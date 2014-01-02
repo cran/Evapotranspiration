@@ -1,0 +1,106 @@
+\name{Evapotranspiration.Truc}
+\alias{Evapotranspiration.Truc}
+
+\title{Truc Formulation
+}
+\description{
+Implementing the Truc formulation for estimating reference crop evapotranspiration.
+}
+\usage{
+\method{Evapotranspiration}{Truc}(data, constants, sunshine.hours, humid, \dots) 
+}
+
+\arguments{
+  \item{data}{
+  A list of data in class "Truc" which contains the following items (climate variables) required by Truc formulation:
+  "Ta", "n" or "Cd" or "Precip"
+  }
+  \item{constants}{
+  A list named "constants" consists of constants required for the calculation of Truc formulation which must contain the following items:
+  "Elev" - ground elevation above mean sea level in m,
+  "lambda" - latent heat of vaporisation = 2.45 MJ.kg^-1,
+  "lat_rad" - latitude in radians,
+  "Gsc" - solar constant = 0.0820 MJ.m^-2.min^-1
+  "as" - fraction of extraterrestrial radiation reaching earth on sunless days,
+  "bs" - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days,
+  "sigma" - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.
+  }
+  \item{sunshine.hours}{
+  Must be either "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  }
+  \item{humid}{
+  Must be TRUE or FALSE, indicating if adjustment for non-humid conditions is applied in Truc formulation (Alexandris et al., 2008, Equation 5b).
+  }
+  \item{\dots}{
+  Dummy for generic function, no need to define.
+  }
+}
+
+\details{
+  The alternative calculation options can be selected through argument \code{sunshine.hours}, please see "Arguments" for details.
+  Humidity adjustment for the estimations is available through argument \code{humid}, please see "Arguments" for details.
+}
+
+\value{
+This function returns a object of class \code{Truc}. Such objects are list with components:
+
+  \item{PET.Daily}{
+  A \code{zoo} object containing daily aggregated estimations of Truc reference crop evapotranspiration.
+  }
+  \item{PET.Monthly}{
+  A \code{zoo} object containing monthly aggregated estimations of Truc reference crop evapotranspiration.
+  }
+  \item{PET.Annual}{
+  A \code{zoo} object containing annually aggregated estimations of Truc reference crop evapotranspiration.
+  }
+  \item{PET.MonthlyAve}{
+  A \code{zoo} object containing monthly averaged estimations of daily Truc reference crop evapotranspiration.
+  }
+  \item{PET.AnnualAve}{
+  A \code{zoo} object containing annually averaged estimations of daily Truc reference crop evapotranspiration.
+  }
+  \item{PET_formulation}{
+  A character string containing the name of the formulation used which equals to "Truc".
+  }
+  \item{PET_type}{
+  A character string containing the type of the estimation obtained which is "Reference Crop Evapotranspiration".
+  }
+  \item{message1}{
+  A message to inform the users about how solar radiation has been calculated by using which data.
+  }
+  \item{message4}{
+  A message to inform the users about if adjustment for non-humid conditions has been applied to calculated Truc reference crop evapotranspiration.
+  }
+}
+\references{
+MCMAHON, T., PEEL, M., LOWE, L., SRIKANTHAN, R. & MCVICAR, T. 2012. Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
+
+TURC, L. 1961. Estimation of irrigation water requirements, potential evapotranspiration: a simple climatic formula evolved up to date. Ann. Agron, 12, 13-49.
+
+ALEXANDRIS, S., STRICEVIC, R. & PETKOVIC, S. 2008. Comparative analysis of reference evapotranspiration from the surface of rainfed grass in central Serbia, calculated by six empirical methods against the Penman-Monteith formula. Eur Water, 21, 17-28.
+
+}
+\author{
+Danlu Guo
+}
+
+\examples{
+# Use processed existing data set from kent Town, Adelaide
+data("processeddata")
+data("constants")
+
+# Set data class to be "Truc" to call function
+funname <- "Truc" 
+class(data) <- funname 
+
+# Call generic function Evapotranspiration(data, ...) with class "Truc"
+results <- Evapotranspiration(data, constants, sunshine.hours="data", humid = TRUE)
+}
+
+% Add one or more standard keywords, see file 'KEYWORDS' in the
+% R documentation directory.
+\keyword{Truc}
+\keyword{evapotranspiration}
+\keyword{reference crop evapotranspiration}
+% __ONLY ONE__ keyword per line
+
