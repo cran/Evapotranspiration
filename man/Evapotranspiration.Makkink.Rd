@@ -1,0 +1,93 @@
+\name{Evapotranspiration.Makkink}
+\alias{Evapotranspiration.Makkink}
+
+\title{Makkink Formulation
+}
+\description{
+Implementing the Makkink formulation for estimating potential evaporation.
+}
+\usage{
+\method{Evapotranspiration}{Makkink}(data, constants, sunshine.hours, \dots)
+}
+
+\arguments{
+  \item{data}{
+  A list of data in class "Makkink" which contains the following items (climate variables) required by Makkink formulation:
+  "Ta", "n" or "Cd" or "Precip"
+  }
+  \item{constants}{
+  A list named "constants" consists of constants required for the calculation of Makkink formulation which must contain the following items:
+  "Elev" - ground elevation above mean sea level in m,
+  "lambda" - latent heat of vaporisation = 2.45 MJ.kg^-1,
+  "lat_rad" - latitude in radians,
+  "Gsc" - solar constant = 0.0820 MJ.m^-2.min^-1
+  "as" - fraction of extraterrestrial radiation reaching earth on sunless days,
+  "bs" - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
+  }
+  \item{sunshine.hours}{
+  Must be either "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  }
+  \item{\dots}{
+  Dummy for generic function, no need to define.
+  }
+}
+
+\details{
+  The alternative calculation options can be selected through argument \code{sunshine.hours}, please see "Arguments" for details.
+}
+
+\value{
+This function returns a object of class \code{Makkink}. Such objects are list with components:
+
+  \item{PET.Daily}{
+  A \code{zoo} object containing daily aggregated estimations of Makkink potential evaporation.
+  }
+  \item{PET.Monthly}{
+  A \code{zoo} object containing monthly aggregated estimations of Makkink potential evaporation.
+  }
+  \item{PET.Annual}{
+  A \code{zoo} object containing annually aggregated estimations of Makkink potential evaporation.
+  }
+  \item{PET.MonthlyAve}{
+  A \code{zoo} object containing monthly averaged estimations of daily Makkink potential evaporation.
+  }
+  \item{PET.AnnualAve}{
+  A \code{zoo} object containing annually averaged estimations of daily Makkink potential evaporation.
+  }
+  \item{PET_formulation}{
+  A character string containing the name of the formulation used which equals to "Makkink".
+  }
+  \item{PET_type}{
+  A character string containing the type of the estimation obtained which is "Potential Evaporation".
+  }
+  \item{message1}{
+  A message to inform the users about how solar radiation has been calculated by using which data.
+  }
+}
+\references{
+MCMAHON, T., PEEL, M., LOWE, L., SRIKANTHAN, R. & MCVICAR, T. 2012. Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
+
+}
+\author{
+Danlu Guo
+}
+
+\examples{
+# Use processed existing data set from kent Town, Adelaide
+data("processeddata")
+data("constants")
+
+# Set data class to be "Makkink" to call function
+funname <- "Makkink" 
+class(data) <- funname 
+
+# Call generic function Evapotranspiration(data, ...) with class "Makkink"
+results <- Evapotranspiration(data, constants, sunshine.hours="data")
+}
+
+% Add one or more standard keywords, see file 'KEYWORDS' in the
+% R documentation directory.
+\keyword{Makkink}
+\keyword{potential evaporation}
+% __ONLY ONE__ keyword per line
+
