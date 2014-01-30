@@ -7,13 +7,13 @@
 Implementing the Granger-Gray formulation for estimating actual areal evapotranspiration.
 }
 \usage{
-\method{Evapotranspiration}{GrangerGray}(data, constants, sunshine.hours, windfunction_ver, alpha, \dots)
+\method{Evapotranspiration}{GrangerGray}(data, constants, solar, windfunction_ver, alpha, \dots)
 }
 
 \arguments{
   \item{data}{
   A list of data in class "GrangerGray" which contains the following items (climate variables) required by Granger-Gray formulation:
-  "Ta", "vas", "vabar", "Tmax", "Tmin", "n" or "Cd" or "Precip", "u2" or "uz"
+  "Tmax", "Tmin", "RHmax", "RHmin", "Rs", "n" or "Cd", "u2" or "uz"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Granger-Gray formulation which must contain the following items:
@@ -27,8 +27,8 @@ Implementing the Granger-Gray formulation for estimating actual areal evapotrans
   "sigma" - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1,
   "G" - soil heat flux in MJ.m^-2.day^-1, = 0 when using daily time step.
   }
-  \item{sunshine.hours}{
-  Must be either "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  \item{solar}{
+  Must be either "data", "sunshine hours", "cloud" or "monthly precipitation". "data" indicates that solar radiation data is to be used to calculate evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{windfunction_ver}{
   The version of Penman wind function that will be used within the Penman formulation. Must be either "1948" or "1956". "1948" is for applying the Penman's 1948 wind function (Penman, 1948); "1956" is for applying the Penman's 1956 wind function (Penman, 1956)
@@ -42,7 +42,7 @@ Implementing the Granger-Gray formulation for estimating actual areal evapotrans
 }
 
 \details{
-  The alternative calculation options can be selected through arguments \code{sunshine.hours} and \code{windfunction_ver}, please see "Arguments" for details.
+  The alternative calculation options can be selected through arguments \code{solar} and \code{windfunction_ver}, please see "Arguments" for details.
   User-defined evaporative surface is allowed through argument \code{alpha}, please see "Arguments" for details.
 }
 
@@ -98,7 +98,7 @@ funname <- "GrangerGray"
 class(data) <- funname 
 
 # Call generic function Evapotranspiration(data, ...) with class "GrangerGray"
-results <- Evapotranspiration(data, constants, sunshine.hours="data", windfunction_ver = 
+results <- Evapotranspiration(data, constants, solar="sunshine hours", windfunction_ver = 
 "1948", alpha = 0.23)
 }
 

@@ -7,13 +7,13 @@
 Implementing the Priestley-Taylor formulation for potential evaporation
 }
 \usage{
-\method{Evapotranspiration}{PriestleyTaylor}(data, constants, sunshine.hours, alpha, \dots)
+\method{Evapotranspiration}{PriestleyTaylor}(data, constants, solar, alpha, \dots)
 }
 
 \arguments{
   \item{data}{
   A list of data in class "PriestleyTaylor" which contains the following items (climate variables) required by Priestley-Taylor formulation:
-  "Ta", "vabar", Tmax", "Tmin", "n" or "Cd" or "Precip"
+  "Tmax", "Tmin", "RHmax", "RHmin", "RS", "n" or "Cd"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Priestley-Taylor formulation which must contain the following items:
@@ -27,8 +27,8 @@ Implementing the Priestley-Taylor formulation for potential evaporation
   "alphaPT" - Priestley-Taylor coefficient,
   "G" - soil heat flux in MJ.m^-2.day^-1, = 0 when using daily time step.
   }
-  \item{sunshine.hours}{
-  Must be either "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  \item{solar}{
+  Must be either "data", "sunshine hours", "cloud" or "monthly precipitation". "data" indicates that solar radiation data is to be used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{alpha}{
   Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface (or surrounding surface for Penpan formulation) representing the portion of the incident radiation that is reflected back at the surface. 
@@ -39,7 +39,7 @@ Implementing the Priestley-Taylor formulation for potential evaporation
 }
 
 \details{
-  The alternative calculation options can be selected through argument \code{sunshine.hours}, please see "Arguments" for details.
+  The alternative calculation options can be selected through argument \code{solar}, please see "Arguments" for details.
   User-defined evaporative surface is allowed through argument \code{alpha}, please see "Arguments" for details.
 }
 
@@ -90,7 +90,7 @@ funname <- "PriestleyTaylor"
 class(data) <- funname
 
 # Call generic function Evapotranspiration(data, ...) with class "PriestleyTaylor"
-results <- Evapotranspiration(data, constants, sunshine.hours="data", alpha = 0.08)
+results <- Evapotranspiration(data, constants, solar="sunshine hours", alpha = 0.08)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

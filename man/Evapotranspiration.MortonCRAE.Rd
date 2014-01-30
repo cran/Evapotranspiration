@@ -7,13 +7,13 @@
 Implementing the Morton CRAE formulation for estimating potential evapotranspiration, wet-environment areal evapotranspiration and actual areal evapotranspiration.
 }
 \usage{
-\method{Evapotranspiration}{MortonCRAE}(data, constants, est, sunshine.hours, Tdew, \dots)
+\method{Evapotranspiration}{MortonCRAE}(data, constants, est, solar, Tdew, \dots)
 }
 
 \arguments{
   \item{data}{
   A list of data in class "MortonCRAE" which contains the following items (climate variables) required by Morton CRAE formulation:
-  "Ta", Tmax", "Tmin", "Tdew", n" or "Cd".
+  "Tmax", "Tmin", "Tdew", "n" or "Cd".
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Morton CRAE formulation which must contain the following items:
@@ -32,8 +32,8 @@ Implementing the Morton CRAE formulation for estimating potential evapotranspira
   "sigmaMo" - Stefan-Boltzmann constant in Morton's procedure, = 5.67e-08 W.m^-2.K^-4 (Morton, 1983),
   "lambdaMo" - Latent heat of vaporisation in Morton's procedure, = 28.5W.day.kg^-1 when T >= 0 degree Celcius, = 28.5*1.15W.day.kg^-1 when T < 0 degree Celcius.
   }
-  \item{sunshine.hours}{
-  Must be either "data" or "cloud". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data.
+  \item{solar}{
+  Must be either "sunshine hours" or "cloud". "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data.
   }
   \item{est}{
   Must be either "potential ET", "wet areal ET" or "actual areal ET". "potential ET" proceeds to estimating potential evapotranspiration; "wet areal ET" proceeds to estimating wet-environmental areal evapotranspiration; "actual areal ET" proceeds to estimating actual areal evapotranspiraion
@@ -48,7 +48,7 @@ Implementing the Morton CRAE formulation for estimating potential evapotranspira
 
 \details{
   The type of evapotranspiration calculated can be selected through argument \code{est}, please see "Arguments" for details.
-  The alternative calculation options can be selected through argument \code{sunshine.hours} and \code{Tdew}, please see "Arguments" for details.
+  The alternative calculation options can be selected through argument \code{solar} and \code{Tdew}, please see "Arguments" for details.
 }
 
 \value{
@@ -102,8 +102,8 @@ funname <- "MortonCRAE"
 class(data) <- funname 
 
 # Call generic function Evapotranspiration(data, ...) with class "MortonCRAE"
-results <- Evapotranspiration(data, constants, est = "potential ET", sunshine.hours = 
-"data", Tdew = TRUE) 
+results <- Evapotranspiration(data, constants, est = "potential ET", solar = 
+"sunshine hours", Tdew = TRUE) 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

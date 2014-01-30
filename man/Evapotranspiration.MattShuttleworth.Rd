@@ -7,7 +7,7 @@
 Implementing the Matt-Shuttleworth formulation for reference crop evapotranspiration
 }
 \usage{
-\method{Evapotranspiration}{MattShuttleworth}(data, constants, sunshine.hours, alpha, r_s, CH, \dots)
+\method{Evapotranspiration}{MattShuttleworth}(data, constants, solar, alpha, r_s, CH, \dots)
 }
 
 \arguments{
@@ -28,8 +28,8 @@ Implementing the Matt-Shuttleworth formulation for reference crop evapotranspira
   "Roua" - mean air density = 1.20 kg.m^-3, 
   "Ca" - specific heat of air = 0.001013 MJ.kg^-1.oC^-1.
   }
-  \item{sunshine.hours}{
-  Must be either "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  \item{solar}{
+  Must be either "sunshine hours", "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation data will be used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{alpha}{
   Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface (or surrounding surface for Penpan formulation) representing the portion of the incident radiation that is reflected back at the surface. 
@@ -46,7 +46,7 @@ Implementing the Matt-Shuttleworth formulation for reference crop evapotranspira
 }
 
 \details{
-  The alternative calculation options can be selected through argument \code{sunshine.hours}, please see "Arguments" for details.
+  The alternative calculation options can be selected through argument \code{solar}, please see "Arguments" for details.
   User-defined evaporative surface is allowed through arguments \code{alpha}, \code{r_s} and \code{CH}, please see "Arguments" for details.
 }
 \value{
@@ -98,7 +98,7 @@ funname <- "MattShuttleworth"
 class(data) <- funname
 
 # Call generic function Evapotranspiration(data, ...) with class "MattShuttleworth"
-results <- Evapotranspiration(data, constants, sunshine.hours="data", alpha = 0.23, r_s = 70, CH = 
+results <- Evapotranspiration(data, constants, solar="sunshine hours", alpha = 0.23, r_s = 70, CH = 
 0.12)
 }
 

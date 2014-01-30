@@ -21,14 +21,15 @@ Reading(climatedata, constants, stopmissing)
   "Air.temperature.in.Degrees.C" - subdaily temperature in Degree Celcius,
   "Wind.speed.at.2m.measured.in.km.h" - subdaily wind speed at 2m from ground in km/h,
   "Wind.speed.measured.in.km.h" - subdaily wind speed measured at the height of wind instrument in km/h,
+  "Solar.radiation.in.MJ/sqm/day" - daily incoming solar radiation,
   "n" - daily sunshine hours,
   "cloud.cover.in.oktas" - daily cloud cover in oktas,
-  "precipiration.in.mm" - daily precipitation in mm,
+  "precipitation.in.mm" - daily precipitation in mm,
   "Class.A.pan.evaporation.in.mm" - daily Class-A pan evaporation in mm,
   "RHmax" - daily maximum relative humidity in percentage,
   "RHmin" - daily minimum relative humidity in percentage,
   "Relative.humidity.in.percentage.." - subdaily relative humidity in percentage,
-  "Dew.point.temperature.in.Degrees.C" - subdaily dew point temperature in degree Celcius.
+  "Dew.point.temperature.in.Degrees.C" - subdaily dew point temperature in degree Celcius,
   In order to determine which variables to include in "climatedata", please see \code{Evapotranspiration} for the specific data requirements for different formulations.
   }
   \item{constants}{
@@ -70,6 +71,9 @@ This function returns a list with all components of class \code{zoo} which have 
   \item{uz}{
   A \code{zoo} object containing the daily wind speed measured at the height of wind instrument in m/s.
   }
+  \item{Rs}{
+  A \code{zoo} object containing the daily solar radiation in MJ/m^2/day.
+  }
   \item{n}{
   A \code{zoo} object containing the daily sunshine hours.
   }
@@ -88,20 +92,8 @@ This function returns a list with all components of class \code{zoo} which have 
   \item{RHmin}{
   A \code{zoo} object containing the daily minimum relative humidity in percentage.
   }
-  \item{RHmean}{
-  A \code{zoo} object containing the average daily relative humidity in percentage.
-  }
-  \item{vas}{
-  A \code{zoo} object containing the average daily saturated vapour pressure in KPa.
-  }
-  \item{vabar}{
-  A \code{zoo} object containing the average daily actual vapour pressure in KPa.
-  }
   \item{Tdew}{
   A \code{zoo} object containing the average daily dew temperatures in degree Celcius.
-  }
-  \item{Ta}{
-  A \code{zoo} object containing the average daily temperatures in degree Celcius.
   }
   Note that the components might have value of \code{NULL} when the corresponding raw data cannot be found in "climatedata".
   }

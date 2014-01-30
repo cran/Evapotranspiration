@@ -7,13 +7,13 @@
 Implementing the Makkink formulation for estimating potential evaporation.
 }
 \usage{
-\method{Evapotranspiration}{Makkink}(data, constants, sunshine.hours, \dots)
+\method{Evapotranspiration}{Makkink}(data, constants, solar, \dots)
 }
 
 \arguments{
   \item{data}{
   A list of data in class "Makkink" which contains the following items (climate variables) required by Makkink formulation:
-  "Ta", "n" or "Cd" or "Precip"
+  "Tmax", "Tmin", "Rs", "n" or "Cd"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Makkink formulation which must contain the following items:
@@ -24,8 +24,8 @@ Implementing the Makkink formulation for estimating potential evaporation.
   "as" - fraction of extraterrestrial radiation reaching earth on sunless days,
   "bs" - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
   }
-  \item{sunshine.hours}{
-  Must be either "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  \item{solar}{
+  Must be either "sunshine hours", "data", "cloud" or "monthly precipitation". "sunshine hours" indicates that solar radiation data will be used directly for calculating evapotranspiration; "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -33,7 +33,7 @@ Implementing the Makkink formulation for estimating potential evaporation.
 }
 
 \details{
-  The alternative calculation options can be selected through argument \code{sunshine.hours}, please see "Arguments" for details.
+  The alternative calculation options can be selected through argument \code{solar}, please see "Arguments" for details.
 }
 
 \value{
@@ -82,7 +82,7 @@ funname <- "Makkink"
 class(data) <- funname 
 
 # Call generic function Evapotranspiration(data, ...) with class "Makkink"
-results <- Evapotranspiration(data, constants, sunshine.hours="data")
+results <- Evapotranspiration(data, constants, solar="sunshine hours")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

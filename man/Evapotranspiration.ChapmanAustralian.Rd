@@ -7,13 +7,13 @@
 Implementing the Chapman formulation for estimating equivalent Penmen-Monteith reference crop evapotranspiration.
 }
 \usage{
-\method{Evapotranspiration}{ChapmanAustralian}(data, constants, Penpan, sunshine.hours, alpha, \dots) 
+\method{Evapotranspiration}{ChapmanAustralian}(data, constants, Penpan, solar, alpha, \dots) 
 }
 
 \arguments{
   \item{data}{
   A list of data in class "ChapmanAustralian" which contains the following items (climate variables) required by Chapman formulation:
-  "Epan" or "Ta" and "Tmax" and "Tmin" and "vabar" and "vas" and "u2" or "uz" and "n" or "Cd"
+  "Epan" or "Tmax" and "Tmin" and "RHmax" and "RHmin" and "u2" or "uz" and "Rs" or "n" or "Cd"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Penman formulation which must contain the following items:
@@ -32,8 +32,8 @@ Implementing the Chapman formulation for estimating equivalent Penmen-Monteith r
   \item{Penpan}{
   Must be TRUE or FALSE, indicating if the Penpan formulation is used for estimating Class-A pan evaporation required in Chapman formulation. If TRUE Penpan will be used and if FALSE the actual data of Class-A pan evaporation will be used.
   }
-  \item{sunshine.hours}{
-  Must be either "data" or "cloud". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data.
+  \item{solar}{
+  Must be either "data", "sunshine hours", or "cloud". "data" indicates that solar radiation data is used directly for calculating evapotranspiration, "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data.
   }
   \item{alpha}{
   Must be defined if Penpan = TRUE. Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface (or surrounding surface for Penpan formulation) representing the portion of the incident radiation that is reflected back at the surface. 
@@ -44,7 +44,7 @@ Implementing the Chapman formulation for estimating equivalent Penmen-Monteith r
 }
 
 \details{
-  The alternative calculation options can be selected through arguments \code{Penpan} and \code{sunshine.hours}, please see "Arguments" for details.
+  The alternative calculation options can be selected through arguments \code{Penpan} and \code{solar}, please see "Arguments" for details.
 }
 
 \value{
@@ -96,7 +96,8 @@ funname <- "ChapmanAustralian"
 class(data) <- funname 
 
 # Call generic function Evapotranspiration(data, ...) with class "ChapmanAustralian"
-results <- Evapotranspiration(data, constants, Penpan = TRUE, sunshine.hours = "data", alpha = 0.23)
+results <- Evapotranspiration(data, constants, Penpan = TRUE, solar = "sunshine hours", 
+alpha = 0.23)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

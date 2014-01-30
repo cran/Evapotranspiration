@@ -7,13 +7,13 @@
 Implementing the Truc formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{Evapotranspiration}{Truc}(data, constants, sunshine.hours, humid, \dots) 
+\method{Evapotranspiration}{Truc}(data, constants, solar, humid, \dots) 
 }
 
 \arguments{
   \item{data}{
   A list of data in class "Truc" which contains the following items (climate variables) required by Truc formulation:
-  "Ta", "n" or "Cd" or "Precip"
+  "Tmax", "Tmin", "Rs", "n" or "Cd"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Truc formulation which must contain the following items:
@@ -25,8 +25,8 @@ Implementing the Truc formulation for estimating reference crop evapotranspirati
   "bs" - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days,
   "sigma" - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.
   }
-  \item{sunshine.hours}{
-  Must be either "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  \item{solar}{
+  Must be either "data", "sunshine hours", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{humid}{
   Must be TRUE or FALSE, indicating if adjustment for non-humid conditions is applied in Truc formulation (Alexandris et al., 2008, Equation 5b).
@@ -37,7 +37,7 @@ Implementing the Truc formulation for estimating reference crop evapotranspirati
 }
 
 \details{
-  The alternative calculation options can be selected through argument \code{sunshine.hours}, please see "Arguments" for details.
+  The alternative calculation options can be selected through argument \code{solar}, please see "Arguments" for details.
   Humidity adjustment for the estimations is available through argument \code{humid}, please see "Arguments" for details.
 }
 
@@ -94,7 +94,7 @@ funname <- "Truc"
 class(data) <- funname 
 
 # Call generic function Evapotranspiration(data, ...) with class "Truc"
-results <- Evapotranspiration(data, constants, sunshine.hours="data", humid = TRUE)
+results <- Evapotranspiration(data, constants, solar="sunshine hours", humid = TRUE)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the
