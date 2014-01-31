@@ -7,13 +7,13 @@
 Implementing the Balney-Criddle formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{Evapotranspiration}{BalneyCriddle}(data, constants, sunshine.hours, height, \dots) 
+\method{Evapotranspiration}{BalneyCriddle}(data, constants, solar, height, \dots) 
 }
 
 \arguments{
   \item{data}{
   A list of data in class "BalneyCriddle" which contains the following items (climate variables) required by Balney-Criddle formulation:
-  "Ta", "RHmin", "n" or "Cd", "u2" or "uz"
+  "Tmax", "Tmin", "RHmin", "n", "u2" or "uz", "RHmin"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Balney-Criddle formulation which must contain the following items:
@@ -22,8 +22,8 @@ Implementing the Balney-Criddle formulation for estimating reference crop evapot
   "z" - height of wind instrument in m,
   "e0", "e1", "e2", "e3", "e4" - recommended values of 0.81917, -0.0040922, 1.0705, 0.065649, -0.0059684, -0.0005967 respectively (Table 1 in Frevert et al., 1983).
   }
-  \item{sunshine.hours}{
-  Must be either "data" or "cloud". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data.
+  \item{solar}{
+  Must be either "sunshine hours" or "cloud". "sunshine hours" indicates that solar radiation is to be calculated using the data of sunshine hours; for "cloud" sunshine hours is to be estimated from cloud data.
   }
   \item{height}{
   Must be TRUE or FALSE, indicating if adjustment for site elevation for arid and semi-arid regions is applied in Balney-Criddle formulation (Allen and Brockway, 1983).
@@ -34,7 +34,7 @@ Implementing the Balney-Criddle formulation for estimating reference crop evapot
 }
 
 \details{
-  The alternative calculation options can be selected through argument \code{sunshine.hours}, please see "Arguments" for details.
+  The alternative calculation options can be selected through argument \code{solar}, please see "Arguments" for details.
   Height adjustment for the estimations is available through argument \code{height}, please see "Arguments" for details.
 }
 
@@ -90,7 +90,7 @@ funname <- "BalneyCriddle"
 class(data) <- funname 
 
 # Call generic function Evapotranspiration(data, ...) with class "BalneyCriddle"
-results <- Evapotranspiration(data, constants, sunshine.hours="data", height = TRUE)
+results <- Evapotranspiration(data, constants, solar="sunshine.hours", height = TRUE)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

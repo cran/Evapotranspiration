@@ -37,7 +37,7 @@ funname <- "Penman"
 class(data) <- funname 
 
 # Call generic function Evapotranspiration(data, ...) with class "Penman"
-results <- Evapotranspiration(data, constants, sunshine.hours="data", wind=
+results <- Evapotranspiration(data, constants, solar="sunshine hours", wind=
 "yes", windfunction_ver = "1948", alpha = 0.08, z0 = 0.001) 
 }
 

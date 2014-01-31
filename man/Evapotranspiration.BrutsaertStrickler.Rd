@@ -7,13 +7,13 @@
 Implementing the Brutsaert-Strickler formulation for actual areal evapotranspiration
 }
 \usage{
-\method{Evapotranspiration}{BrutsaertStrickler}(data, constants, sunshine.hours, alpha, \dots)
+\method{Evapotranspiration}{BrutsaertStrickler}(data, constants, solar, alpha, \dots)
 }
 
 \arguments{
   \item{data}{
   A list of data in class "BrutsaertStrickler" which contains the following items (climate variables) required by Brutsaert-Strickler formulation:
-  "Ta", "vas", "vabar", "Tmax", "Tmin", "n" or "Cd" or "Precip", "u2" or "uz"
+  "Tmax", "Tmin", "RHmax", "RHmin", "RS", "n" or "Cd", "u2" or "uz"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Brutsaert-Strickler formulation which must contain the following items:
@@ -26,8 +26,8 @@ Implementing the Brutsaert-Strickler formulation for actual areal evapotranspira
   "z" - height of wind instrument in m,
   "sigma" - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.
   }
-  \item{sunshine.hours}{
-  Must be either "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  \item{solar}{
+  Must be either "data", "sunshine hours", cloud" or "monthly precipitation". "data" indicates that solar radiation data is used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{alpha}{
   Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface (or surrounding surface for Penpan formulation) representing the portion of the incident radiation that is reflected back at the surface. 
@@ -38,7 +38,7 @@ Implementing the Brutsaert-Strickler formulation for actual areal evapotranspira
 }
 
 \details{
-  The alternative calculation options can be selected through argument \code{sunshine.hours}, please see "Arguments" for details.
+  The alternative calculation options can be selected through argument \code{solar}, please see "Arguments" for details.
   User-defined evaporative surface is allowed through argument \code{alpha}, please see "Arguments" for details.
 }
 
@@ -89,7 +89,7 @@ funname <- "BrutsaertStrickler"
 class(data) <- funname
 
 # Call generic function Evapotranspiration(data, ...) with class "BrutsaertStrickler"
-results <- Evapotranspiration(data, constants, sunshine.hours="data", alpha = 0.08)
+results <- Evapotranspiration(data, constants, solar="sunshine.hours", alpha = 0.08)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

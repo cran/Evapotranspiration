@@ -13,7 +13,7 @@ Implementing the Hargreaves-Samani formulation for estimating reference crop eva
 \arguments{
   \item{data}{
   A list of data in class "HargreavesSamani" which contains the following items (climate variables) required by Hargreaves-Samani formulation:
-  "Ta", "Tmax", "Tmin"
+  "Tmax", "Tmin"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Hargreaves-Samani formulation which must contain the following items:

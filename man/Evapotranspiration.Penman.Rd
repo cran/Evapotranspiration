@@ -7,14 +7,14 @@
 Implementing the Penman formulation for estimating open-water evaporation or potential evapotranspiration
 }
 \usage{
-\method{Evapotranspiration}{Penman}(data, constants, sunshine.hours, wind, windfunction_ver, 
+\method{Evapotranspiration}{Penman}(data, constants, solar, wind, windfunction_ver, 
 alpha = 0.08, z0 = 0.001, \dots)
 }
 
 \arguments{
   \item{data}{
   A list of data in class "Penman" which contains the following items (climate variables) required by Penman formulation:
-  "Ta", Tmax", "Tmin", "n" or "Cd" or "Precip", "u2" or "uz" or "RHmean", "vabar"
+  "Tmax", "Tmin", "Rs", "n" or "Cd", "u2" or "uz" or "RHmax", "RHmin"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Penman formulation which must contain the following items:
@@ -27,8 +27,8 @@ alpha = 0.08, z0 = 0.001, \dots)
   "z" - height of wind instrument in m,
   "sigma" - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.
   }
-  \item{sunshine.hours}{
-  Must be either "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  \item{solar}{
+  Must be either "data", "sunshine hours", "cloud" or "monthly precipitation". "data" indicates that solar radiation data is to be used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{wind}{
   Must be either "yes" or "no". "yes" indicates that the calculation will use real data of wind speed; "no" indicates that the alternative calculation without using wind data will be used in Penman formulation (Valiantzas 2006, Equation33).
@@ -48,7 +48,7 @@ alpha = 0.08, z0 = 0.001, \dots)
 }
 
 \details{
-  The alternative calculation options can be selected through arguments \code{sunshine.hours}, \code{wind} and \code{windfunction_ver}, please see "Arguments" for details.
+  The alternative calculation options can be selected through arguments \code{solar}, \code{wind} and \code{windfunction_ver}, please see "Arguments" for details.
   User-defined evaporative surface is allowed through arguments \code{alpha} and \code{z0}, please see "Arguments" for details.
 }
 
@@ -106,7 +106,7 @@ funname <- "Penman"
 class(data) <- funname 
 
 # Call generic function Evapotranspiration(data, ...) with class "Penman"
-results <- Evapotranspiration(data, constants, sunshine.hours="data", wind=
+results <- Evapotranspiration(data, constants, solar="sunshine hours", wind=
 "yes", windfunction_ver = "1948", alpha = 0.08, z0 = 0.001) 
 }
 

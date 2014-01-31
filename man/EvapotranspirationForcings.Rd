@@ -20,13 +20,16 @@ EvapotranspirationForcings(data, results, forcing)
   }
   \item{forcing}{
   A character string as the name of a climate variable that the estimated evapotranspiration should be plotted against, can be any of:
-  "Ta" - average temperature,
+  "Tmax" - maximum temperature,
+  "Tmin" - minimum temperature,
   "u2" - average wind speed at 2m,
   "uz" - average wind speed,
+  "Rs" - solar radiation,
   "n" - daily sunshine hours,
   "Precip" - precipitation,
   "Epan" - Class-A pan evaporation,
-  "RHmean" - average relative humidity,
+  "RHmax" - maximum relative humidity,
+  "RHmin" - minimum relative humidity,
   "Tdew" - average dew point temeprature.
   }
   }
@@ -52,10 +55,10 @@ funname <- "Penman"
 class(data) <- funname 
 
 # Call generic function Evapotranspiration(data, constants, ...) with class "Penman"
-results <- Evapotranspiration(data, constants, sunshine.hours="data", wind=
+results <- Evapotranspiration(data, constants, solar="sunshine hours", wind=
 "yes", windfunction_ver = "1948", alpha = 0.08, z0 = 0.001) 
 # Plot the estimated Penman open-water evaporation against average temperature
-EvapotranspirationForcings(data, results, forcing = "Ta")
+EvapotranspirationForcings(data, results, forcing = "Tmax")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

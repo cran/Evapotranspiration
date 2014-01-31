@@ -13,7 +13,7 @@ Implementing the Jensen-Haise formulation for estimating potential evapotranspir
 \arguments{
   \item{data}{
   A list of data in class "JensenHaise" which contains the following items (climate variables) required by Jensen-Haise formulation:
-  "Ta"
+  "Tmax", "Tmin"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Penman formulation which must contain the following items:

@@ -7,13 +7,13 @@
 Implementing the Penpan formulation for Class-A pan evaporation.
 }
 \usage{
-\method{Evapotranspiration}{Penpan}(data, constants, sunshine.hours, alpha, overest, \dots)
+\method{Evapotranspiration}{Penpan}(data, constants, solar, alpha, overest, \dots)
 }
 
 \arguments{
   \item{data}{
   A list of data in class "Penpan" which contains the following items (climate variables) required by Penpan formulation:
-  "Ta", "vas", "vabar", "Tmax", "Tmin", "n" or "Cd" or "Precip", "u2" or "uz"
+  "Tmax", "Tmin", "RHmax", "RHmin", "Rs", "n" or "Cd", "u2" or "uz"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Penpan formulation which must contain the following items:
@@ -29,8 +29,8 @@ Implementing the Penpan formulation for Class-A pan evaporation.
   "alphaA" - albedo for Class-A pan,
   "ap" - a constant in Penpan = 2.4.
   }
-  \item{sunshine.hours}{
-  Must be either "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  \item{solar}{
+  Must be either "data", "sunshine hours", "cloud" or "monthly precipitation". "data" indicates that solar radiation data is to be used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{alpha}{
   Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface (or surrounding surface for Penpan formulation) representing the portion of the incident radiation that is reflected back at the surface. 
@@ -44,7 +44,7 @@ Implementing the Penpan formulation for Class-A pan evaporation.
 }
 
 \details{
-  The alternative calculation options can be selected through argument \code{sunshine.hours}, please see "Arguments" for details.
+  The alternative calculation options can be selected through argument \code{solar}, please see "Arguments" for details.
   User-defined evaporative surface is allowed through argument \code{alpha}, please see "Arguments" for details.
   Adjustment for overestimation on the estimations are available through argument \code{height}, please see "Arguments" for details.
 }
@@ -97,7 +97,7 @@ funname <- "Penpan"
 class(data) <- funname
 
 # Call generic function Evapotranspiration(data, ...) with class "Penpan"
-results <- Evapotranspiration(data, constants, sunshine.hours="data", alpha = 0.23, overest = TRUE)
+results <- Evapotranspiration(data, constants, solar="sunshine hours", alpha = 0.23, overest = TRUE)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

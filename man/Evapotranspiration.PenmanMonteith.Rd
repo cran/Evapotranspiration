@@ -7,13 +7,13 @@
 Implementing the Penman-Monteith formulation (including the method for FAO-56 hypothetical short grass and the method for ASCE-EWRI Standardised crop) for estimating reference crop evapotranspiration
 }
 \usage{
-\method{Evapotranspiration}{PenmanMonteith}(data, constants, sunshine.hours, wind, crop, \dots)
+\method{Evapotranspiration}{PenmanMonteith}(data, constants, solar, wind, crop, \dots)
 }
 
 \arguments{
   \item{data}{
   A list of data in class "PenmanMonteith" which contains the following items (climate variables) required by Penman-Monteith formulation:
-  "Ta", "vabar", Tmax", "Tmin", "n" or "Cd" or "Precip", "u2" or "uz" or "RHmean"
+  "Tmax", "Tmin", "RHmax", "RHmin", "Rs, "n" or "Cd", "u2" or "uz"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Penman-Monteith formulation which must contain the following items:
@@ -27,8 +27,8 @@ Implementing the Penman-Monteith formulation (including the method for FAO-56 hy
   "sigma" - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1,
   "G" - soil heat flux in MJ.m^-2.day^-1, = 0 when using daily time step.
   }
-  \item{sunshine.hours}{
-  Must be either "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  \item{solar}{
+  Must be either "data", "sunshine hours", "cloud" or "monthly precipitation". "data" indicates that solar radiation data is to be used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{wind}{
   Must be either "yes" or "no". "yes" indicates that the calculation will use real data of wind speed; "no" indicates that the alternative calculation without using wind data will be used in Penman formulation (Valiantzas 2006, Equation33).
@@ -42,7 +42,7 @@ Implementing the Penman-Monteith formulation (including the method for FAO-56 hy
 }
 
 \details{
-  The alternative calculation options can be selected through arguments \code{sunshine.hours} and \code{wind}, please see "Arguments" for details.
+  The alternative calculation options can be selected through arguments \code{solar} and \code{wind}, please see "Arguments" for details.
   User-defined evaporative surface is allowed through arguments \code{crop}, please see "Arguments" for details.
 }
 
@@ -98,7 +98,7 @@ funname <- "PenmanMonteith"
 class(data) <- funname 
 
 # Call generic function Evapotranspiration(data, ...) with class "PenmanMonteith"
-results <- Evapotranspiration(data, constants, sunshine.hours="data", wind="yes", crop="short") 
+results <- Evapotranspiration(data, constants, solar="sunshine hours", wind="yes", crop="short") 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

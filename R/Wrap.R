@@ -5,7 +5,7 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c("funname"))
 # A Function for reading, checking and doing basic calculation from data for Evapotranspiration functions #
 # Timestep - daily
 
-Reading <- function(climatedata, constants, stopmissing) {
+ Reading <- function(climatedata, constants, stopmissing) {
   
   # Checking if all data required is available, give error message if not
   
@@ -26,7 +26,7 @@ Reading <- function(climatedata, constants, stopmissing) {
   Date.monthly <- unique(as.yearmon(Date.subdaily, "%d/%m/%y"))
 
   # Julian day
-  J.temp <- zoo(Date.subdaily$yday+1,Date.subdaily) # Julian calendar day; 1 added in to that first Jan = day 1
+  J.temp <- zoo(Date.subdaily$yday+1,as.Date(Date.subdaily)) # Julian calendar day; 1 added in to that first Jan = day 1
   J <- aggregate(J.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
   
   # Number of month
@@ -34,7 +34,7 @@ Reading <- function(climatedata, constants, stopmissing) {
   i  <- (i.temp - trunc(i.temp))*12 + 1    #Month 
   
   # Number of days in a month
-  ndays.temp <- zoo(climatedata$Day, Date.subdaily)
+  ndays.temp <- zoo(climatedata$Day, as.Date(Date.subdaily))
   ndays.temp <- aggregate(ndays.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
   ndays <- aggregate(ndays.temp, as.yearmon(Date.daily, "%m/%y"), FUN = max)
   
@@ -175,6 +175,27 @@ Reading <- function(climatedata, constants, stopmissing) {
       uz <- NULL
     }
   
+  # Check if data 'Solar.radiation.in.MJ.per.sqm.per.day' exists
+  if ('Solar.radiation.in.MJ.per.sqm.per.day' %in% (colnames(climatedata))) {  
+    if ("TRUE" %in% (is.na(climatedata$Solar.radiation.in.MJ.per.sqm.per.day))) {
+      message("Warning: missing values in 'Dew.point.temperature.in.Degrees.C'")
+      message(paste("Number of missing values in Dew.point.temperature.in.Degrees.C: ", sum(is.na(climatedata$Solar.radiation.in.MJ.per.sqm.per.day))))
+      message(paste("% missing data: ", signif(sum(is.na(climatedata$Solar.radiation.in.MJ.per.sqm.per.day))/nrow(climatedata) * 100, digits = -3), "%"))
+      if (sum(is.na(climatedata$Solar.radiation.in.MJ.per.sqm.per.day)) >= stopmissing/100 * nrow(climatedata)) {
+        stop("missing data of Solar.radiation.in.MJ.per.sqm.per.day exceeds ", stopmissing, "%, please use high quality data for calculation")
+      } else {
+        message("Interpolation is performed for missing data, users should be aware of the associated risk")
+      }
+    }
+    Rs.temp <- zoo(climatedata$Solar.radiation.in.MJ.per.sqm.per.day, Date.subdaily)
+    Rs <- aggregate(Rs.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
+    message("Interpolation is performed to replace data with error, users should be aware of the associated risk")
+    for (m in 0:11) {
+      Rs[as.POSIXlt(time(Rs))$mon==m & is.na(Rs)] = mean(Rs[as.POSIXlt(time(Rs))$mon==m & !is.na(Rs)])
+    }
+  } else {
+      Rs <- NULL
+  }
     # Check if data 'n' exists
     if ("n" %in% (colnames(climatedata))) {
       if ("TRUE" %in% (is.na(climatedata$n))) {
@@ -217,55 +238,59 @@ Reading <- function(climatedata, constants, stopmissing) {
     } 
   
   
-    # Check if data 'precipiration.in.mm' exists
-    if ("precipiration.in.mm" %in% (colnames(climatedata))) {
-      if ("TRUE" %in% (is.na(climatedata$precipiration.in.mm))) {
-        message("Warning: missing values in 'precipiration.in.mm' (daily precipiration)")
-        message(paste("Number of missing values in precipiration.in.mm: ", sum(is.na(climatedata$precipiration.in.mm))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$precipiration.in.mm))/nrow(climatedata) * 100, digits = -3), "%"))
-        if (sum(is.na(climatedata$precipiration.in.mm)) >= stopmissing/100 * nrow(climatedata)) {
-          stop("missing data of precipiration.in.mm exceeds ", stopmissing, "%, please use high quality data for calculation")
+    # Check if data 'precipitation.in.mm' exists
+    if ("precipitation.in.mm" %in% (colnames(climatedata))) {
+      if ("TRUE" %in% (is.na(climatedata$precipitation.in.mm))) {
+        message("Warning: missing values in 'precipitation.in.mm' (daily precipitation)")
+        message(paste("Number of missing values in precipitation.in.mm: ", sum(is.na(climatedata$precipitation.in.mm))))
+        message(paste("% missing data: ", signif(sum(is.na(climatedata$precipitation.in.mm))/nrow(climatedata) * 100, digits = -3), "%"))
+        if (sum(is.na(climatedata$precipitation.in.mm)) >= stopmissing/100 * nrow(climatedata)) {
+          stop("missing data of precipitation.in.mm exceeds ", stopmissing, "%, please use high quality data for calculation")
         } else {
           message("Interpolation is performed for missing data, users should be aware of the associated risk")
         }
       }
-      P.temp <- zoo(climatedata$precipiration.in.mm, Date.subdaily) 
+      P.temp <- zoo(climatedata$precipitation.in.mm, Date.subdaily) 
       for (m in 0:11) {
         P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(is.na(P.temp))] = mean(P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(!is.na(P.temp))]) # Changing to monthly mean 
       }
-      Precip <- aggregate(P.temp, as.Date(Date.subdaily, "%d/%m/%y"),sum)
+      Precip <- aggregate(P.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
       P.monthly <- aggregate(Precip, as.yearmon(Date.daily, "%m/%y"),sum)
-      Cd <- numeric(length(P.temp))
-      for (n in 1:length(P.temp)) {
-        if (P.monthly[n] >= 1) {
-          Cd[n] <- 1 + 0.5*log10(P.monthly[n]) + (log10(P.monthly[n]))^2 # calculation of cloudiness (number of tenths of sky covered by cloud) based on monthly precipitation (mm) (S3.12)
+      Cd.temp <- numeric(length(P.monthly))
+      for (m in 1:length(P.monthly)) {
+        if (P.monthly[m] >= 1) {
+          Cd.temp[m] <- 1 + 0.5*log10(P.monthly[m]) + (log10(P.monthly[m]))^2 # calculation of cloudiness (number of tenths of sky covered by cloud) based on monthly precipitation (mm) (S3.12)
         } else {
-          Cd[n] <- 1 # calculation of cloudiness (number of tenths of sky covered by cloud) based on monthly precipitation (mm) (S3.12)
+          Cd.temp[m] <- 1 # calculation of cloudiness (number of tenths of sky covered by cloud) based on monthly precipitation (mm) (S3.12)
         }
       }
-      Cd <- zoo(Cd, Date.subdaily)
-  } else {
+      Cd.temp <- zoo(Cd.temp, Date.daily)
+      Cd <- Precip
+      for (m in 1:length(Cd)) {
+        Cd[as.yearmon(time(Cd)) == as.yearmon(time(Cd.temp))[m]] <- Cd.temp[m]
+      }
+    } else {
       Cd <- NULL
     } 
 
  
-  # Check if data 'precipiration.in.mm' exist
-  if ("precipiration.in.mm" %in% (colnames(climatedata))) {  
-    if ("TRUE" %in% (is.na(climatedata$precipiration.in.mm))) {
-      message("Warning: missing values in 'precipiration.in.mm' (daily precipitation)")
-      message(paste("Number of missing values in precipiration.in.mm: ", sum(is.na(climatedata$precipiration.in.mm))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$precipiration.in.mm))/nrow(climatedata) * 100, digits = -3), "%"))
-      if (sum(is.na(climatedata$precipiration.in.mm)) >= stopmissing/100 * nrow(climatedata)) {
-        stop("missing data of precipiration.in.mm exceeds ", stopmissing, "%, please use high quality data for calculation")
+  # Check if data 'precipitation.in.mm' exist
+  if ("precipitation.in.mm" %in% (colnames(climatedata))) {  
+    if ("TRUE" %in% (is.na(climatedata$precipitation.in.mm))) {
+      message("Warning: missing values in 'precipitation.in.mm' (daily precipitation)")
+      message(paste("Number of missing values in precipitation.in.mm: ", sum(is.na(climatedata$precipitation.in.mm))))
+      message(paste("% missing data: ", signif(sum(is.na(climatedata$precipitation.in.mm))/nrow(climatedata) * 100, digits = -3), "%"))
+      if (sum(is.na(climatedata$precipitation.in.mm)) >= stopmissing/100 * nrow(climatedata)) {
+        stop("missing data of precipitation.in.mm exceeds ", stopmissing, "%, please use high quality data for calculation")
       } else {
         message("Interpolation is performed for missing data, users should be aware of the associated risk")
       }
     }
-    P.temp <- zoo(climatedata$precipiration.in.mm, Date.subdaily) 
+    P.temp <- zoo(climatedata$precipitation.in.mm, Date.subdaily) 
     for (m in 0:11) {
       P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(is.na(P.temp))] = mean(P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(!is.na(P.temp))]) # Changing to monthly mean 
     }
-    Precip <- aggregate(P.temp, as.Date(Date.subdaily, "%d/%m/%y"),sum)
+    Precip <- aggregate(P.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
   } else {
     Precip <- NULL
   }
@@ -395,11 +420,11 @@ Reading <- function(climatedata, constants, stopmissing) {
       }
     }
     Tdew.temp <- zoo(climatedata$Dew.point.temperature.in.Degrees.C, Date.subdaily)
-    Tdew.temp[is.na(Tdew.temp)==T] = mean(Tdew.temp[is.na(Tdew.temp)==F])
     Tdew <- aggregate(Tdew.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
     message(paste("Number of days increments when Tdew has errors: ", sum(Tdew>100)))
     message("Interpolation is performed to replace data with error, users should be aware of the associated risk")
     for (m in 0:11) {
+      Tdew[as.POSIXlt(time(Tdew))$mon==m & is.na(Tdew)] = mean(Tdew[as.POSIXlt(time(Tdew))$mon==m & !is.na(RHmin)])
       Tdew[as.POSIXlt(time(Tdew))$mon==m & as.numeric(Tdew)>100] = mean(Tdew[as.POSIXlt(time(Tdew))$mon==m & as.numeric(Tdew)<100])
     }
     } else {
@@ -415,36 +440,9 @@ Reading <- function(climatedata, constants, stopmissing) {
     }
   
   #-------------------------------------------------------------------------------------
-
-  # Calculating mean temperature 
-  Ta <- (Tmax + Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  if (length(Ta) == 0) {
-    Ta <- NULL
-  }
-  
-  # mean relative humidity
-  RHmean <- (RHmax + RHmin) / 2 
-  if (length(RHmean) == 0) {
-    RHmean <- NULL
-  }
-  
-  # Saturated vapour pressure
-  vs_Tmax <- 0.6108 * exp(17.27 * Tmax / (Tmax + 237.3)) # Equation S2.5
-  vs_Tmin <- 0.6108 * exp(17.27 * Tmin / (Tmin + 237.3)) # Equation S2.5
-  vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-  if (length(vas) == 0) {
-    vas <- NULL
-  }
-  
-  # Vapour pressure
-  vabar <- (vs_Tmin * RHmax/100 + vs_Tmax * RHmin/100)/2 # Equation S2.7
-  if (length(vabar) == 0) {
-    vabar <- NULL
-  }
   
   data <- list(Date.daily=Date.daily, Date.monthly=Date.monthly, J=J, i=i, ndays=ndays, Tmax=Tmax, Tmin=Tmin, u2=u2, uz=uz, 
-               n=n, Cd=Cd, Precip=Precip, Epan=Epan, RHmax=RHmax, RHmin=RHmin, RHmean=RHmean, vas=vas, vabar=vabar, 
-               Tdew=Tdew, Ta=Ta)
+               Rs=Rs,n=n, Cd=Cd, Precip=Precip, Epan=Epan, RHmax=RHmax, RHmin=RHmin, Tdew=Tdew)
   return(data)
 }
   
@@ -481,7 +479,7 @@ ReadOBSEvaporation <- function(E_OBS, data) {
     # Aggregation
     E_obs.Daily <- E_obs
     E_obs.Monthly <- aggregate(E_obs, as.yearmon(Date.OBS, "%m/%y"), FUN = sum)
-    E_obs.Annual <- aggregate(E_obs.Monthly, floor(as.numeric(as.yearmon(Date.OBS, "%y"))), FUN = sum)
+    E_obs.Annual <- aggregate(E_obs.Daily, floor(as.numeric(as.yearmon(Date.OBS, "%y"))), FUN = sum)
     
     # Average
     E_obs.MonthlyAve <- E_obs.AnnualAve <- NULL
@@ -570,10 +568,10 @@ PlotEvapotranspiration <- function(results, OBS, OBSplot) { # plot estimations a
 EvapotranspirationForcings <- function(data, results, forcing) {
   plot.new()
   # define forcing names
-  Fnames <- list(v=c("Ta","u2","uz","n","Precip","Epan","RHmean","Tdew"), 
-              n=c("average temperature", "average wind speed at 2m", "average wind speed", "daily sunshine hours", 
-                 "precipitation", "Class-A pan evaporation", "average relative humidity", "average dew point temeprature"),
-              u=c("degree Celcius", "m/s", "m/s", "hours", "mm/day", "mm/day", "%", "degree Celcius"))
+  Fnames <- list(v=c("Tmax","Tmin","u2","uz","Rs","n","Precip","Epan","RHmax","RHmin","Tdew"), 
+              n=c("maximum temperature","minimum temperature", "average wind speed at 2m", "average wind speed", "daily solar radiation", "daily sunshine hours", 
+                 "precipitation", "Class-A pan evaporation", "maximum relative humidity", "minimum relative humidity", "average dew point temeprature"),
+              u=c("degree Celcius","degree Celcius", "m/s", "m/s", "MJ.per.sqm.per.day", "hours", "mm/day", "mm/day", "%", "%", "degree Celcius"))
   
   # check forcing value
   if (forcing %in% Fnames$v) {
@@ -636,7 +634,7 @@ EvapotranspirationForcings <- function(data, results, forcing) {
   
     
   } else {
-    stop("Please select forcing from 'Ta','u2','uz','n','Precip','Epan','RHmean','Tdew'") # forcing is not defined
+    stop("Please select forcing from 'Tmax','Tmin','u2','uz','Rs','n','Precip','Epan','RHmax','RHmin','Tdew'") # forcing is not defined
   }
   
 }
@@ -647,39 +645,30 @@ Evapotranspiration <- function(data, ...) UseMethod("Evapotranspiration")
 
   #-------------------------------------------------------------------------------------
   
-Evapotranspiration.Penman <- function(data, constants, sunshine.hours, wind, windfunction_ver, alpha = 0.08, z0 = 0.001, ...) {
+Evapotranspiration.Penman <- function(data, constants, solar, wind, windfunction_ver, alpha = 0.08, z0 = 0.001, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+    stop("fail to obtain data of 'Ta' (daily average temperature)")
   }
   if (wind == "yes") { # wind data is required
-    if (is.null(data$Tmax)) {
-      stop("fail to obtain data of 'Tmax' (daily maximum temperature)")
-    }
-    if (is.null(data$Tmin)) {
-      stop("fail to obtain data of 'Tmin' (daily minimum temperature)")
-    }
-    if (is.null(data$vabar)) {
+    if (is.null(data$RHmax)|is.null(data$RHmin)) {
       stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
-    }
-    if (is.null(data$vas)) {
-      stop("fail to obtain data of 'vas' (daily saturated vapour pressure)")
     }
     if (is.null(data$uz) & is.null(data$u2)) {
       stop("fail to obtain data of wind speed")
     }
   }
-  if (wind == "no" & is.null(data$RHmean)) { # for alternative calculation with no wind data
-    stop("fail to obtain 'RHmean' (average daily relative humidity)")
-  }
-  if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+
+  if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+  } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
     stop("fail to obtain data of 'n' (daily sunshine hours)")
-  } else if (sunshine.hours == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
+  } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
     stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
-  } else if (sunshine.hours == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipiration.in.mm' (monthly precipiration)")
+  } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
+    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
   } 
   
   if (wind != "yes" & wind != "no") {
@@ -701,20 +690,25 @@ Evapotranspiration.Penman <- function(data, constants, sunshine.hours, wind, win
     }  
   }
   
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
+  
   # Calculations from data and constants for Penman
   
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+  R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
   
-    if (sunshine.hours!="monthly precipitation") {
+    if (solar == "data") {
+      R_s <- data$Rs
+    } else if (solar!="monthly precipitation") {
       # calculate R_s from sunshine hours - data or estimation using cloudness
-      R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
       R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
     } else {
       # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
@@ -729,7 +723,15 @@ Evapotranspiration.Penman <- function(data, constants, sunshine.hours, wind, win
         u2 <- data$u2
       }
       
-      R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(data$vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
+      # Saturated vapour pressure
+      vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+      vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+      vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
+      
+      # Vapour pressure
+      vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
+      
+      R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
       R_ns <- (1 - alpha) * R_s # net incoming shortwave radiation - water or other evaporative surface with specified Albedo (S3.2)
       
       R_n = R_ns - R_nl # net radiation (S3.1)
@@ -741,11 +743,14 @@ Evapotranspiration.Penman <- function(data, constants, sunshine.hours, wind, win
         stop("Please select the version of wind function (1948 or 1956)")
       }
       
-      Ea = f_u * (data$vas - data$vabar) # (S4.2)
+      Ea = f_u * (vas - vabar) # (S4.2)
       
       Epenman.Daily <-  delta / (delta +  gamma) * (R_n / constants$lambda) + gamma  / (delta + gamma) * Ea # Penman open-water evaporation (S4.1)
     } else {
-      Epenman.Daily <-  0.047 * R_s * sqrt(data$Ta + 9.5) - 2.4 * (R_s/R_a)^2 + 0.09 * (data$Ta + 20) * (1 - data$RHmean/100) # Penman open-water evaporation without wind data by Valiantzas (2006) (S4.12)
+      # mean relative humidity
+      RHmean <- (data$RHmax + data$RHmin) / 2 
+      
+      Epenman.Daily <-  0.047 * R_s * sqrt(Ta + 9.5) - 2.4 * (R_s/R_a)^2 + 0.09 * (Ta + 20) * (1 - RHmean/100) # Penman open-water evaporation without wind data by Valiantzas (2006) (S4.12)
     }
    
    PET.Daily <- Epenman.Daily
@@ -777,9 +782,11 @@ Evapotranspiration.Penman <- function(data, constants, sunshine.hours, wind, win
      }
    }
    
-   if (sunshine.hours == "data") {
+   if (solar == "data") {
+     message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"    
+   } else if (solar == "sunshine hours") {
      message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-   } else if (sunshine.hours == "cloud") {
+   } else if (solar == "cloud") {
      message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
    } else {
      message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -807,39 +814,30 @@ Evapotranspiration.Penman <- function(data, constants, sunshine.hours, wind, win
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.PenmanMonteith <- function(data, constants, sunshine.hours, wind, crop, ...) {
+Evapotranspiration.PenmanMonteith <- function(data, constants, solar, wind, crop, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
     stop("fail to obtain data of 'Ta' (average daily temperature)")
   }
-  if (is.null(data$vabar)) {
-    stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
-  }
-  if (is.null(data$Tmax)) {
-    stop("fail to obtain data of 'Tmax' (daily maximum temperature)")
-  }
-  if (is.null(data$Tmin)) {
-    stop("fail to obtain data of 'Tmin' (daily minimum temperature)")
+  if (is.null(data$RHmax)|is.null(data$RHmin)) {
+  stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
   }
   if (wind == "yes") { # wind data is required
-    if (is.null(data$vas)) {
-      stop("fail to obtain data of 'vas' (daily saturated vapour pressure)")
-    }
     if (is.null(data$u2) & is.null(data$uz)) {
       stop("fail to obtain data of wind speed")
     }
   }
-  if (wind == "no" & is.null(data$RHmean)) { # for alternative calculation with no wind data
-    stop("fail to obtain 'RHmean' (average daily relative humidity)")
-  }
-  if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+  
+  if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+  } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
     stop("fail to obtain data of 'n' (daily sunshine hours)")
-  } else if (sunshine.hours == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
+  } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
     stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
-  } else if (sunshine.hours == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipiration.in.mm' (monthly precipiration)")
+  } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
+    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
   } 
   
   if (wind != "yes" & wind != "no") {
@@ -862,28 +860,39 @@ Evapotranspiration.PenmanMonteith <- function(data, constants, sunshine.hours, w
     alpha <- 0.25 # semi-desert short grass - will not be used for calculation - just informative
   }
   
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
+  
+  # Saturated vapour pressure
+  vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+  vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+  vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
+  # Vapour pressure
+  vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
   
   # Calculations from data and constants for Penman-Monteith Reference Crop
   
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+  R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
   
-  if (sunshine.hours!="monthly precipitation") {
+  if (solar == "data") {
+    R_s <- data$Rs
+  } else if (solar!="monthly precipitation") {
     # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
     R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
   } else {
     # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
     R_s <- (0.85 - 0.047*data$Cd)*R_a 
   }
   
-  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(data$vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
+  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
   R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
   R_ng <- R_nsg - R_nl # net radiation (S3.1)
   
@@ -898,17 +907,20 @@ Evapotranspiration.PenmanMonteith <- function(data, constants, sunshine.hours, w
     if (crop == "short") {
       r_s <- 70 # will not be used for calculation - just informative
       CH <- 0.12 # will not be used for calculation - just informative
-      ET_RC.Daily <- (0.408 * delta * (R_ng - constants$G) + gamma * 900 * u2 * (data$vas - data$vabar)/(data$Ta + 273)) / (delta + gamma * (1 + 0.34*u2)) # FAO-56 reference crop evapotranspiration from short grass (S5.18)
+      ET_RC.Daily <- (0.408 * delta * (R_ng - constants$G) + gamma * 900 * u2 * (vas - vabar)/(Ta + 273)) / (delta + gamma * (1 + 0.34*u2)) # FAO-56 reference crop evapotranspiration from short grass (S5.18)
     } else {
       r_s <- 45 # will not be used for calculation - just informative
       CH <- 0.50 # will not be used for calculation - just informative
-      ET_RC.Daily <- (0.408 * delta * (R_ng - constants$G) + gamma * 1600 * u2 * (data$vas - data$vabar)/(data$Ta + 273)) / (delta + gamma * (1 + 0.38*u2)) # ASCE-EWRI standardised Penman-Monteith for long grass (S5.19)
+      ET_RC.Daily <- (0.408 * delta * (R_ng - constants$G) + gamma * 1600 * u2 * (vas - vabar)/(Ta + 273)) / (delta + gamma * (1 + 0.38*u2)) # ASCE-EWRI standardised Penman-Monteith for long grass (S5.19)
     }
   } else {
+    # mean relative humidity
+    RHmean <- (data$RHmax + data$RHmin) / 2 
+    
     R_s.Monthly <- aggregate(R_s, as.yearmon(data$Date.daily, "%m/%y"),mean)
     R_a.Monthly <- aggregate(R_a, as.yearmon(data$Date.daily, "%m/%y"),mean)
-    Ta.Monthly <- aggregate(data$Ta, as.yearmon(data$Date.daily, "%m/%y"),mean)
-    RHmean.Monthly <- aggregate(data$RHmean, as.yearmon(data$Date.daily, "%m/%y"),mean)
+    Ta.Monthly <- aggregate(Ta, as.yearmon(data$Date.daily, "%m/%y"),mean)
+    RHmean.Monthly <- aggregate(RHmean, as.yearmon(data$Date.daily, "%m/%y"),mean)
     ET_RC.Daily <- 0.038 * R_s.Monthly * sqrt(Ta.Monthly + 9.5) - 2.4 * (R_s.Monthly/R_a.Monthly)^2 + 0.075 * (Ta.Monthly + 20) * (1 - RHmean.Monthly/100) # Reference crop evapotranspiration without wind data by Valiantzas (2006) (S5.21)
   }
   
@@ -943,9 +955,11 @@ Evapotranspiration.PenmanMonteith <- function(data, constants, sunshine.hours, w
     }
   }
   
-  if (sunshine.hours == "data") {
+  if (solar == "data") {
+    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+  } else if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-  } else if (sunshine.hours == "cloud") {
+  } else if (solar == "cloud") {
     message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
     message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -969,35 +983,29 @@ Evapotranspiration.PenmanMonteith <- function(data, constants, sunshine.hours, w
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.MattShuttleworth <- function(data, constants, sunshine.hours, alpha, r_s, CH, ...) { 
+Evapotranspiration.MattShuttleworth <- function(data, constants, solar, alpha, r_s, CH, ...) { 
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+    stop("fail to obtain data of 'Ta' (average daily temperature), 'vas' (daily saturated vapour pressure) and 'vabar' (mean daily vapour pressure)")
   }
-  if (is.null(data$vas)) {
-    stop("fail to obtain data of 'vas' (daily saturated vapour pressure)")
-  }
-  if (is.null(data$vabar)) {
+  if (is.null(data$RHmax)|is.null(data$RHmin)) {
     stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
-  }
-  if (is.null(data$Tmax)) {
-    stop("fail to obtain data of 'Tmax' (daily maximum temperature)")
-  }
-  if (is.null(data$Tmin)) {
-    stop("fail to obtain data of 'Tmin' (daily minimum temperature)")
   }
   if (is.null(data$u2) & is.null(data$uz)) {
     stop("fail to obtain data of wind speed")
   }
-  if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+  
+  if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+  } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
     stop("fail to obtain data of 'n' (daily sunshine hours)")
-  } else if (sunshine.hours == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
+  } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
     stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
-  } else if (sunshine.hours == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipiration.in.mm' (monthly precipiration)")
-  } 
+  } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
+    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+  }
   
   # check user-input albedo, surface resistance and crop height
   if (is.na(as.numeric(alpha))) {
@@ -1015,27 +1023,40 @@ Evapotranspiration.MattShuttleworth <- function(data, constants, sunshine.hours,
     }
   } 
   
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
+  
+  # Saturated vapour pressure
+  vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+  vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+  vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
+  
+  # Vapour pressure
+  vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
+  
   # Calculations from data and constants for Matt-Shuttleworth Reference Crop
   
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+  R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
   
-  if (sunshine.hours!="monthly precipitation") {
+  if (solar == "data") {
+    R_s <- data$Rs
+  } else if (solar!="monthly precipitation") {
     # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
     R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
   } else {
     # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
     R_s <- (0.85 - 0.047*data$Cd)*R_a 
   }
   
-  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(data$vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
+  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
   # For short grass
   R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
   R_ng <- R_nsg - R_nl # net radiation (S3.1)
@@ -1047,13 +1068,13 @@ Evapotranspiration.MattShuttleworth <- function(data, constants, sunshine.hours,
     u2 <- data$u2
   }
   
-  r_clim <- 86400 * constants$Roua * constants$Ca * (data$vas - data$vabar) / delta * R_ng # clinmatological resistance (s*m^-1) (S5.34)
+  r_clim <- 86400 * constants$Roua * constants$Ca * (vas - vabar) / delta * R_ng # clinmatological resistance (s*m^-1) (S5.34)
   r_clim[r_clim == 0] <- 0.1 # correction for r_clim = 0
   u2[u2 == 0] <- 0.1 # correction for u2 = 0
   VPD50toVPD2 <- (302 * (delta + gamma) + 70 * gamma * u2) / (208 * (delta + gamma) + 70 * gamma * u2) + 1/r_clim * ((302 * (delta + gamma) + 70 * gamma * u2) / (208 * (delta + gamma) + 70 * gamma * u2) * (208 / u2) - (302 / u2)) # ratio of vapour pressure deficits at 50m to vapour pressure deficits at 2m heights (S5.35)
   r_c50 <- 1 / ((0.41)^2) * log((50 - 0.67 * CH) / (0.123 * CH)) * log((50 - 0.67 * CH) / (0.0123 * CH)) * log((2 - 0.08) / 0.0148) / log((50 - 0.08) / 0.0148) # aerodynamic coefficient (s*m^-1) (S5.36)
   
-  E_Tc.Daily <- 1/constants$lambda * (delta * R_ng + (constants$Roua * constants$Ca * u2 * (data$vas - data$vabar)) / r_c50) * VPD50toVPD2 / (delta + gamma * (1 + r_s * u2 / r_c50)) # well-watered crop evapotranspiration in a semi-arid and windy location (S5.37)
+  E_Tc.Daily <- 1/constants$lambda * (delta * R_ng + (constants$Roua * constants$Ca * u2 * (vas - vabar)) / r_c50) * VPD50toVPD2 / (delta + gamma * (1 + r_s * u2 / r_c50)) # well-watered crop evapotranspiration in a semi-arid and windy location (S5.37)
   
   PET.Daily <- E_Tc.Daily
   PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
@@ -1074,9 +1095,11 @@ Evapotranspiration.MattShuttleworth <- function(data, constants, sunshine.hours,
   PET_type <- "Reference Crop Evapotranspiration"
   Surface <- paste("user-defined, albedo =", alpha, "; surface resisitance =", r_s, "sm^-1; crop height =", CH, "m")
   
-  if (sunshine.hours == "data") {
+  if (solar == "data") {
+    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+  } else if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-  } else if (sunshine.hours == "cloud") {
+  } else if (solar == "cloud") {
     message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
     message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -1094,29 +1117,26 @@ Evapotranspiration.MattShuttleworth <- function(data, constants, sunshine.hours,
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.PriestleyTaylor <- function(data, constants, sunshine.hours, alpha, ...) {  
+Evapotranspiration.PriestleyTaylor <- function(data, constants, solar, alpha, ...) {  
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+    stop("fail to obtain data of 'Ta' (average daily temperature) and 'vabar' (mean daily actual vapour pressure)")
   }
-  if (is.null(data$vabar)) {
+  if (is.null(data$RHmax)|is.null(data$RHmin)) {
     stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
   }
-  if (is.null(data$Tmax)) {
-    stop("fail to obtain data of 'Tmax' (daily maximum temperature)")
-  }
-  if (is.null(data$Tmin)) {
-    stop("fail to obtain data of 'Tmin' (daily minimum temperature)")
-  }
-  if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+  
+  if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+  } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
     stop("fail to obtain data of 'n' (daily sunshine hours)")
-  } else if (sunshine.hours == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
+  } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
     stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
-  } else if (sunshine.hours == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipiration.in.mm' (monthly precipiration)")
-  } 
+  } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
+    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+  }
   
   # check user-input albedo
   if (is.na(as.numeric(alpha))) {
@@ -1127,28 +1147,40 @@ Evapotranspiration.PriestleyTaylor <- function(data, constants, sunshine.hours, 
       stop("Please use a value between 0 and 1 for the alpha (albedo of evaporative surface)")
     }
   } 
+
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
   
+  # Saturated vapour pressure
+  vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+  vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+  vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
+  # Vapour pressure
+  vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
+
   # Calculations from data and constants for Matt-Shuttleworth Reference Crop
   
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+  R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
   
-  if (sunshine.hours!="monthly precipitation") {
+  if (solar == "data") {
+    R_s <- data$Rs
+  } else if (solar!="monthly precipitation") {
     # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
     R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
   } else {
     # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
     R_s <- (0.85 - 0.047*data$Cd)*R_a 
   }
   
-  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(data$vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
+  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
   # For short grass
   R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
   R_ng <- R_nsg - R_nl # net radiation (S3.1)
@@ -1178,9 +1210,11 @@ Evapotranspiration.PriestleyTaylor <- function(data, constants, sunshine.hours, 
     Surface <- paste("water, albedo =", alpha)
   }
   
-  if (sunshine.hours == "data") {
+  if (solar == "data") {
+    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+  } else if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-  } else if (sunshine.hours == "cloud") {
+  } else if (solar == "cloud") {
     message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
     message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -1198,35 +1232,29 @@ Evapotranspiration.PriestleyTaylor <- function(data, constants, sunshine.hours, 
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.Penpan <- function(data, constants, sunshine.hours, alpha, overest, ...) {
+Evapotranspiration.Penpan <- function(data, constants, solar, alpha, overest, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+    stop("fail to obtain data of 'Ta' (average daily temperature), 'vas' (daily saturated vapour pressure) and 'vabar' (mean daily actual vapour pressure)")
   }
-  if (is.null(data$vabar)) {
+  if (is.null(data$RHmax)|is.null(data$RHmin)) {
     stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
-  }
-  if (is.null(data$Tmax)) {
-    stop("fail to obtain data of 'Tmax' (daily maximum temperature)")
-  }
-  if (is.null(data$Tmin)) {
-    stop("fail to obtain data of 'Tmin' (daily minimum temperature)")
-  }
-  if (is.null(data$vas)) {
-    stop("fail to obtain data of 'vas' (daily saturated vapour pressure)")
   }
   if (is.null(data$u2) & is.null(data$uz)) {
     stop("fail to obtain data of wind speed")
   }
-  if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+  
+  if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+  } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
     stop("fail to obtain data of 'n' (daily sunshine hours)")
-  } else if (sunshine.hours == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
+  } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
     stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
-  } else if (sunshine.hours == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipiration.in.mm' (monthly precipiration)")
-  } 
+  } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
+    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+  }
   
   # check user-input albedo
   if (is.na(as.numeric(alpha))) {
@@ -1238,20 +1266,33 @@ Evapotranspiration.Penpan <- function(data, constants, sunshine.hours, alpha, ov
     }
   } 
   
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
+  
+  # Saturated vapour pressure
+  vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+  vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+  vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
+  
+  # Vapour pressure
+  vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
+  
   # Calculations from data and constants for Penpan
   
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+  R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
   
-  if (sunshine.hours!="monthly precipitation") {
+  if (solar == "data") {
+    R_s <- data$Rs
+  } else if (solar!="monthly precipitation") {
     # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
     R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
   } else {
     # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
@@ -1265,7 +1306,7 @@ Evapotranspiration.Penpan <- function(data, constants, sunshine.hours, alpha, ov
     u2 <- data$u2
   }
   
-  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(data$vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
+  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
   # For short grass
   P_rad <- 1.32 + 4 * 10^(-4) * abs(constants$lat) + 8 * 10^(-5) * (constants$lat)^2 # pan radiation factor (S6.6)
   f_dir <- -0.11 + 1.31 * R_s / R_a # fraction of R_S that os direct (S6.5)
@@ -1273,7 +1314,7 @@ Evapotranspiration.Penpan <- function(data, constants, sunshine.hours, alpha, ov
   R_npan <-(1 - constants$alphaA) * R_span - R_nl # net radiation at the pan (S6.3)
   f_pan_u <-1.201 + 1.621 * u2 # (S6.2)
   
-  Epenpan.Daily <- delta / (delta + constants$ap * gamma) * R_npan / constants$lambda + constants$ap * gamma / (delta + constants$ap * gamma) * f_pan_u * (data$vas - data$vabar) # Penpan estimation of Class-A pan evaporation (S6.1)
+  Epenpan.Daily <- delta / (delta + constants$ap * gamma) * R_npan / constants$lambda + constants$ap * gamma / (delta + constants$ap * gamma) * f_pan_u * (vas - vabar) # Penpan estimation of Class-A pan evaporation (S6.1)
   if (overest == TRUE) {
     Epenpan.Daily <- Epenpan.Daily / 1.078 # adjusted by 1.078 to balance overestimation observed by McMahon 
   }
@@ -1298,9 +1339,11 @@ Evapotranspiration.Penpan <- function(data, constants, sunshine.hours, alpha, ov
   PET_type <- "Class-A Pan Evaporation"
   Surface <- paste("user-defined, albedo =", alpha)
   
-  if (sunshine.hours == "data") {
+  if (solar == "data") {
+    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+  } else if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-  } else if (sunshine.hours == "cloud") {
+  } else if (solar == "cloud") {
     message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
     message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -1318,35 +1361,29 @@ Evapotranspiration.Penpan <- function(data, constants, sunshine.hours, alpha, ov
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.BrutsaertStrickler <- function(data, constants, sunshine.hours, alpha, ...) {
+Evapotranspiration.BrutsaertStrickler <- function(data, constants, solar, alpha, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+    stop("fail to obtain data of 'Ta' (average daily temperature), 'vabar' (mean daily actual vapour pressure) and 'vas' (daily saturated vapour pressure)")
   }
-  if (is.null(data$vabar)) {
+  if (is.null(data$RHmax)|is.null(data$RHmin)) {
     stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
-  }
-  if (is.null(data$Tmax)) {
-    stop("fail to obtain data of 'Tmax' (daily maximum temperature)")
-  }
-  if (is.null(data$Tmin)) {
-    stop("fail to obtain data of 'Tmin' (daily minimum temperature)")
-  }
-  if (is.null(data$vas)) {
-    stop("fail to obtain data of 'vas' (daily saturated vapour pressure)")
   }
   if (is.null(data$u2) & is.null(data$uz)) {
     stop("fail to obtain data of wind speed")
   }
-  if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+  
+  if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+  } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
     stop("fail to obtain data of 'n' (daily sunshine hours)")
-  } else if (sunshine.hours == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
+  } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
     stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
-  } else if (sunshine.hours == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipiration.in.mm' (monthly precipiration)")
-  } 
+  } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
+    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+  }
   
   # check user-input albedo
   if (is.na(as.numeric(alpha))) {
@@ -1358,23 +1395,36 @@ Evapotranspiration.BrutsaertStrickler <- function(data, constants, sunshine.hour
     }
   } 
   
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
+
+  # Saturated vapour pressure
+  vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+  vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+  vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
+  
+  # Vapour pressure
+  vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
+  
   # update alphaPT according to Brutsaert and Strickler (1979)
   constants$alphaPT <- 1.28
   
   # Calculations from data and constants for Brutsaert and Strickler actual evapotranspiration
   
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+  R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
   
-  if (sunshine.hours!="monthly precipitation") {
+  if (solar == "data") {
+    R_s <- data$Rs
+  } else if (solar!="monthly precipitation") {
     # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
     R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
   } else {
     # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
@@ -1388,13 +1438,13 @@ Evapotranspiration.BrutsaertStrickler <- function(data, constants, sunshine.hour
     u2 <- data$u2
   }
   
-  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(data$vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
+  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
   # For short grass
   R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
   R_ng <- R_nsg - R_nl # net radiation (S3.1)
   f_u2 <- 2.626 + 1.381 * u2 # Penman's wind function adopted with Priestley and Tayloy constant alphaPT by Brutsaert and Strickler (1979) (S8.3)
   
-  ET_BS_Act.Daily <- (2 * constants$alphaPT - 1) * (delta / (delta + gamma)) * R_ng / constants$lambda - gamma / (delta + gamma) * f_u2 * (data$vas - data$vabar) # Brutsaert and Strickler actual areal evapotranspiration (mm.day^-1) Brutsaert and Strickler (1979) (S8.2)
+  ET_BS_Act.Daily <- (2 * constants$alphaPT - 1) * (delta / (delta + gamma)) * R_ng / constants$lambda - gamma / (delta + gamma) * f_u2 * (vas - vabar) # Brutsaert and Strickler actual areal evapotranspiration (mm.day^-1) Brutsaert and Strickler (1979) (S8.2)
   
   PET.Daily <- ET_BS_Act.Daily
   PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
@@ -1415,9 +1465,11 @@ Evapotranspiration.BrutsaertStrickler <- function(data, constants, sunshine.hour
   PET_type <- "Actual Areal Evapotranspiration"
   Surface <- paste("user-defined, albedo =", alpha)
   
-  if (sunshine.hours == "data") {
+  if (solar == "data") {
+    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+  } else if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-  } else if (sunshine.hours == "cloud") {
+  } else if (solar == "cloud") {
     message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
     message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -1435,35 +1487,29 @@ Evapotranspiration.BrutsaertStrickler <- function(data, constants, sunshine.hour
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.GrangerGray <- function(data, constants, sunshine.hours, windfunction_ver, alpha, ...) {
+Evapotranspiration.GrangerGray <- function(data, constants, solar, windfunction_ver, alpha, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+    stop("fail to obtain data of 'Ta' (average daily temperature), 'vabar' (mean daily actual vapour pressure) and 'vas' (daily saturated vapour pressure)")
   }
-  if (is.null(data$vabar)) {
+  if (is.null(data$RHmax)|is.null(data$RHmin)) {
     stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
-  }
-  if (is.null(data$Tmax)) {
-    stop("fail to obtain data of 'Tmax' (daily maximum temperature)")
-  }
-  if (is.null(data$Tmin)) {
-    stop("fail to obtain data of 'Tmin' (daily minimum temperature)")
-  }
-  if (is.null(data$vas)) {
-    stop("fail to obtain data of 'vas' (daily saturated vapour pressure)")
   }
   if (is.null(data$u2) & is.null(data$uz)) {
     stop("fail to obtain data of wind speed")
   }
-  if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+  
+  if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+  } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
     stop("fail to obtain data of 'n' (daily sunshine hours)")
-  } else if (sunshine.hours == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
+  } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
     stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
-  } else if (sunshine.hours == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipiration.in.mm' (monthly precipiration)")
-  } 
+  } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
+    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+  }
   
   # check user-input albedo
   if (is.na(as.numeric(alpha))) {
@@ -1475,27 +1521,40 @@ Evapotranspiration.GrangerGray <- function(data, constants, sunshine.hours, wind
     }
   } 
   
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
+  
+  # Saturated vapour pressure
+  vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+  vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+  vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
+  
+  # Vapour pressure
+  vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
+  
   # Calculations from data and constants for Granger and Gray actual evapotranspiration
   
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+  R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
   
-  if (sunshine.hours!="monthly precipitation") {
+  if (solar == "data") {
+    R_s <- data$Rs
+  } else if (solar!="monthly precipitation") {
     # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
     R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
   } else {
     # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
     R_s <- (0.85 - 0.047*data$Cd)*R_a 
   }
   
-  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(data$vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
+  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
   # For short grass
   R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
   R_ng <- R_nsg - R_nl # net radiation (S3.1)
@@ -1514,7 +1573,7 @@ Evapotranspiration.GrangerGray <- function(data, constants, sunshine.hours, wind
   } else if (windfunction_ver != "1948" & windfunction_ver != "1956") {
     stop("Please select the version of wind function (1948 or 1956)")
   }
-  Ea = f_u * (data$vas - data$vabar) # (S4.2)
+  Ea = f_u * (vas - vabar) # (S4.2)
   D_p <- Ea / (Ea + (R_ng - constants$G) / constants$lambda) # dimensionless relative drying power (S8.6)
   G_g <- 1 / (0.793 + 0.20 * exp(4.902 * D_p)) + 0.006 * D_p # dimensionless evaporation parameter (S8.5)
   ET_GG_Act.Daily <- delta * G_g / (delta * G_g + gamma) * (R_ng - constants$G) / constants$lambda + gamma * G_g / (delta * G_g + gamma) * Ea # Granger and Gray actual areal evapotranspiration (mm.day^-1) Granger and Gray (1989) (S8.4)
@@ -1538,9 +1597,11 @@ Evapotranspiration.GrangerGray <- function(data, constants, sunshine.hours, wind
   PET_type <- "Actual Areal Evapotranspiration"
   Surface <- paste("user-defined, albedo =", alpha)
   
-  if (sunshine.hours == "data") {
+  if (solar == "data") {
+    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+  } else if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-  } else if (sunshine.hours == "cloud") {
+  } else if (solar == "cloud") {
     message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
     message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -1564,40 +1625,31 @@ Evapotranspiration.GrangerGray <- function(data, constants, sunshine.hours, wind
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.SzilagyiJozsa <- function(data, constants, sunshine.hours, wind, windfunction_ver, alpha, z0, ...) {
+Evapotranspiration.SzilagyiJozsa <- function(data, constants, solar, wind, windfunction_ver, alpha, z0, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+    stop("fail to obtain data of 'Ta' (average daily temperature) and 'vabar' (mean daily actual vapour pressure)")
   }
-  if (is.null(data$vabar)) {
+  if (is.null(data$RHmax)|is.null(data$RHmin)) {
     stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
   }
   if (wind == "yes") { # wind data is required
-    if (is.null(data$Tmax)) {
-      stop("fail to obtain data of 'Tmax' (daily maximum temperature)")
-    }
-    if (is.null(data$Tmin)) {
-      stop("fail to obtain data of 'Tmin' (daily minimum temperature)")
-    }
-    if (is.null(data$vas)) {
-      stop("fail to obtain data of 'vas' (daily saturated vapour pressure)")
-    }
     if (is.null(data$u2) & is.null(data$uz)) {
       stop("fail to obtain data of wind speed")
     }
   }
-  if (wind == "no" & is.null(data$RHmean)) { # for alternative calculation with no wind data
-    stop("fail to obtain 'RHmean' (average daily relative humidity)")
-  }
-  if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+  
+  if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+  } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
     stop("fail to obtain data of 'n' (daily sunshine hours)")
-  } else if (sunshine.hours == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
+  } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
     stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
-  } else if (sunshine.hours == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipiration.in.mm' (monthly precipiration)")
-  } 
+  } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
+    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+  }
   
   if (wind != "yes" & wind != "no") {
     stop("Please choose if actual data will be used for wind speed from wind = 'yes' and wind = 'no'")
@@ -1621,20 +1673,33 @@ Evapotranspiration.SzilagyiJozsa <- function(data, constants, sunshine.hours, wi
   # update alphaPT according to Szilagyi and Jozsa (2008)
   constants$alphaPT <- 1.31
   
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
+  
+  # Saturated vapour pressure
+  vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+  vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+  vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
+  
+  # Vapour pressure
+  vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
+  
   # Calculations from data and constants for Penman
   
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+  R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
   
-  if (sunshine.hours!="monthly precipitation") {
+  if (solar == "data") {
+    R_s <- data$Rs
+  } else if (solar!="monthly precipitation") {
     # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
     R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
   } else {
     # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
@@ -1648,8 +1713,8 @@ Evapotranspiration.SzilagyiJozsa <- function(data, constants, sunshine.hours, wi
     } else {
       u2 <- data$u2
     }
-      
-    R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(data$vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
+    
+    R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
     # For vegetated surface
     R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
     R_ng = R_nsg - R_nl # net radiation (S3.1)
@@ -1660,18 +1725,21 @@ Evapotranspiration.SzilagyiJozsa <- function(data, constants, sunshine.hours, wi
     } else if (windfunction_ver != "1948" & windfunction_ver != "1956") {
       stop("Please select the version of wind function (1948 or 1956)")
     }
-    Ea = f_u * (data$vas - data$vabar) # (S4.2)
+    Ea = f_u * (vas - vabar) # (S4.2)
     
     Epenman.Daily <-  delta / (delta +  gamma) * (R_ng / constants$lambda) + gamma  / (delta + gamma) * Ea # Penman open-water evaporation (S4.1)
   } else {
-    Epenman.Daily <-  0.047 * R_s * sqrt(data$Ta + 9.5) - 2.4 * (R_s/R_a)^2 + 0.09 * (data$Ta + 20) * (1 - data$RHmean/100) # Penman open-water evaporation without wind data by Valiantzas (2006) (S4.12)
+    # mean relative humidity
+    RHmean <- (data$RHmax + data$RHmin) / 2 
+    
+    Epenman.Daily <-  0.047 * R_s * sqrt(Ta + 9.5) - 2.4 * (R_s/R_a)^2 + 0.09 * (Ta + 20) * (1 - RHmean/100) # Penman open-water evaporation without wind data by Valiantzas (2006) (S4.12)
   }
   
   # Iteration for equilibrium temperature T_e
-  T_e <- data$Ta
+  T_e <- Ta
   for (i in 1:99999) {
     v_e <- 0.6108 * exp(17.27 * T_e/(T_e + 237.3)) # saturated vapour pressure at T_e (S2.5)
-    T_enew <- data$Ta - 1 / gamma * (1 - R_ng / (constants$lambda * Epenman.Daily)) * (v_e - data$vabar) # rearranged from S8.8
+    T_enew <- Ta - 1 / gamma * (1 - R_ng / (constants$lambda * Epenman.Daily)) * (v_e - vabar) # rearranged from S8.8
     deltaT_e <- na.omit(T_enew - T_e)
     maxdeltaT_e <- abs(max(deltaT_e))
     T_e <- T_enew
@@ -1700,9 +1768,11 @@ Evapotranspiration.SzilagyiJozsa <- function(data, constants, sunshine.hours, wi
   PET_type <- "Actual Evapotranspiration"
   Surface <- paste("user-defined, albedo =", alpha, "; roughness height", z0, "m")
   
-  if (sunshine.hours == "data") {
+  if (solar == "data") {
+    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+  } else if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-  } else if (sunshine.hours == "cloud") {
+  } else if (solar == "cloud") {
     message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
     message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -1731,35 +1801,42 @@ Evapotranspiration.SzilagyiJozsa <- function(data, constants, sunshine.hours, wi
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.Makkink <- function(data, constants, sunshine.hours, ...) {
+Evapotranspiration.Makkink <- function(data, constants, solar, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
     stop("fail to obtain data of 'Ta' (average daily temperature)")
   }
-  if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+  if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+  } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
     stop("fail to obtain data of 'n' (daily sunshine hours)")
-  } else if (sunshine.hours == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
+  } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
     stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
-  } else if (sunshine.hours == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipiration.in.mm' (monthly precipiration)")
-  } 
+  } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
+    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+  }
   
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
+
   # Calculations from data and constants for Makkink
   
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+  R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
   
-  if (sunshine.hours!="monthly precipitation") {
+  if (solar == "data") {
+    R_s <- data$Rs
+  } else if (solar!="monthly precipitation") {
     # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
     R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
   } else {
     # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
@@ -1786,9 +1863,11 @@ Evapotranspiration.Makkink <- function(data, constants, sunshine.hours, ...) {
   PET_formulation <- "Makkink"
   PET_type <- "Potential Evaporation"
 
-  if (sunshine.hours == "data") {
+  if (solar == "data") {
+    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+  } else if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-  } else if (sunshine.hours == "cloud") {
+  } else if (solar == "cloud") {
     message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
     message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -1806,16 +1885,16 @@ Evapotranspiration.Makkink <- function(data, constants, sunshine.hours, ...) {
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.BalneyCriddle <- function(data, constants, sunshine.hours, height, ...) {
+Evapotranspiration.BalneyCriddle <- function(data, constants, solar, height, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
     stop("fail to obtain data of 'Ta' (average daily temperature)")
   }
-  if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+  if (solar == "sunshine hours" & is.null(data$n)) { # sunshine hour data is required
     stop("fail to obtain data of 'n' (daily sunshine hours)")
-  } else if (sunshine.hours == "cloud") {
+  } else if (solar == "cloud") {
     if (is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
       stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
     }
@@ -1823,12 +1902,14 @@ Evapotranspiration.BalneyCriddle <- function(data, constants, sunshine.hours, he
       stop("fail to obtain data of wind speed")
     }
     if (is.null(data$RHmin)) { 
-      stop("fail to obtain 'RHmin' (average daily relative humidity)")
+      stop("fail to obtain 'RHmin' (minimum daily relative humidity)")
     } 
   } 
-  if (sunshine.hours == "monthly.precipitation") {
-    stop("fail to obtain data of 'n' (daily sunshine hours)")
-  } 
+  if (solar == "data" | solar == "monthly precipitation") {
+    stop("Only 'sunshine hours' and 'cloud' are accepted because estimations of sunshine hours is required")
+  }
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
 
   # Calculations from data and constants for Balney and Criddle
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
@@ -1847,7 +1928,7 @@ Evapotranspiration.BalneyCriddle <- function(data, constants, sunshine.hours, he
   p_y <- 100 * data$n/N.annual # percentage of actual daytime hours for the day comparing to the annual sum of maximum sunshine hours
 
   
-  ET_BC.Daily <- (0.0043 * data$RHmin - data$n/N - 1.41) + bvar * p_y * (0.46 * data$Ta +8.13) # Balney-Criddle Reference Crop evapotranspiration (mm.day^-1) (S9.7)
+  ET_BC.Daily <- (0.0043 * data$RHmin - data$n/N - 1.41) + bvar * p_y * (0.46 * Ta +8.13) # Balney-Criddle Reference Crop evapotranspiration (mm.day^-1) (S9.7)
   
   PET.Daily <- ET_BC.Daily
   PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
@@ -1871,9 +1952,9 @@ Evapotranspiration.BalneyCriddle <- function(data, constants, sunshine.hours, he
   PET_formulation <- "Balney-Criddle"
   PET_type <- "Reference Crop Evapotranspiration"
 
-  if (sunshine.hours == "data") {
+  if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-  } else if (sunshine.hours == "cloud") {
+  } else if (solar == "cloud") {
     message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
     message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -1898,49 +1979,59 @@ Evapotranspiration.BalneyCriddle <- function(data, constants, sunshine.hours, he
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.Truc <- function(data, constants, sunshine.hours, humid, ...) {
+Evapotranspiration.Truc <- function(data, constants, solar, humid, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
     stop("fail to obtain data of 'Ta' (average daily temperature)")
   }
-  if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+  if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+  } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
     stop("fail to obtain data of 'n' (daily sunshine hours)")
-  } else if (sunshine.hours == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
+  } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
     stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
-  } else if (sunshine.hours == "monthly precipitation" & is.null(data$n)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipiration.in.mm' (monthly precipiration)")
-  } 
+  } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
+    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+  }
 
-  if (humid == TRUE & is.null(data$RHmean)) { # for adjustment for non-humid conditions
+  if (humid == TRUE & (is.null(data$RHmax)|is.null(data$RHmin))) { # for adjustment for non-humid conditions
     stop("fail to obtain 'RHmean' (average daily relative humidity)")
   } 
+  
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
   
   # Calculations from data and constants for Truc
   
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+  R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
   
-  if (sunshine.hours!="monthly precipitation") {
+  if (solar == "data") {
+    R_s <- data$Rs
+  } else if (solar!="monthly precipitation") {
     # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
     R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
   } else {
     # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
     R_s <- (0.85 - 0.047*data$Cd)*R_a 
   }
   
-  ET_truc.Daily <- 0.013 * (23.88 * R_s + 50) * data$Ta / (data$Ta + 15) # reference crop evapotranspiration by Truc (1961) (S9.10)
+  ET_truc.Daily <- 0.013 * (23.88 * R_s + 50) * Ta / (Ta + 15) # reference crop evapotranspiration by Truc (1961) (S9.10)
   
   if (humid == TRUE) {
-    ET_truc.Daily[data$RHmean < 50] <- 0.013 * (23.88 * R_s + 50) * data$Ta[data$RHmean < 50] / (data$Ta[data$RHmean < 50] + 15) * (1 + (50 - data$RHmean[data$RHmean < 50]) / 70) # Truc reference crop evapotranspiration adjusted for non-humid conditions (RH < 50) by Alexandris et al., (S9.11)
+    # mean relative humidity
+    RHmean <- (data$RHmax + data$RHmin) / 2 
+    
+    ET_truc.Daily[RHmean < 50] <- 0.013 * (23.88 * R_s + 50) * Ta[RHmean < 50] / (Ta[RHmean < 50] + 15) * (1 + (50 - RHmean[RHmean < 50]) / 70) # Truc reference crop evapotranspiration adjusted for non-humid conditions (RH < 50) by Alexandris et al., (S9.11)
   }
   
   PET.Daily <- ET_truc.Daily
@@ -1961,9 +2052,11 @@ Evapotranspiration.Truc <- function(data, constants, sunshine.hours, humid, ...)
   PET_formulation <- "Truc"
   PET_type <- "Reference Crop Evapotranspiration"
   
-  if (sunshine.hours == "data") {
+  if (solar == "data") {
+    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+  } else if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-  } else if (sunshine.hours == "cloud") {
+  } else if (solar == "cloud") {
     message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
     message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -1992,20 +2085,17 @@ Evapotranspiration.HargreavesSamani <- function(data, constants, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
     stop("fail to obtain data of 'Ta' (average daily temperature)")
   }
-  if (is.null(data$Tmax)) {
-    stop("fail to obtain data of 'Tmax' (daily maximum temperature)")
-  }
-  if (is.null(data$Tmin)) {
-    stop("fail to obtain data of 'Tmin' (daily minimum temperature)")
-  }
+  
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
   
   # Calculations from data and constants for Hargreaves-Samani
   
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
@@ -2014,7 +2104,7 @@ Evapotranspiration.HargreavesSamani <- function(data, constants, ...) {
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   
   C_HS <- 0.00185 * (data$Tmax - data$Tmin)^2 - 0.0433 * (data$Tmax - data$Tmin) + 0.4023 # empirical coefficient by Hargreaves and Samani (1985) (S9.13)
-  ET_HS.Daily <- 0.0135 * C_HS * R_a / constants$lambda * (data$Tmax - data$Tmin)^0.5 * (data$Ta + 17.8) # reference crop evapotranspiration by Hargreaves and Samani (1985) (S9.12)
+  ET_HS.Daily <- 0.0135 * C_HS * R_a / constants$lambda * (data$Tmax - data$Tmin)^0.5 * (Ta + 17.8) # reference crop evapotranspiration by Hargreaves and Samani (1985) (S9.12)
 
   PET.Daily <- ET_HS.Daily
   PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
@@ -2045,35 +2135,28 @@ Evapotranspiration.HargreavesSamani <- function(data, constants, ...) {
 
   #-------------------------------------------------------------------------------------
   
-Evapotranspiration.ChapmanAustralian <- function(data, constants, Penpan, sunshine.hours, alpha, ...) {
+Evapotranspiration.ChapmanAustralian <- function(data, constants, Penpan, solar, alpha, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (Penpan == TRUE) { # Calculate Class-A pan evaporation using Penpan formula
-    if (is.null(data$Ta)) { 
-      stop("fail to obtain data of 'Ta' (average daily temperature)")
+    if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+      stop("fail to obtain data of 'Ta' (average daily temperature), 'vabar' (mean daily actual vapour pressure) and 'vas' (daily saturated vapour pressure)")
     }
-    if (is.null(data$Tmax)) {
-      stop("fail to obtain data of 'Tmax' (daily maximum temperature)")
-    }
-    if (is.null(data$Tmin)) {
-      stop("fail to obtain data of 'Tmin' (daily minimum temperature)")
-    }
-    if (is.null(data$vabar)) {
+    if (is.null(data$RHmax)|is.null(data$RHmin)) {
       stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
-    }
-    if (is.null(data$vas)) {
-      stop("fail to obtain data of 'vas' (daily saturated vapour pressure)")
     }
     if (is.null(data$u2) & is.null(data$uz)) {
       stop("fail to obtain data of wind speed")
     }
-    if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+    if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+      stop("fail to obtain data of 'Rs' (daily solar radiation)")
+    } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
       stop("fail to obtain data of 'n' (daily sunshine hours)")
-    } else if (sunshine.hours == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
+    } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
       stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
-    } else if (sunshine.hours == "monthly precipitation") { # for alternative calculation of cloudiness using monthly precipitation
-      stop("fail to obtain data of 'n' (daily sunshine hours)")
+    } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
+      stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
     } 
   }
   if (Penpan == FALSE & is.null(data$Epan)) { # for using Class-A pan evaporation data
@@ -2090,28 +2173,41 @@ Evapotranspiration.ChapmanAustralian <- function(data, constants, Penpan, sunshi
       }
     } 
   }
-  
+
   # Calculations from data and constants for daily equivalent Penman-Monteith potential evaporation 
   A_p <- 0.17 + 0.011 * abs(constants$lat) # constant (S13.2)
   B_p <- 10 ^ (0.66 - 0.211 * abs(constants$lat)) # constants (S13.3)
   
   if (Penpan == TRUE) {
+    # Calculating mean temperature 
+    Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
+    
+    # Saturated vapour pressure
+    vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+    vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+    vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
+    
+    # Vapour pressure
+    vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
+    
     # estimating class-A pan evaporation using Penpan model 
     P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-    delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+    delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
     gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
     d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
     delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
     w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
     N <- 24/pi * w_s # calculating daily values
     R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+    R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
     
-    if (sunshine.hours == "monthly precipitation") {
+    if (solar == "data") {
+      R_s <- data$Rs
+    } else if (solar == "monthly precipitation") {
       # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
       R_s <- (0.85 - 0.047*data$Cd)*R_a 
     } else {
       # calculate R_s from sunshine hours - data or estimation using cloudness
-      R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
       R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
     }
     
@@ -2122,7 +2218,7 @@ Evapotranspiration.ChapmanAustralian <- function(data, constants, Penpan, sunshi
       u2 <- data$u2
     }
     
-    R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(data$vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
+    R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
     # For short grass
     P_rad <- 1.32 + 4 * 10^(-4) * abs(constants$lat) + 8 * 10^(-5) * (constants$lat)^2 # pan radiation factor (S6.6)
     f_dir <- -0.11 + 1.31 * R_s / R_a # fraction of R_S that os direct (S6.5)
@@ -2130,7 +2226,7 @@ Evapotranspiration.ChapmanAustralian <- function(data, constants, Penpan, sunshi
     R_npan <-(1 - constants$alphaA) * R_span - R_nl # net radiation at the pan (S6.3)
     f_pan_u <-1.201 + 1.621 * u2 # (S6.2)
     
-    Epan <- delta / (delta + constants$ap * gamma) * R_npan / constants$lambda + constants$ap * gamma / (delta + constants$ap * gamma) * f_pan_u * (data$vas - data$vabar) # Penpan estimation of Class-A pan evaporation (S6.1)
+    Epan <- delta / (delta + constants$ap * gamma) * R_npan / constants$lambda + constants$ap * gamma / (delta + constants$ap * gamma) * f_pan_u * (vas - vabar) # Penpan estimation of Class-A pan evaporation (S6.1)
     ET_eqPM.Daily <- A_p * Epan + B_p # daily equivalent Penman-Monteith potential evaporation (mm.day^-1)
   } else if (Penpan == FALSE & is.null(data$Epan)) {
     stop("No data available for Class-A pan evaporation ")
@@ -2153,9 +2249,11 @@ Evapotranspiration.ChapmanAustralian <- function(data, constants, Penpan, sunshi
   }
   
   # Generate summary message for results
-  if (sunshine.hours == "data") {
+  if (solar == "data") {
+    message1 <- "Solar radiation data has been used for calculating evapotranspiration"
+  } else if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-  } else if (sunshine.hours == "cloud") {
+  } else if (solar == "cloud") {
     message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
     message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -2193,14 +2291,17 @@ Evapotranspiration.JensenHaise <- function(data, constants, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
     stop("fail to obtain data of 'Ta' (average daily temperature)")
   }
+  
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
   
   # Calculations from data and constants for Jensen-Haise
   # estimating evapotranspiration using Jensen-Haise
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
@@ -2208,7 +2309,7 @@ Evapotranspiration.JensenHaise <- function(data, constants, ...) {
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   
-  ET_JH.Daily <- R_a * data$Ta / (constants$lambda * 40) # Jensen-Haise daily evapotranspiration by Jensen and Haise  (1963) (mm.day^-1) (Oudin et al., 2005)
+  ET_JH.Daily <- R_a * Ta / (constants$lambda * 40) # Jensen-Haise daily evapotranspiration by Jensen and Haise  (1963) (mm.day^-1) (Oudin et al., 2005)
  
   PET.Daily <- ET_JH.Daily
   PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
@@ -2242,15 +2343,17 @@ Evapotranspiration.McGuinnessBordne <- function(data, constants, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
-  if (is.null(data$Ta)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
     stop("fail to obtain data of 'Ta' (average daily temperature)")
   }
 
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
   
   # Calculations from data and constants for McGuinness-Bordne
   # estimating evapotranspiration using McGuinness-Bordne
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * data$Ta)/(data$Ta+237.3))) / ((data$Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
@@ -2258,7 +2361,7 @@ Evapotranspiration.McGuinnessBordne <- function(data, constants, ...) {
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   
-  ET_MB.Daily <- R_a * (data$Ta + 5) / (constants$lambda * 68) # McGuinness-Bordne daily evapotranspiration by McGuinness-Bordne  (1972) (mm.day^-1) (Oudin et al., 2005)
+  ET_MB.Daily <- R_a * (Ta + 5) / (constants$lambda * 68) # McGuinness-Bordne daily evapotranspiration by McGuinness-Bordne  (1972) (mm.day^-1) (Oudin et al., 2005)
   
   PET.Daily <- ET_MB.Daily
   PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
@@ -2288,7 +2391,7 @@ Evapotranspiration.McGuinnessBordne <- function(data, constants, ...) {
   #####################################################
 
   # Calculate radiation variables
-Radiation <- function(data, constants, sunshine.hours, Tdew) {
+Radiation <- function(data, constants, solar, Tdew) {
   class(data) <- funname
 
     # Check of specific data requirement
@@ -2301,17 +2404,15 @@ Radiation <- function(data, constants, sunshine.hours, Tdew) {
     if (Tdew == TRUE & is.null(data$Tdew)) {
       stop("fail to obtain data of 'Tdew' (daily dew point temperature")
     }
-    if (Tdew == FALSE & is.null(data$vabar)) {
+    if (Tdew == FALSE & (is.null(data$RHmax)|is.null(data$RHmin))) {
       stop("fail to obtain data of 'vabar' mean daily actual vapour pressure")
     }
-    if (sunshine.hours == "data" & is.null(data$n)) { # sunshine hour data is required
+    if (is.null(data$n)) {
       stop("fail to obtain data of 'n' (daily sunshine hours)")
-    } else if (sunshine.hours == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-      stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
-    } 
-    if (sunshine.hours == "monthly.precipitation") {
-      stop("fail to obtain data of 'n' (daily sunshine hours)")
-    } 
+    }
+    if (solar == "data" | solar == "monthly precipitation") {
+      stop("Only 'sunshine hours' and 'cloud' are accepted because estimations of sunshine hours is required")
+    }  
   
     if (is.null(data$Precip)) {
       if ("PA" %in% names(constants) == FALSE) { 
@@ -2328,7 +2429,15 @@ Radiation <- function(data, constants, sunshine.hours, Tdew) {
     if (Tdew == TRUE) {
       Tdew_Mo <- aggregate(data$Tdew, as.yearmon(data$Date.daily, "%m/%y"), FUN = mean)
     } else {
-      vabar_Mo <- aggregate(data$vabar, as.yearmon(data$Date.daily, "%m/%y"), FUN = mean)
+      # Saturated vapour pressure
+      vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+      vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+      vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
+      
+      # Vapour pressure
+      vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
+      
+      vabar_Mo <- aggregate(vabar, as.yearmon(data$Date.daily, "%m/%y"), FUN = mean)
       Tdew_Mo <- (116.9 + 237.3*log(vabar_Mo)) / (16.78 - log(vabar_Mo))
     }
     
@@ -2475,9 +2584,9 @@ Radiation <- function(data, constants, sunshine.hours, Tdew) {
     }# constraint B_Mo < 0.05 * constants$epsilonMo * sigmaMo * (T_Mo + 274)^4 (S21.64)
   
     # Generate summary message for results
-    if (sunshine.hours == "data") {
+    if (solar == "data") {
       message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
-    } else if (sunshine.hours == "cloud") {
+    } else if (solar == "cloud") {
       message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
     } else {
       message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
@@ -2494,9 +2603,9 @@ Radiation <- function(data, constants, sunshine.hours, Tdew) {
   }
   
   #-------------------------------------------------------------------------------------
-  Evapotranspiration.MortonCRAE <- function(data, constants, est, sunshine.hours, Tdew, ...)  {
+  Evapotranspiration.MortonCRAE <- function(data, constants, est, solar, Tdew, ...)  {
     
-    variables <- Radiation(data, constants, sunshine.hours, Tdew)
+    variables <- Radiation(data, constants, solar, Tdew)
     
     # Morton's CRAE procedure
     
@@ -2593,14 +2702,14 @@ Radiation <- function(data, constants, sunshine.hours, Tdew) {
   
   
   #-----------------------------------------------------------------------------------
-  Evapotranspiration.MortonCRWE <- function(data, constants, est, sunshine.hours, Tdew, ...) {
+  Evapotranspiration.MortonCRWE <- function(data, constants, est, solar, Tdew, ...) {
 
     constants$epsilonMo <- 0.97 # (Morton, 1983)
     constants$fz <- 25.0 # Wm^-2.mbar^-1 for T >= 0 degree Celcius (Morton, 1983)
     constants$b0 <- 1.12 # (Morton, 1983)
     constants$b1 <- 13 # W.m^-2 (Morton, 1983)
     constants$b2 <- 1.12 # (Morton, 1983)
-    variables <- Radiation(data, constants, sunshine.hours, Tdew)
+    variables <- Radiation(data, constants, solar, Tdew)
     
     # Morton's CRWE procedure
     

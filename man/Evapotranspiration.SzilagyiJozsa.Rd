@@ -7,14 +7,14 @@
 Implementing the Szilagyi-Jozsa formulation for estimating actual evapotranspiration
 }
 \usage{
-\method{Evapotranspiration}{SzilagyiJozsa}(data, constants, sunshine.hours, wind, 
+\method{Evapotranspiration}{SzilagyiJozsa}(data, constants, solar, wind, 
 windfunction_ver, alpha, z0, \dots)
 }
 
 \arguments{
   \item{data}{
   A list of data in class "SzilagyiJozsa" which contains the following items (climate variables) required by Szilagyi-Jozsa formulation:
-  "Ta", "vas", "vabar", "Tmax", "Tmin", "n" or "Cd" or "Precip", "u2" or "uz" or "RHmean"
+  "Tmax", "Tmin", "RHmax", "RHmin", "Rs", "n" or "Cd", "u2" or "uz"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Szilagyi-Jozsa formulation which must contain the following items:
@@ -27,8 +27,8 @@ windfunction_ver, alpha, z0, \dots)
   "z" - height of wind instrument in m,
   "sigma" - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.
   }
-  \item{sunshine.hours}{
-  Must be either "data", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  \item{solar}{
+  Must be either "data", "sunshine hours", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{wind}{
   Must be either "yes" or "no". "yes" indicates that the calculation will use real data of wind speed for calculating Penman potential evapotranspiration, which is required for this formulation; "no" indicates that the alternative calculation without using wind data will be used in Penman formulation (Valiantzas 2006, Equation33).
@@ -48,7 +48,7 @@ windfunction_ver, alpha, z0, \dots)
 }
 
 \details{
-  The alternative calculation options can be selected through arguments \code{sunshine.hours}, \code{wind} and \code{windfunction_ver}, please see "Arguments" for details.
+  The alternative calculation options can be selected through arguments \code{solar}, \code{wind} and \code{windfunction_ver}, please see "Arguments" for details.
   User-defined evaporative surface is allowed through arguments \code{alpha} and \code{z0}, please see "Arguments" for details.
 }
 
@@ -108,7 +108,7 @@ funname <- "SzilagyiJozsa"
 class(data) <- funname
 
 # Call generic function Evapotranspiration(data, ...) with class "SzilagyiJozsa"
-results <- Evapotranspiration(data, constants, sunshine.hours="data", wind =
+results <- Evapotranspiration(data, constants, solar="sunshine hours", wind =
 "yes", windfunction_ver = "1948", alpha = 0.23, z0 = 0.02)
 
 }
