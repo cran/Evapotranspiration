@@ -1,0 +1,32 @@
+		CHANGES IN Evapotranspiration VERSION 1.2
+
+BUG FIXES
+
+    o Corrected the calculating of annual maximum sunshine hours in BalneyCriddle formulation. The previous version sums up maximum sunshine hours from all record days in each year which may result in      incomplete summation for any incomplete years (in the first year and/or last year) of record. In the updates this is corrected by performing checks on the first and last year of data and automatically adjust the annual maximum sunshine hours for incomplete first/last years of data.
+   
+
+		CHANGES IN Evapotranspiration VERSION 1.1
+
+NEW FEATURES
+
+    o  incorporated the calculation of Ta, RHmean, vabar and vas into individual formulations (instead of calculating them in function Reading) to make it easier to study the influence of climate variables on the estimation from each formulation
+
+    o  solar radiation data can be used directly in Function Evapotranspiration..() for different formulations with the argument, please see the documentation for each evapotranspiration formulation for detail.
+
+SIGNIFICANT USER-VISIBLE CHANGES
+
+    o	updated function Reading for the precipitation data so that precipitation data is now read from raw daily precipitation records which is more accessible than the previously expected subdaily precipiration data.
+
+DEPRECATED & DEFUNCT
+
+   o	Argument "sunshine.hours" in the evapotranspiration formulations is now replaced by "solar", please see the documentation for each evapotranspiration formulation for detail.
+
+BUG FIXES
+
+    o corrected function ReadOBSEvaporation aggregation method for annual sum for the daily data.
+
+    o correct the typo "precipiration" -> "precipitation".
+
+    o fixed the bug in the time step of calculating cloud cover using monthly precipitation data in function Reading.
+
+    o corrected the calculation of Julian days and number of days in each month in function Reading.
