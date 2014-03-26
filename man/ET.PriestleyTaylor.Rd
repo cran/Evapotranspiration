@@ -1,5 +1,5 @@
-\name{Evapotranspiration.PriestleyTaylor}
-\alias{Evapotranspiration.PriestleyTaylor}
+\name{ET.PriestleyTaylor}
+\alias{ET.PriestleyTaylor}
 
 \title{Priestley-Taylor Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Priestley-Taylor formulation for potential evaporation
 }
 \usage{
-\method{Evapotranspiration}{PriestleyTaylor}(data, constants, solar, alpha, \dots)
+\method{ET}{PriestleyTaylor}(data, constants, solar, alpha, \dots)
 }
 
 \arguments{
@@ -89,8 +89,8 @@ data("constants")
 funname <- "PriestleyTaylor"
 class(data) <- funname
 
-# Call generic function Evapotranspiration(data, ...) with class "PriestleyTaylor"
-results <- Evapotranspiration(data, constants, solar="sunshine hours", alpha = 0.08)
+# Call generic function ET(data, ...) with class "PriestleyTaylor"
+results <- ET(data, constants, solar="sunshine hours", alpha = 0.08)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

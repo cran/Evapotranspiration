@@ -1,5 +1,5 @@
-\name{Evapotranspiration.Penman}
-\alias{Evapotranspiration.Penman}
+\name{ET.Penman}
+\alias{ET.Penman}
 
 \title{Penman Formulation
 }
@@ -7,14 +7,14 @@
 Implementing the Penman formulation for estimating open-water evaporation or potential evapotranspiration
 }
 \usage{
-\method{Evapotranspiration}{Penman}(data, constants, solar, wind, windfunction_ver, 
+\method{ET}{Penman}(data, constants, solar, wind, windfunction_ver, 
 alpha = 0.08, z0 = 0.001, \dots)
 }
 
 \arguments{
   \item{data}{
   A list of data in class "Penman" which contains the following items (climate variables) required by Penman formulation:
-  "Tmax", "Tmin", "Rs", "n" or "Cd", "u2" or "uz" or "RHmax", "RHmin"
+  "Tmax", "Tmin", "Rs", "n" or "Cd", "u2" or "uz", "RHmax", "RHmin"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Penman formulation which must contain the following items:
@@ -74,7 +74,7 @@ This function returns a object of class \code{Penman}. Such objects are list wit
   A character string containing the name of the formulation used which equals to "Penman".
   }
   \item{PET_type}{
-  A character string containing the type of the estimation obtained which is either "Open-water Evaporation" or "Potential Evaporation".
+  A character string containing the type of the estimation obtained which is either "Open-water Evaporation" or "Potential Evapotranspiration".
   }
   \item{message1}{
   A message to inform the users about how solar radiation has been calculated by using which data.
@@ -105,8 +105,8 @@ data("constants")
 funname <- "Penman" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, ...) with class "Penman"
-results <- Evapotranspiration(data, constants, solar="sunshine hours", wind=
+# Call generic function ET(data, ...) with class "Penman"
+results <- ET(data, constants, solar="sunshine hours", wind=
 "yes", windfunction_ver = "1948", alpha = 0.08, z0 = 0.001) 
 }
 

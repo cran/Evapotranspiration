@@ -1,5 +1,5 @@
-\name{Evapotranspiration.Makkink}
-\alias{Evapotranspiration.Makkink}
+\name{ET.Makkink}
+\alias{ET.Makkink}
 
 \title{Makkink Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Makkink formulation for estimating potential evaporation.
 }
 \usage{
-\method{Evapotranspiration}{Makkink}(data, constants, solar, \dots)
+\method{ET}{Makkink}(data, constants, solar, \dots)
 }
 
 \arguments{
@@ -81,8 +81,8 @@ data("constants")
 funname <- "Makkink" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, ...) with class "Makkink"
-results <- Evapotranspiration(data, constants, solar="sunshine hours")
+# Call generic function ET(data, ...) with class "Makkink"
+results <- ET(data, constants, solar="sunshine hours")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

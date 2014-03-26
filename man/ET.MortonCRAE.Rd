@@ -1,5 +1,5 @@
-\name{Evapotranspiration.MortonCRAE}
-\alias{Evapotranspiration.MortonCRAE}
+\name{ET.MortonCRAE}
+\alias{ET.MortonCRAE}
 
 \title{Morton CRAE Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Morton CRAE formulation for estimating potential evapotranspiration, wet-environment areal evapotranspiration and actual areal evapotranspiration.
 }
 \usage{
-\method{Evapotranspiration}{MortonCRAE}(data, constants, est, solar, Tdew, \dots)
+\method{ET}{MortonCRAE}(data, constants, est, solar, Tdew, \dots)
 }
 
 \arguments{
@@ -101,8 +101,8 @@ data("constants")
 funname <- "MortonCRAE" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, ...) with class "MortonCRAE"
-results <- Evapotranspiration(data, constants, est = "potential ET", solar = 
+# Call generic function ET(data, ...) with class "MortonCRAE"
+results <- ET(data, constants, est = "potential ET", solar = 
 "sunshine hours", Tdew = TRUE) 
 }
 

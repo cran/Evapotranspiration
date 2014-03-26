@@ -1,5 +1,5 @@
-\name{Evapotranspiration.McGuinnessBordne}
-\alias{Evapotranspiration.McGuinnessBordne}
+\name{ET.McGuinnessBordne}
+\alias{ET.McGuinnessBordne}
 
 \title{McGuinness-Bordne Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the McGuinness-Bordne formulation for estimating potential evapotranspiration.
 }
 \usage{
-\method{Evapotranspiration}{McGuinnessBordne}(data, constants, \dots) 
+\method{ET}{McGuinnessBordne}(data, constants, \dots) 
 }
 
 \arguments{
@@ -57,9 +57,7 @@ This function returns a object of class \code{McGuinnessBordne}. Such objects ar
   }
 }
 \references{
-MCMAHON, T., PEEL, M., LOWE, L., SRIKANTHAN, R. & MCVICAR, T. 2012. Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
-
-MCGUINNESS, J. L. & BORDNE, E. F. 1972. A comparison of lysimeter-derived potential evapotranspiration with computed values, US Dept. of Agriculture.
+XU, C. Y. & SINGH, V. P. 2000. Evaluation and generalization of radiation-based methods for calculating evaporation. Hydrological Processes, 14, 339-349.
 }
 \author{
 Danlu Guo
@@ -74,8 +72,8 @@ data("constants")
 funname <- "McGuinnessBordne" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, ...) with class "McGuinnessBordne"
-results <- Evapotranspiration(data, constants)
+# Call generic function ET(data, ...) with class "McGuinnessBordne"
+results <- ET(data, constants)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

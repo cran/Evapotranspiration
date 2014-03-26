@@ -1,674 +1,32 @@
-# For global variable 'funname'
-if(getRversion() >= "2.15.1")  utils::globalVariables(c("funname"))
 
-
-# A Function for reading, checking and doing basic calculation from data for Evapotranspiration functions #
-# Timestep - daily
-
- Reading <- function(climatedata, constants, stopmissing) {
-  
-  # Checking if all data required is available, give error message if not
-  
-  # Check if data 'Year', 'Month' and 'Day' exist
-  if ("Year" %in% (colnames(climatedata)) == FALSE) {
-    stop("missing data of 'Year'")
-  }
-  if ("Month" %in% (colnames(climatedata)) == FALSE) {
-    stop("missing data of 'Month'")
-  }
-  if ("Day" %in% (colnames(climatedata)) == FALSE) {  
-    stop("missing data of 'Day'")     
-  }
-
-  # Date
-  Date.subdaily <- strptime(paste(climatedata$Day, "/", climatedata$Month, "/", climatedata$Year, " ", climatedata$Hour, sep=""), "%d/%m/%Y %H")
-  Date.daily <- unique(as.Date(Date.subdaily, "%d/%m/%y"))
-  Date.monthly <- unique(as.yearmon(Date.subdaily, "%d/%m/%y"))
-
-  # Julian day
-  J.temp <- zoo(Date.subdaily$yday+1,as.Date(Date.subdaily)) # Julian calendar day; 1 added in to that first Jan = day 1
-  J <- aggregate(J.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-  
-  # Number of month
-  i.temp  <- unique(as.yearmon(Date.daily, "%m/%y"))
-  i  <- (i.temp - trunc(i.temp))*12 + 1    #Month 
-  
-  # Number of days in a month
-  ndays.temp <- zoo(climatedata$Day, as.Date(Date.subdaily))
-  ndays.temp <- aggregate(ndays.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-  ndays <- aggregate(ndays.temp, as.yearmon(Date.daily, "%m/%y"), FUN = max)
-  
-  # check acceptable % missing data
-  if (is.na(as.numeric(stopmissing))) {
-      stop("Please use a numeric value for the maximum allowable percentage of missing data")
-    }
-    if (!is.na(as.numeric(stopmissing))) {
-      if (as.numeric(stopmissing) < 1 | as.numeric(stopmissing) > 99) {
-        stop("Please use a value between 1 and 99 for the maximum allowable percentage of missing data")
-      }
-    } 
-
-  message(paste("The maximum acceptable percentage of missing data is", stopmissing, "%"))
-  
-  # Check if data 'Tmax' and 'Tmin' exist
-
-  if ("Tmax" %in% (colnames(climatedata))) {  
-    if ("TRUE" %in% (is.na(climatedata$Tmax))) {
-      message("Warning: missing values in 'Tmax' (daily maximum temperature)")
-      message(paste("Number of missing values in Tmax: ", sum(is.na(climatedata$Tmax))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$Tmax))/nrow(climatedata) * 100, digits = -3), "%"))
-      if (sum(is.na(climatedata$Tmax)) >= stopmissing/100 * nrow(climatedata)) {
-        stop("missing data of Tmax exceeds ", stopmissing, "%, please use high quality data for calculation")
-      } else {
-        message("Interpolation is performed for missing data, users should be aware of the associated risk")
-      }
-    }
-    Tmax.temp <- zoo(climatedata$Tmax, Date.subdaily)  
-    Tmax <- aggregate(Tmax.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-    message(paste("Number of days increments when Tmax has errors: ", sum(Tmax>100)))
-    message("Interpolation is performed to replace data with error, users should be aware of the associated risk")
-    for (m in 0:11) {
-      Tmax[as.POSIXlt(time(Tmax))$mon==m & as.numeric(Tmax)>100] = mean(Tmax[as.POSIXlt(time(Tmax))$mon==m & as.numeric(Tmax)<100])
-      Tmax[as.POSIXlt(time(Tmax))$mon==m & is.na(Tmax)] = mean(Tmax[as.POSIXlt(time(Tmax))$mon==m & !is.na(Tmax)])
-    }
-  } else {
-    if ("Air.temperature.in.Degrees.C" %in% (colnames(climatedata))) {
-      message("Warning: missing data of 'Tmax'(daily maximum temperature), calculated from subdaily 'Air.temperature.in.Degrees.C'")
-      if ("TRUE" %in% (is.na(climatedata$Air.temperature.in.Degrees.C))) {
-        message("Warning: missing values in 'Air.temperature.in.Degrees.C'")
-        message(paste("Number of missing values in Air.temperature.in.Degrees.C: ", sum(is.na(climatedata$Air.temperature.in.Degrees.C))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$Air.temperature.in.Degrees.C))/nrow(climatedata) * 100, digits = -3), "%"))
-        if (sum(is.na(climatedata$Air.temperature.in.Degrees.C)) >= stopmissing/100 * nrow(climatedata)) {
-          stop("missing data of Air.temperature.in.Degrees.C exceeds ", stopmissing, "%, please use high quality data for calculation")
-        } else {
-          message("Interpolation is performed for missing data, users should be aware of the associated risk")
-        }
-        temp.temp <- zoo(climatedata$Air.temperature.in.Degrees.C, Date.subdaily)
-        for (m in 0:11) {
-          temp.temp[as.POSIXlt(time(temp.temp))$mon==m & is.na(temp.temp)] = mean(temp.temp[as.POSIXlt(time(temp.temp))$mon==m & !is.na(temp.temp)])
-        }
-        Tmax <- aggregate(temp.temp, as.Date(Date.subdaily, "%d/%m/%y"), FUN = max)
-    }
-      } else {
-      Tmax <- NULL
-    }
-  }
-  
-  if ("Tmin" %in% (colnames(climatedata))) {  
-    if ("TRUE" %in% (is.na(climatedata$Tmin))) {
-      message("Warning: missing values in 'Tmin' (daily minimum temperature)")
-      message(paste("Number of missing values in Tmin: ", sum(is.na(climatedata$Tmin))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$Tmin))/nrow(climatedata) * 100, digits = -3), "%"))
-      if (sum(is.na(climatedata$Tmin)) >= stopmissing/100 * nrow(climatedata)) {
-        stop("missing data of Tmin exceeds ", stopmissing, "%, please use high quality data for calculation")
-      } else {
-        message("Interpolation is performed for missing data, users should be aware of the associated risk")
-      }
-    }
-    Tmin.temp <- zoo(climatedata$Tmin, Date.subdaily)
-    Tmin <- aggregate(Tmin.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-    message(paste("Number of days increments when Tmin has errors: ", sum(Tmin>100)))
-    message("Interpolation is performed to replace data with error, users should be aware of the associated risk")
-    for (m in 0:11) {
-      Tmin[as.POSIXlt(time(Tmin))$mon==m & as.numeric(Tmin)>100] = mean(Tmin[as.POSIXlt(time(Tmin))$mon==m & as.numeric(Tmin)<100])
-      Tmin[as.POSIXlt(time(Tmin))$mon==m & is.na(Tmin)] = mean(Tmin[as.POSIXlt(time(Tmin))$mon==m & !is.na(Tmin)])
-    }      
-  } else if ("Air.temperature.in.Degrees.C" %in% (colnames(climatedata))) {
-      message("Warning: missing data of 'Tmin'(daily minimum temperature), calculated from subdaily 'Air.temperature.in.Degrees.C'")
-      if ("TRUE" %in% (is.na(climatedata$Air.temperature.in.Degrees.C))) {
-        message("Warning: missing values in 'Air.temperature.in.Degrees.C'")
-        message(paste("Number of missing values in Air.temperature.in.Degrees.C: ", sum(is.na(climatedata$Air.temperature.in.Degrees.C))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$Air.temperature.in.Degrees.C))/nrow(climatedata) * 100, digits = -3), "%"))
-        if (sum(is.na(climatedata$Air.temperature.in.Degrees.C)) >= stopmissing/100 * nrow(climatedata)) {
-          stop("missing data of Air.temperature.in.Degrees.C exceeds ", stopmissing, "%, please use high quality data for calculation")
-        } else {
-          message("Interpolation is performed for missing data, users should be aware of the associated risk")
-        }
-        temp.temp <- zoo(climatedata$Air.temperature.in.Degrees.C, Date.subdaily)
-        for (m in 0:11) {
-          temp.temp[as.POSIXlt(time(temp.temp))$mon==m & is.na(temp.temp)] = mean(temp.temp[as.POSIXlt(time(temp.temp))$mon==m & !is.na(temp.temp)])
-        }
-        Tmin <- aggregate(temp.temp, as.Date(Date.subdaily, "%d/%m/%y"), FUN = min)
-    }
-      } else {
-      Tmin <- NULL
-    }
-  
-  Ta <- NULL
-  
-  # Check if data 'Wind.speed.measured.in.km.h' exists
-  if ("Wind.speed.at.2m.measured.in.km.h" %in% (colnames(climatedata))) {  
-    if ("TRUE" %in% (is.na(climatedata$Wind.speed.at.2m.measured.in.km.h))) {
-      message("Warning: missing values in 'Wind.speed.at.2m.measured.in.km.h'")
-      message(paste("Number of missing values in Wind.speed.at.2m.measured.in.km.h: ", sum(is.na(climatedata$Wind.speed.at.2m.measured.in.km.h))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$Wind.speed.at.2m.measured.in.km.h))/nrow(climatedata) * 100, digits = -3), "%"))
-      if (sum(is.na(climatedata$Wind.speed.at.2m.measured.in.km.h)) >= stopmissing/100 * nrow(climatedata)) {
-        stop("missing data of Wind.speed.at.2m.measured.in.km.h exceeds ", stopmissing, "%, please use high quality data for calculation")
-      } else {
-        message("Interpolation is performed for missing data, users should be aware of the associated risk")
-      }
-    }
-    u2.temp <- zoo(climatedata$Wind.speed.at.2m.measured.in.km.h*1000/3600, Date.subdaily) 
-    for (m in 0:11) {
-      u2.temp[as.POSIXlt(time(u2.temp))$mon==m &  as.numeric(is.na(u2.temp))] = mean(u2.temp[as.POSIXlt(time(u2.temp))$mon==m &  as.numeric(!is.na(u2.temp))]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
-    }
-    u2 <- aggregate(u2.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-    } else if ("Wind.speed.measured.in.km.h" %in% (colnames(climatedata))) {
-      if ("TRUE" %in% (is.na(climatedata$Wind.speed.measured.in.km.h))) {
-      message("Warning: missing data of 'Wind.speed.measured.in.km.h', calculated from 'Wind.speed.measured.in.km.h")
-      u2 <- NULL
-      message(paste("Number of missing values in Wind.speed.measured.in.km.h: ", sum(is.na(climatedata$Wind.speed.measured.in.km.h))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$Wind.speed.measured.in.km.h))/nrow(climatedata) * 100, digits = -3), "%"))
-      if (sum(is.na(climatedata$Wind.speed.measured.in.km.h)) >= stopmissing/100 * nrow(climatedata)) {
-        stop("missing data of Wind.speed.measured.in.km.h exceeds ", stopmissing, "%, please use high quality data for calculation")
-      } else {
-        message("Interpolation is performed for missing data, users should be aware of the associated risk")
-        }
-      }
-      uz.temp <- zoo(climatedata$Wind.speed.measured.in.km.h*1000/3600, Date.subdaily)  
-      for (m in 0:11) {
-        uz.temp[as.POSIXlt(time(uz.temp))$mon==m &  as.numeric(is.na(uz.temp))] = mean(uz.temp[as.POSIXlt(time(uz.temp))$mon==m &  as.numeric(!is.na(uz.temp))]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
-      }
-      uz <- aggregate(uz.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean) 
-      } else {
-      u2 <- NULL
-      uz <- NULL
-    }
-  
-  # Check if data 'Solar.radiation.in.MJ.per.sqm.per.day' exists
-  if ('Solar.radiation.in.MJ.per.sqm.per.day' %in% (colnames(climatedata))) {  
-    if ("TRUE" %in% (is.na(climatedata$Solar.radiation.in.MJ.per.sqm.per.day))) {
-      message("Warning: missing values in 'Dew.point.temperature.in.Degrees.C'")
-      message(paste("Number of missing values in Dew.point.temperature.in.Degrees.C: ", sum(is.na(climatedata$Solar.radiation.in.MJ.per.sqm.per.day))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$Solar.radiation.in.MJ.per.sqm.per.day))/nrow(climatedata) * 100, digits = -3), "%"))
-      if (sum(is.na(climatedata$Solar.radiation.in.MJ.per.sqm.per.day)) >= stopmissing/100 * nrow(climatedata)) {
-        stop("missing data of Solar.radiation.in.MJ.per.sqm.per.day exceeds ", stopmissing, "%, please use high quality data for calculation")
-      } else {
-        message("Interpolation is performed for missing data, users should be aware of the associated risk")
-      }
-    }
-    Rs.temp <- zoo(climatedata$Solar.radiation.in.MJ.per.sqm.per.day, Date.subdaily)
-    Rs <- aggregate(Rs.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-    message("Interpolation is performed to replace data with error, users should be aware of the associated risk")
-    for (m in 0:11) {
-      Rs[as.POSIXlt(time(Rs))$mon==m & is.na(Rs)] = mean(Rs[as.POSIXlt(time(Rs))$mon==m & !is.na(Rs)])
-    }
-  } else {
-      Rs <- NULL
-  }
-    # Check if data 'n' exists
-    if ("n" %in% (colnames(climatedata))) {
-      if ("TRUE" %in% (is.na(climatedata$n))) {
-        message("Warning: missing values in 'n' (daily sunshine hours)")
-        message(paste("Number of missing values in n: ", sum(is.na(climatedata$n))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$n))/nrow(climatedata) * 100, digits = -3), "%"))
-        if (sum(is.na(climatedata$n)) >= stopmissing/100 * nrow(climatedata)) {
-          stop("missing data of n exceeds ", stopmissing, "%, please use high quality data for calculation")
-        } else {
-          message("Interpolation is performed for missing data, users should be aware of the associated risk")
-        }
-      }
-      n.temp <- zoo(climatedata$n, Date.subdaily)  
-      for (m in 0:11) {
-        n.temp[as.POSIXlt(time(n.temp))$mon==m &  as.numeric(is.na(n.temp))] = mean(n.temp[as.POSIXlt(time(n.temp))$mon==m &  as.numeric(!is.na(n.temp))]) # Changing to monthly mean 
-      }
-      n <- aggregate(n.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-    } else {
-      n <- NULL
-    } 
-  
-    # Check if data 'cloud.cover.in.oktas' exists
-    if ("cloud.cover.in.oktas" %in% (colnames(climatedata))) {
-      if ("TRUE" %in% (is.na(climatedata$cloud.cover.in.oktas))) {
-        message("Warning: missing values in 'cloud.cover.in.oktas' (daily cloud cover)")
-        message(paste("Number of missing values in cloud.cover.in.oktas: ", sum(is.na(climatedata$cloud.cover.in.oktas))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$cloud.cover.in.oktas))/nrow(climatedata) * 100, digits = -3), "%"))
-        if (sum(is.na(climatedata$cloud.cover.in.oktas)) >= stopmissing/100 * nrow(climatedata)) {
-          stop("missing data of cloud.cover.in.oktas exceeds ", stopmissing, "%, please use high quality data for calculation")
-        } else {
-          message("Interpolation is performed for missing data, users should be aware of the associated risk")
-        }
-      }
-      C0.temp <- zoo(climatedata$cloud.cover.in.oktas, Date.subdaily) 
-      for (m in 0:11) {
-        C0.temp[as.POSIXlt(time(C0.temp))$mon==m &  as.numeric(is.na(C0.temp))] = mean(C0.temp[as.POSIXlt(time(C0.temp))$mon==m &  as.numeric(!is.na(C0.temp))]) # Changing to monthly mean 
-      }
-      C0 <- aggregate(C0.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-      n <- constants$a_0 + constants$b_0*C0 + constants$c_0*C0^2 + constants$d_0*C0^3 # calculation of sunshine hours (h) based on cloud cover (oktas) (S3.10)
-    } 
-  
-  
-    # Check if data 'precipitation.in.mm' exists
-    if ("precipitation.in.mm" %in% (colnames(climatedata))) {
-      if ("TRUE" %in% (is.na(climatedata$precipitation.in.mm))) {
-        message("Warning: missing values in 'precipitation.in.mm' (daily precipitation)")
-        message(paste("Number of missing values in precipitation.in.mm: ", sum(is.na(climatedata$precipitation.in.mm))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$precipitation.in.mm))/nrow(climatedata) * 100, digits = -3), "%"))
-        if (sum(is.na(climatedata$precipitation.in.mm)) >= stopmissing/100 * nrow(climatedata)) {
-          stop("missing data of precipitation.in.mm exceeds ", stopmissing, "%, please use high quality data for calculation")
-        } else {
-          message("Interpolation is performed for missing data, users should be aware of the associated risk")
-        }
-      }
-      P.temp <- zoo(climatedata$precipitation.in.mm, Date.subdaily) 
-      for (m in 0:11) {
-        P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(is.na(P.temp))] = mean(P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(!is.na(P.temp))]) # Changing to monthly mean 
-      }
-      Precip <- aggregate(P.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-      P.monthly <- aggregate(Precip, as.yearmon(Date.daily, "%m/%y"),sum)
-      Cd.temp <- numeric(length(P.monthly))
-      for (m in 1:length(P.monthly)) {
-        if (P.monthly[m] >= 1) {
-          Cd.temp[m] <- 1 + 0.5*log10(P.monthly[m]) + (log10(P.monthly[m]))^2 # calculation of cloudiness (number of tenths of sky covered by cloud) based on monthly precipitation (mm) (S3.12)
-        } else {
-          Cd.temp[m] <- 1 # calculation of cloudiness (number of tenths of sky covered by cloud) based on monthly precipitation (mm) (S3.12)
-        }
-      }
-      Cd.temp <- zoo(Cd.temp, Date.daily)
-      Cd <- Precip
-      for (m in 1:length(Cd)) {
-        Cd[as.yearmon(time(Cd)) == as.yearmon(time(Cd.temp))[m]] <- Cd.temp[m]
-      }
-    } else {
-      Cd <- NULL
-    } 
-
- 
-  # Check if data 'precipitation.in.mm' exist
-  if ("precipitation.in.mm" %in% (colnames(climatedata))) {  
-    if ("TRUE" %in% (is.na(climatedata$precipitation.in.mm))) {
-      message("Warning: missing values in 'precipitation.in.mm' (daily precipitation)")
-      message(paste("Number of missing values in precipitation.in.mm: ", sum(is.na(climatedata$precipitation.in.mm))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$precipitation.in.mm))/nrow(climatedata) * 100, digits = -3), "%"))
-      if (sum(is.na(climatedata$precipitation.in.mm)) >= stopmissing/100 * nrow(climatedata)) {
-        stop("missing data of precipitation.in.mm exceeds ", stopmissing, "%, please use high quality data for calculation")
-      } else {
-        message("Interpolation is performed for missing data, users should be aware of the associated risk")
-      }
-    }
-    P.temp <- zoo(climatedata$precipitation.in.mm, Date.subdaily) 
-    for (m in 0:11) {
-      P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(is.na(P.temp))] = mean(P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(!is.na(P.temp))]) # Changing to monthly mean 
-    }
-    Precip <- aggregate(P.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-  } else {
-    Precip <- NULL
-  }
-
-  # Check if data 'Class.A.pan.evaporation.in.mm' exist
-  if ("Class.A.pan.evaporation.in.mm" %in% (colnames(climatedata))) {  
-    if ("TRUE" %in% (is.na(climatedata$Class.A.pan.evaporation.in.mm))) {
-        message("Warning: missing values in 'Class.A.pan.evaporation.in.mm'")
-        message(paste("Number of missing values in Class.A.pan.evaporation.in.mm: ", sum(is.na(climatedata$Class.A.pan.evaporation.in.mm))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$Class.A.pan.evaporation.in.mm))/nrow(climatedata) * 100, digits = -3), "%"))
-        if (sum(is.na(climatedata$Class.A.pan.evaporation.in.mm)) >= stopmissing/100 * nrow(climatedata)) {
-          stop("missing data of Class.A.pan.evaporation.in.mm exceeds ", stopmissing, "%, please use high quality data for calculation")
-        } else {
-          message("Interpolation is performed for missing data, users should be aware of the associated risk")
-        }
-      }
-      Epan.temp <- zoo(climatedata$Class.A.pan.evaporation.in.mm, Date.subdaily) 
-      for (m in 0:11) {
-        Epan.temp[as.POSIXlt(time(Epan.temp))$mon==m &  as.numeric(is.na(Epan.temp))] = mean(Epan.temp[as.POSIXlt(time(Epan.temp))$mon==m &  as.numeric(!is.na(Epan.temp))]) # Changing to monthly mean 
-      }
-      Epan <- aggregate(P.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean) 
-  } else {
-    Epan <- NULL
-  }
-  
-  # Check if data 'RHmax' and 'RHmin' exist
-  if ("RHmax" %in% (colnames(climatedata))) {  
-    if ("TRUE" %in% (is.na(climatedata$RHmax))) {
-      message("Warning: missing values in 'RHmax' (daily maximum temperature)")
-      message(paste("Number of missing values in RHmax: ", sum(is.na(climatedata$RHmax))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$RHmax))/nrow(climatedata) * 100, digits = -3), "%"))
-      if (sum(is.na(climatedata$RHmax)) >= stopmissing/100 * nrow(climatedata)) {
-        stop("missing data of RHmax exceeds ", stopmissing, "%, please use high quality data for calculation")
-      } else {
-        message("Interpolation is performed for missing data, users should be aware of the associated risk")
-      }
-    }
-    RHmax.temp <- zoo(climatedata$RHmax, Date.subdaily)
-    RHmax <- aggregate(RHmax.temp, as.Date(Date.subdaily, "%d/%m/%y") ,FUN = mean) 
-    for (m in 0:11) {
-      RHmax[as.POSIXlt(time(RHmax))$mon==m & is.na(RHmax)] = mean(RHmax[as.POSIXlt(time(RHmax))$mon==m & !is.na(RHmax)])
-    }
-    message(paste("Number of days increments when RHmax has errors: ", sum(RHmax>100)))
-    message("'RHmax' with values > 100% has been adjusted to 100%, users should be aware of the associated risk")
-    RHmax[RHmax>100] = 100
-  } else {
-    if ("Relative.humidity.in.percentage.." %in% (colnames(climatedata))) {
-      message("Warning: missing data of 'RHmax'(daily maximum relative humidity), calculated from subdaily 'Relative.humidity.in.percentage..'")
-      if ("TRUE" %in% (is.na(climatedata$Relative.humidity.in.percentage..))) {
-        message("Warning: missing values in 'Relative.humidity.in.percentage..'")
-        message(paste("Number of missing values in Relative.humidity.in.percentage..: ", sum(is.na(climatedata$Relative.humidity.in.percentage..))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$Relative.humidity.in.percentage..))/nrow(climatedata) * 100, digits = -3), "%"))
-        if (sum(is.na(climatedata$Relative.humidity.in.percentage..)) >= stopmissing/100 * nrow(climatedata)) {
-          stop("missing data of Relative.humidity.in.percentage.. exceeds ", stopmissing, "%, please use high quality data for calculation")
-        } else {
-          message("Interpolation is performed for missing data, users should be aware of the associated risk")
-        }
-      }
-    RH.temp <- zoo(climatedata$Relative.humidity.in.percentage.., Date.subdaily)
-    RHmax <- aggregate(RH.temp, as.Date(Date.subdaily, "%d/%m/%y"), FUN = max)
-    for (m in 0:11) {
-      RHmax[as.POSIXlt(time(RHmax))$mon==m & is.na(RHmax)] = mean(RHmax[as.POSIXlt(time(RHmax))$mon==m & !is.na(RHmax)])
-    }
-    message(paste("Number of days increments when RHmax has errors: ", sum(RHmax>100)))
-    message("'RHmax' with values > 100% has been adjusted to 100%, users should be aware of the associated risk")
-    RHmax[RHmax>100] = 100
-      } else {
-      RHmax <- NULL
-    }
-  }
-  
-  if ("RHmin" %in% (colnames(climatedata))) {  
-    if ("TRUE" %in% (is.na(climatedata$RHmin))) {
-      message("Warning: missing values in 'RHmin' (daily minimum temperature)")
-      message(paste("Number of missing values in RHmin: ", sum(is.na(climatedata$RHmin))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$RHmin))/nrow(climatedata) * 100, digits = -3), "%"))
-      if (sum(is.na(climatedata$RHmin)) >= stopmissing/100 * nrow(climatedata)) {
-        stop("missing data of RHmin exceeds ", stopmissing, "%, please use high quality data for calculation")
-      } else {
-        message("Interpolation is performed for missing data, users should be aware of the associated risk")
-      }
-    }
-    RHmin.temp <- zoo(climatedata$RHmin, Date.subdaily)
-    RHmin <- aggregate(RHmin.temp, as.Date(Date.subdaily, "%d/%m/%y") ,FUN = mean) 
-    for (m in 0:11) {
-      RHmin[as.POSIXlt(time(RHmin))$mon==m & is.na(RHmin)] = mean(RHmin[as.POSIXlt(time(RHmin))$mon==m & !is.na(RHmin)])
-    }
-    message(paste("Number of days increments when RHmin has errors: ", sum(RHmin>RHmax)))
-    message("'RHmax' with values > 'RHmax' has been adjusted to '0.9999*RHmax', users should be aware of the associated risk")
-    RHmin[RHmin>=RHmax] = 0.9999*RHmax[RHmin>=RHmax] # setting upper bound on minimum RH to ensure that ea < es for all es,ea. 
-    } else {
-    if ("Relative.humidity.in.percentage.." %in% (colnames(climatedata))) {
-      message("Warning: missing data of 'RHmin'(daily minimum relative humidity), calculated from subdaily 'Relative.humidity.in.percentage..'")
-      if ("TRUE" %in% (is.na(climatedata$Relative.humidity.in.percentage..))) {
-        message("Warning: missing values in 'Relative.humidity.in.percentage..'")
-        message(paste("Number of missing values in Relative.humidity.in.percentage..: ", sum(is.na(climatedata$Relative.humidity.in.percentage..))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$Relative.humidity.in.percentage..))/nrow(climatedata) * 100, digits = -3), "%"))
-        if (sum(is.na(climatedata$Relative.humidity.in.percentage..)) >= stopmissing/100 * nrow(climatedata)) {
-          stop("missing data of Relative.humidity.in.percentage.. exceeds ", stopmissing, "%, please use high quality data for calculation")
-        } else {
-          message("Interpolation is performed for missing data, users should be aware of the associated risk")
-        }
-      }
-      RH.temp <- zoo(climatedata$Relative.humidity.in.percentage.., Date.subdaily)
-      RHmin <- aggregate(RH.temp, as.Date(Date.subdaily, "%d/%m/%y"), FUN = min)
-      for (m in 0:11) {
-        RHmin[as.POSIXlt(time(RHmin))$mon==m & is.na(RHmin)] = mean(RHmin[as.POSIXlt(time(RHmin))$mon==m & !is.na(RHmin)])
-      }
-      message(paste("Number of days increments when RHmin has errors: ", sum(RHmin>RHmax)))
-      message("'RHmax' with values > 'RHmax' has been adjusted to '0.9999*RHmax', users should be aware of the associated risk")
-      RHmin[RHmin>=RHmax] = 0.9999*RHmax[RHmin>=RHmax] # setting upper bound on minimum RH to ensure that ea < es for all es,ea. 
-      } else {
-      RHmin <- NULL
-    }
-  }
-  
-  # Check if data 'Dew.point.temperature.in.Degrees.C' exists
-  if ("Dew.point.temperature.in.Degrees.C" %in% (colnames(climatedata))) {  
-    if ("TRUE" %in% (is.na(climatedata$Dew.point.temperature.in.Degrees.C))) {
-      message("Warning: missing values in 'Dew.point.temperature.in.Degrees.C'")
-      message(paste("Number of missing values in Dew.point.temperature.in.Degrees.C: ", sum(is.na(climatedata$Dew.point.temperature.in.Degrees.C))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$Dew.point.temperature.in.Degrees.C))/nrow(climatedata) * 100, digits = -3), "%"))
-      if (sum(is.na(climatedata$Dew.point.temperature.in.Degrees.C)) >= stopmissing/100 * nrow(climatedata)) {
-        stop("missing data of Dew.point.temperature.in.Degrees.C exceeds ", stopmissing, "%, please use high quality data for calculation")
-      } else {
-        message("Interpolation is performed for missing data, users should be aware of the associated risk")
-      }
-    }
-    Tdew.temp <- zoo(climatedata$Dew.point.temperature.in.Degrees.C, Date.subdaily)
-    Tdew <- aggregate(Tdew.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-    message(paste("Number of days increments when Tdew has errors: ", sum(Tdew>100)))
-    message("Interpolation is performed to replace data with error, users should be aware of the associated risk")
-    for (m in 0:11) {
-      Tdew[as.POSIXlt(time(Tdew))$mon==m & is.na(Tdew)] = mean(Tdew[as.POSIXlt(time(Tdew))$mon==m & !is.na(RHmin)])
-      Tdew[as.POSIXlt(time(Tdew))$mon==m & as.numeric(Tdew)>100] = mean(Tdew[as.POSIXlt(time(Tdew))$mon==m & as.numeric(Tdew)<100])
-    }
-    } else {
-      if ("Vapour.pressure.in.hPa" %in% (colnames(climatedata))) {
-        message("Warning: missing data of 'Dew.point.temperature.in.Degrees.C', calculated from 'Vapour.pressure.in.hPa'")
-        Tdew <- NULL
-        if ("TRUE" %in% (is.na(climatedata$Vapour.pressure.in.hPa))) {
-          message("Warning: missing values in 'Vapour.pressure.in.hPa'")
-        }
-      } else {
-        Tdew <- NULL
-      }
-    }
-  
-  #-------------------------------------------------------------------------------------
-  
-  data <- list(Date.daily=Date.daily, Date.monthly=Date.monthly, J=J, i=i, ndays=ndays, Tmax=Tmax, Tmin=Tmin, u2=u2, uz=uz, 
-               Rs=Rs,n=n, Cd=Cd, Precip=Precip, Epan=Epan, RHmax=RHmax, RHmin=RHmin, Tdew=Tdew)
-  return(data)
-}
-  
-  #-------------------------------------------------------------------------------------
-
-ReadOBSEvaporation <- function(E_OBS, data) {
-  
-  # Load evaporation observations and convert to zoo object
-  Date.OBS <- strptime(paste(E_OBS$Day, "/", E_OBS$Month, "/", E_OBS$Year, sep=""), "%d/%m/%Y")
-  if (E_OBS$Day[1] == E_OBS$Day[2]) {
-    Date.OBS <- as.yearmon(Date.OBS)
-    E_obs <- zoo(E_OBS$EVAP.Obs, Date.OBS)
-    
-    # Aggregation
-    E_obs.Daily <- NULL
-    E_obs.Monthly <- E_obs
-    E_obs.Annual <- aggregate(E_obs.Monthly, floor(as.numeric(as.yearmon(Date.OBS, "%y"))), FUN = sum)
-    
-    # Average
-    E_obs.MonthlyAve <- E_obs.AnnualAve <- NULL
-    E_obs.MonthlyAve.temp <- E_obs.Monthly/data$ndays
-    for (mon in min(as.POSIXlt(Date.OBS)$mon):max(as.POSIXlt(Date.OBS)$mon)){
-      i = mon - min(as.POSIXlt(Date.OBS)$mon) + 1
-      E_obs.MonthlyAve[i] <- mean(E_obs.MonthlyAve.temp[as.POSIXlt(Date.OBS)$mon== mon])
-    }
-    for (year in min(as.POSIXlt(Date.OBS)$year):max(as.POSIXlt(Date.OBS)$year)){
-      i = year - min(as.POSIXlt(Date.OBS)$year) + 1
-      E_obs.AnnualAve[i] <- mean(E_obs.MonthlyAve.temp[as.POSIXlt(Date.OBS)$year== year])
-    }
-  } else {
-    Date.OBS <- unique(as.Date(Date.OBS, "%d/%m/%y"))
-    E_obs <- zoo(E_OBS$EVAP.Obs, Date.OBS)
-    
-    # Aggregation
-    E_obs.Daily <- E_obs
-    E_obs.Monthly <- aggregate(E_obs, as.yearmon(Date.OBS, "%m/%y"), FUN = sum)
-    E_obs.Annual <- aggregate(E_obs.Daily, floor(as.numeric(as.yearmon(Date.OBS, "%y"))), FUN = sum)
-    
-    # Average
-    E_obs.MonthlyAve <- E_obs.AnnualAve <- NULL
-    for (mon in min(as.POSIXlt(Date.OBS)$mon):max(as.POSIXlt(Date.OBS)$mon)){
-      i = mon - min(as.POSIXlt(Date.OBS)$mon) + 1
-      E_obs.MonthlyAve[i] <- mean(E_obs.Daily[as.POSIXlt(Date.OBS)$mon== mon])
-    }
-    for (year in min(as.POSIXlt(Date.OBS)$year):max(as.POSIXlt(Date.OBS)$year)){
-      i = year - min(as.POSIXlt(Date.OBS)$year) + 1
-      E_obs.AnnualAve[i] <- mean(E_obs.Daily[as.POSIXlt(Date.OBS)$year== year])
-    }
-  }
-  
-  
-  OBS <- list(Date.OBS=Date.OBS, E_obs.Daily=E_obs.Daily, E_obs.Monthly=E_obs.Monthly, E_obs.Annual=E_obs.Annual, E_obs.MonthlyAve=E_obs.MonthlyAve, E_obs.AnnualAve=E_obs.AnnualAve)
-  return(OBS)
-}
-
-  #-------------------------------------------------------------------------------------
-
-PlotEvapotranspiration <- function(results, OBS, OBSplot) { # plot estimations and observations
-  # Plots - Aggregation
-  par(ask=FALSE)
-  plot.new()
-  if (!is.null(results$PET.Daily)) {
-    plot(results$PET.Daily, main = paste("Daily", results$PET_formulation, results$PET_type),  ylim = c(0,20), xlab = "Year", ylab = list(c(results$PET_type, "mm/day")))
-    if (OBSplot == TRUE) {
-      if (!is.null(OBS)) {
-        if (!is.null(OBS$E_obs.Daily)) {
-          lines(OBS$E_obs.Daily, main = "Observed evaporation", type = "o", pch = ".", ylim = c(0,400), col = "RED", xlab = "Year", ylab = "Observed evaporation mm/day")
-          legend("topright", inset = .05, c(paste(results$PET_formulation,results$PET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
-        }
-      } else {
-        warning("No observed data available for plotting, only the estimated values are plotted")
-      }
-    }
-  } else {
-    warning("No daily results obtained from ", results$PET_formulation)
-  }
-  par(ask=TRUE)
-  
-  plot(results$PET.Monthly, main = paste("Monthly", results$PET_formulation, results$PET_type), type = "o", pch = ".", ylim = c(0,400), xlab = "Year", ylab = list(c(results$PET_type, "mm/month")))
-  if (OBSplot == TRUE) {
-    if (!is.null(OBS)) {
-      lines(OBS$E_obs.Monthly, main = "Observed evaporation", type = "o", pch = ".", ylim = c(0,400), col = "RED", xlab = "Year", ylab = "Observed evaporation mm/month")
-      legend("topright", inset = .05, c(paste(results$PET_formulation,results$PET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
-    } else {
-      warning("No observed data available for plotting, only the estimated values are plotted")
-    }
-  }
-  plot(results$PET.Annual, main = paste("Annual", results$PET_formulation, results$PET_type), type = "o", xlab = "Year", ylim = c(0,3000), ylab = list(c(results$PET_type, "mm/year")))
-  if (OBSplot == TRUE) {
-    if (!is.null(OBS)) {
-      lines(OBS$E_obs.Annual, main = "Observed evaporation", type = "o", col = "RED", ylim = c(0,3000), xlab = "Year", ylab = "Observed evaporation mm/year")
-      legend("topright", inset = .05, c(paste(results$PET_formulation,results$PET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
-    } else {
-      warning("No observed data available for plotting, only the estimated values are plotted")
-    }
-  }
-  
-  # Plots - Average
-  plot(results$PET.MonthlyAve~unique(1:12), main = paste("Monthly average", results$PET_formulation, results$PET_type), type = "o", ylim = c(0,10), xlab = "Month", ylab = list(c("Monthly average", results$PET_type, "mm/day")))
-  if (OBSplot == TRUE) {
-    if (!is.null(OBS)) {
-      lines(OBS$E_obs.MonthlyAve~unique(1:12), main = "Observed evaporation", type = "o", ylim = c(0,10), col = "RED", xlab = "Month", ylab = "Monthly average observed evaporation mm")
-      legend("topright", inset = .05, c(paste(results$PET_formulation,results$PET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
-    } else {
-      warning("No observed data available for plotting, only the estimated values are plotted")
-    }
-  }
-  plot(results$PET.AnnualAve~unique(as.POSIXlt(data$Date.daily)$year + 1900), main = paste("Annual average", results$PET_formulation, results$PET_type), type = "o", ylim = c(0,10), xlab = "Year", ylab = list(c("Annual average", results$PET_type, "mm/day")))
-  if (OBSplot == TRUE) {
-    if (!is.null(OBS)) {
-      lines(OBS$E_obs.AnnualAve~unique(as.POSIXlt(OBS$Date.OBS)$year + 1900), main = "Observed evaporation", type = "o", ylim = c(0,10), col = "RED", xlab = "Year", ylab = "Annual average observed evaporation mm")
-      legend("topright", inset = .05, c(paste(results$PET_formulation,results$PET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
-    } else {
-      warning("No observed data available for plotting, only the estimated values are plotted")
-    }
-  }
-  par(ask=FALSE)
-  paste("Completed plotting for results calculated by", results$PET_formulation, "formulation")
-}
-
-  #-------------------------------------------------------------------------------------
-
-EvapotranspirationForcings <- function(data, results, forcing) {
-  plot.new()
-  # define forcing names
-  Fnames <- list(v=c("Tmax","Tmin","u2","uz","Rs","n","Precip","Epan","RHmax","RHmin","Tdew"), 
-              n=c("maximum temperature","minimum temperature", "average wind speed at 2m", "average wind speed", "daily solar radiation", "daily sunshine hours", 
-                 "precipitation", "Class-A pan evaporation", "maximum relative humidity", "minimum relative humidity", "average dew point temeprature"),
-              u=c("degree Celcius","degree Celcius", "m/s", "m/s", "MJ.per.sqm.per.day", "hours", "mm/day", "mm/day", "%", "%", "degree Celcius"))
-  
-  # check forcing value
-  if (forcing %in% Fnames$v) {
-    par(mfrow=c(2,2))
-    
-    # Aggregated PET vs forcing
-    
-    # Plot daily relationship
-    if (!is.null(results$PET.Daily)) {
-      interval <- "daily"
-      if (!is.null(data[[forcing]])) {
-        plot(results$PET.Daily~data[[forcing]], main = results$PET_formulation, xlab = paste(interval, Fnames$n[Fnames$v == forcing], Fnames$u[Fnames$v == forcing]), ylab = list(c(results$PET_type, "mm/day")))
-      } else {
-        plot(1, type="n", axes=F, xlab="", ylab="")
-        text(1, paste("no", forcing, "data to plot"))
-      }
-    } else {
-      plot(1, type="n", axes=F, xlab="", ylab="")
-      text(1, "no daily ET estimation to plot")
-    }
-  
-    # Plot monthly relationship
-    if (!is.null(results$PET.Monthly)) {
-      interval <- "monthly"
-      if (!is.null(data[[forcing]])) {
-        if (forcing != "Precip") {
-          Fmonthly <- aggregate(data[[forcing]], as.yearmon(data$Date.daily, "%m/%y"), mean)
-        } else {
-          Fmonthly <- aggregate(data[[forcing]], as.yearmon(data$Date.daily, "%m/%y"), sum)
-        }
-        plot(results$PET.Monthly~Fmonthly, main = results$PET_formulation, xlab = paste(interval, Fnames$n[Fnames$v == forcing], Fnames$u[Fnames$v == forcing]), ylab = list(c(results$PET_type, "mm/month")))
-      } else {
-        plot(1, type="n", axes=F, xlab="", ylab="")
-        text(1, paste("no", forcing, "data to plot"))
-      }
-    } else {
-      plot(1, type="n", axes=F, xlab="", ylab="")
-      text(1, "no monthly ET estimation to plot")
-    }
-    
-    
-    # Plot annual relationship
-    if (!is.null(results$PET.Annual)) {
-      interval <- "annual"
-      if (!is.null(data[[forcing]])) {
-        if (forcing != "Precip") {
-          Fannual <- aggregate(Fmonthly, floor(as.numeric(as.yearmon(data$Date.monthly, "%m/%y"))), mean)
-        } else {
-          Fannual <- aggregate(Fmonthly, floor(as.numeric(as.yearmon(data$Date.monthly, "%m/%y"))), sum)
-        }
-        plot(results$PET.Annual~Fannual, main = results$PET_formulation, xlab = paste(interval, Fnames$n[Fnames$v == forcing], Fnames$u[Fnames$v == forcing]), ylab = list(c(results$PET_type, "mm/year")))
-      } else {
-        plot(1, type="n", axes=F, xlab="", ylab="")
-        text(1, paste("no", forcing, "data to plot"))
-      }
-    } else {
-      plot(1, type="n", axes=F, xlab="", ylab="")
-      text(1, "no annual ET estimation to plot")
-    }
-  
-    
-  } else {
-    stop("Please select forcing from 'Tmax','Tmin','u2','uz','Rs','n','Precip','Epan','RHmax','RHmin','Tdew'") # forcing is not defined
-  }
-  
-}
-
-  #-------------------------------------------------------------------------------------
-
-Evapotranspiration <- function(data, ...) UseMethod("Evapotranspiration")
+ET <- function(data, ...) UseMethod("ET")
 
   #-------------------------------------------------------------------------------------
   
-Evapotranspiration.Penman <- function(data, constants, solar, wind, windfunction_ver, alpha = 0.08, z0 = 0.001, ...) {
+ET.Penman <- function(data, constants, solar, wind, windfunction_ver, alpha = 0.08, z0 = 0.001, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (daily average temperature)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   if (wind == "yes") { # wind data is required
     if (is.null(data$RHmax)|is.null(data$RHmin)) {
-      stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
+      stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
     }
     if (is.null(data$uz) & is.null(data$u2)) {
-      stop("fail to obtain data of wind speed")
+      stop("Required data missing for 'uz.subdaily' or 'u2.subdaily'")
     }
   }
 
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
-    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+    stop("Required data missing for 'Rs.daily'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
-    stop("fail to obtain data of 'n' (daily sunshine hours)")
+    stop("Required data missing for 'n.daily'")
   } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-    stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
+    stop("Required data missing for 'Cd.daily'")
   } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+    stop("Required data missing for 'Precip.daily'")
   } 
   
   if (wind != "yes" & wind != "no") {
@@ -774,7 +132,7 @@ Evapotranspiration.Penman <- function(data, constants, solar, wind, windfunction
      Surface <- paste("water, albedo =", alpha, "; roughness height =", z0, "m")
    } else {
      if (alpha != 0.08) {
-       PET_type <- "Potential Evaporation"
+       PET_type <- "Potential ET"
        Surface <- paste("user-defined, albedo =", alpha, "; roughness height =", z0, "m")
      } else if (alpha == 0.08) {
        PET_type <- "Open-water Evaporation"
@@ -783,23 +141,23 @@ Evapotranspiration.Penman <- function(data, constants, solar, wind, windfunction
    }
    
    if (solar == "data") {
-     message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"    
+     message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"    
    } else if (solar == "sunshine hours") {
-     message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+     message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
    } else if (solar == "cloud") {
-     message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+     message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
    } else {
-     message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
    }
    
    if (wind == "yes") {
      if (windfunction_ver == "1948") {
-       message2 <- "Wind data has been used for calculating the Penman evaporation. Penman 1948 wind function has been used."
+       message2 <- "Wind data have been used for calculating the Penman evaporation. Penman 1948 wind function has been used."
      } else if (windfunction_ver == "1956") {
-       message2 <- "Wind data has been used for calculating the Penman evaporation. Penman 1956 wind function has been used."
+       message2 <- "Wind data have been used for calculating the Penman evaporation. Penman 1956 wind function has been used."
      } 
    } else {
-     message2 <- "Alternative calculation for Penman evaporation without wind data has been performed"
+     message2 <- "Alternative calculation for Penman evaporation without wind data have been performed"
    }
   
    message(PET_formulation, " ", PET_type)
@@ -814,30 +172,30 @@ Evapotranspiration.Penman <- function(data, constants, solar, wind, windfunction
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.PenmanMonteith <- function(data, constants, solar, wind, crop, ...) {
+ET.PenmanMonteith <- function(data, constants, solar, wind, crop, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   if (is.null(data$RHmax)|is.null(data$RHmin)) {
-  stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
+  stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
   }
   if (wind == "yes") { # wind data is required
     if (is.null(data$u2) & is.null(data$uz)) {
-      stop("fail to obtain data of wind speed")
+      stop("Required data missing for 'uz.subdaily' or 'u2.subdaily'")
     }
   }
   
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
-    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+    stop("Required data missing for 'Rs.daily'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
-    stop("fail to obtain data of 'n' (daily sunshine hours)")
+    stop("Required data missing for 'n.daily'")
   } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-    stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
+    stop("Required data missing for 'Cd.daily'")
   } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+    stop("Required data missing for 'Precip.daily'")
   } 
   
   if (wind != "yes" & wind != "no") {
@@ -941,34 +299,34 @@ Evapotranspiration.PenmanMonteith <- function(data, constants, solar, wind, crop
   # Generate summary message for results
   if (wind == "no") {
     PET_formulation <- "Penman-Monteith (without wind data)"
-    PET_type <- "Reference Crop Evapotranspiration"
+    PET_type <- "Reference Crop ET"
     Surface <- paste("short grass, albedo =", alpha, "; roughness height =", z0, "m")
   } else {
     if (crop == "short") {
       PET_formulation <- "Penman-Monteith FAO56"
-      PET_type <- "Reference Crop Evapotranspiration"
+      PET_type <- "Reference Crop ET"
       Surface <- paste("FAO-56 hypothetical short grass, albedo =", alpha, "; surface resisitance =", r_s, "sm^-1; crop height =", CH, " m; roughness height =", z0, "m")
     } else {
       PET_formulation <- "Penman-Monteith ASCE-EWRI Standardised"
-      PET_type <- "Reference Crop Evapotranspiration"
+      PET_type <- "Reference Crop ET"
       Surface <- paste("ASCE-EWRI hypothetical tall grass, albedo =", alpha, "; surface resisitance =", r_s, "sm^-1; crop height =", CH, " m; roughness height =", z0, "m")
     }
   }
   
   if (solar == "data") {
-    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+    message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
-    message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
   } else if (solar == "cloud") {
-    message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
-    message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
   if (wind == "yes") {
-    message2 <- "Wind data has been used for calculating the reference crop evapotranspiration"
+    message2 <- "Wind data have been used for calculating the reference crop evapotranspiration"
   } else {
-    message2 <- "Alternative calculation for reference crop evapotranspiration without wind data has been performed"
+    message2 <- "Alternative calculation for reference crop evapotranspiration without wind data have been performed"
   }
   
   message(PET_formulation, " ", PET_type)
@@ -983,28 +341,28 @@ Evapotranspiration.PenmanMonteith <- function(data, constants, solar, wind, crop
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.MattShuttleworth <- function(data, constants, solar, alpha, r_s, CH, ...) { 
+ET.MattShuttleworth <- function(data, constants, solar, alpha, r_s, CH, ...) { 
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature), 'vas' (daily saturated vapour pressure) and 'vabar' (mean daily vapour pressure)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   if (is.null(data$RHmax)|is.null(data$RHmin)) {
-    stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
+    stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
   }
   if (is.null(data$u2) & is.null(data$uz)) {
-    stop("fail to obtain data of wind speed")
+    stop("Required data missing for 'uz.subdaily' or 'u2.subdaily'")
   }
   
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
-    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+    stop("Required data missing for 'Rs.daily'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
-    stop("fail to obtain data of 'n' (daily sunshine hours)")
+    stop("Required data missing for 'n.daily'")
   } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-    stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
+    stop("Required data missing for 'Cd.daily'")
   } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+    stop("Required data missing for 'Precip.daily'")
   }
   
   # check user-input albedo, surface resistance and crop height
@@ -1092,17 +450,17 @@ Evapotranspiration.MattShuttleworth <- function(data, constants, solar, alpha, r
   
   # Generate summary message for results
   PET_formulation <- "Matt-Shuttleworth"
-  PET_type <- "Reference Crop Evapotranspiration"
+  PET_type <- "Reference Crop ET"
   Surface <- paste("user-defined, albedo =", alpha, "; surface resisitance =", r_s, "sm^-1; crop height =", CH, "m")
   
   if (solar == "data") {
-    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+    message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
-    message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
   } else if (solar == "cloud") {
-    message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
-    message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
   message(PET_formulation, " ", PET_type)
@@ -1117,25 +475,25 @@ Evapotranspiration.MattShuttleworth <- function(data, constants, solar, alpha, r
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.PriestleyTaylor <- function(data, constants, solar, alpha, ...) {  
+ET.PriestleyTaylor <- function(data, constants, solar, alpha, ...) {  
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature) and 'vabar' (mean daily actual vapour pressure)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   if (is.null(data$RHmax)|is.null(data$RHmin)) {
-    stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
+    stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
   }
   
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
-    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+    stop("Required data missing for 'Rs.daily'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
-    stop("fail to obtain data of 'n' (daily sunshine hours)")
+    stop("Required data missing for 'n.daily'")
   } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-    stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
+    stop("Required data missing for 'Cd.daily'")
   } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+    stop("Required data missing for 'Precip.daily'")
   }
   
   # check user-input albedo
@@ -1203,7 +561,7 @@ Evapotranspiration.PriestleyTaylor <- function(data, constants, solar, alpha, ..
   
   # Generate summary message for results
   PET_formulation <- "Priestley-Taylor"
-  PET_type <- "Potential Evaporation"
+  PET_type <- "Potential ET"
   if (alpha != 0.08) {
     Surface <- paste("user-defined, albedo =", alpha)
   } else if (alpha == 0.08) {
@@ -1211,13 +569,13 @@ Evapotranspiration.PriestleyTaylor <- function(data, constants, solar, alpha, ..
   }
   
   if (solar == "data") {
-    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+    message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
-    message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
   } else if (solar == "cloud") {
-    message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
-    message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
   message(PET_formulation, " ", PET_type)
@@ -1232,28 +590,28 @@ Evapotranspiration.PriestleyTaylor <- function(data, constants, solar, alpha, ..
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.Penpan <- function(data, constants, solar, alpha, overest, ...) {
+ET.Penpan <- function(data, constants, solar, alpha, overest, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature), 'vas' (daily saturated vapour pressure) and 'vabar' (mean daily actual vapour pressure)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   if (is.null(data$RHmax)|is.null(data$RHmin)) {
-    stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
+    stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
   }
   if (is.null(data$u2) & is.null(data$uz)) {
-    stop("fail to obtain data of wind speed")
+    stop("Required data missing for 'uz.subdaily' or 'u2.subdaily'")
   }
   
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
-    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+    stop("Required data missing for 'Rs.daily'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
-    stop("fail to obtain data of 'n' (daily sunshine hours)")
+    stop("Required data missing for 'n.daily'")
   } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-    stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
+    stop("Required data missing for 'Cd.daily'")
   } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+    stop("Required data missing for 'Precip.daily'")
   }
   
   # check user-input albedo
@@ -1340,13 +698,13 @@ Evapotranspiration.Penpan <- function(data, constants, solar, alpha, overest, ..
   Surface <- paste("user-defined, albedo =", alpha)
   
   if (solar == "data") {
-    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+    message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
-    message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
   } else if (solar == "cloud") {
-    message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
-    message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
   message(PET_formulation, " ", PET_type)
@@ -1361,28 +719,28 @@ Evapotranspiration.Penpan <- function(data, constants, solar, alpha, overest, ..
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.BrutsaertStrickler <- function(data, constants, solar, alpha, ...) {
+ET.BrutsaertStrickler <- function(data, constants, solar, alpha, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature), 'vabar' (mean daily actual vapour pressure) and 'vas' (daily saturated vapour pressure)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   if (is.null(data$RHmax)|is.null(data$RHmin)) {
-    stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
+    stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
   }
   if (is.null(data$u2) & is.null(data$uz)) {
-    stop("fail to obtain data of wind speed")
+    stop("Required data missing for 'uz.subdaily' or 'u2.subdaily'")
   }
   
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
-    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+    stop("Required data missing for 'Rs.daily'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
-    stop("fail to obtain data of 'n' (daily sunshine hours)")
+    stop("Required data missing for 'n.daily'")
   } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-    stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
+    stop("Required data missing for 'Cd.daily'")
   } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+    stop("Required data missing for 'Precip.daily'")
   }
   
   # check user-input albedo
@@ -1462,17 +820,17 @@ Evapotranspiration.BrutsaertStrickler <- function(data, constants, solar, alpha,
   
   # Generate summary message for results
   PET_formulation <- "Brutsaert-Strickler"
-  PET_type <- "Actual Areal Evapotranspiration"
+  PET_type <- "Actual Areal ET"
   Surface <- paste("user-defined, albedo =", alpha)
   
   if (solar == "data") {
-    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+    message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
-    message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
   } else if (solar == "cloud") {
-    message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
-    message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
   message(PET_formulation, " ", PET_type)
@@ -1487,28 +845,28 @@ Evapotranspiration.BrutsaertStrickler <- function(data, constants, solar, alpha,
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.GrangerGray <- function(data, constants, solar, windfunction_ver, alpha, ...) {
+ET.GrangerGray <- function(data, constants, solar, windfunction_ver, alpha, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature), 'vabar' (mean daily actual vapour pressure) and 'vas' (daily saturated vapour pressure)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   if (is.null(data$RHmax)|is.null(data$RHmin)) {
-    stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
+    stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
   }
   if (is.null(data$u2) & is.null(data$uz)) {
-    stop("fail to obtain data of wind speed")
+    stop("Required data missing for 'uz.subdaily' or 'u2.subdaily'")
   }
   
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
-    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+    stop("Required data missing for 'Rs.daily'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
-    stop("fail to obtain data of 'n' (daily sunshine hours)")
+    stop("Required data missing for 'n.daily'")
   } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-    stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
+    stop("Required data missing for 'Cd.daily'")
   } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+    stop("Required data missing for 'Precip.daily'")
   }
   
   # check user-input albedo
@@ -1594,23 +952,23 @@ Evapotranspiration.GrangerGray <- function(data, constants, solar, windfunction_
   
   # Generate summary message for results
   PET_formulation <- "Granger-Gray"
-  PET_type <- "Actual Areal Evapotranspiration"
+  PET_type <- "Actual Areal ET"
   Surface <- paste("user-defined, albedo =", alpha)
   
   if (solar == "data") {
-    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+    message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
-    message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
   } else if (solar == "cloud") {
-    message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
-    message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
   if (windfunction_ver == "1948") {
-    message2 <- "Wind data has been used for the calculation of the drying power of air, using Penman 1948 wind function."
+    message2 <- "Wind data have been used for the calculation of the drying power of air, using Penman 1948 wind function."
   } else if (windfunction_ver == "1956") {
-    message2 <- "Wind data has been used for the calculation of the drying power of air, using Penman 1956 wind function."
+    message2 <- "Wind data have been used for the calculation of the drying power of air, using Penman 1956 wind function."
   }
   
   message(PET_formulation, " ", PET_type)
@@ -1625,30 +983,30 @@ Evapotranspiration.GrangerGray <- function(data, constants, solar, windfunction_
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.SzilagyiJozsa <- function(data, constants, solar, wind, windfunction_ver, alpha, z0, ...) {
+ET.SzilagyiJozsa <- function(data, constants, solar, wind, windfunction_ver, alpha, z0, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature) and 'vabar' (mean daily actual vapour pressure)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   if (is.null(data$RHmax)|is.null(data$RHmin)) {
-    stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
+    stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
   }
   if (wind == "yes") { # wind data is required
     if (is.null(data$u2) & is.null(data$uz)) {
-      stop("fail to obtain data of wind speed")
+      stop("Required data missing for 'uz.subdaily' or 'u2.subdaily'")
     }
   }
   
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
-    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+    stop("Required data missing for 'Rs.daily'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
-    stop("fail to obtain data of 'n' (daily sunshine hours)")
+    stop("Required data missing for 'n.daily'")
   } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-    stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
+    stop("Required data missing for 'Cd.daily'")
   } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+    stop("Required data missing for 'Precip.daily'")
   }
   
   if (wind != "yes" & wind != "no") {
@@ -1765,27 +1123,27 @@ Evapotranspiration.SzilagyiJozsa <- function(data, constants, solar, wind, windf
   
   # Generate summary message for results
   PET_formulation <- "Szilagyi-Jozsa"
-  PET_type <- "Actual Evapotranspiration"
+  PET_type <- "Actual ET"
   Surface <- paste("user-defined, albedo =", alpha, "; roughness height", z0, "m")
   
   if (solar == "data") {
-    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+    message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
-    message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
   } else if (solar == "cloud") {
-    message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
-    message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
   if (wind == "yes") {
     if (windfunction_ver == "1948") {
-      message2 <- "Wind data has been used for calculating the Penman evaporation. Penman 1948 wind function has been used."
+      message2 <- "Wind data have been used for calculating the Penman evaporation. Penman 1948 wind function has been used."
     } else if (windfunction_ver == "1956") {
-      message2 <- "Wind data has been used for calculating the Penman evaporation. Penman 1956 wind function has been used."
+      message2 <- "Wind data have been used for calculating the Penman evaporation. Penman 1956 wind function has been used."
     } 
   } else {
-    message2 <- "Alternative calculation for Penman evaporation without wind data has been performed"
+    message2 <- "Alternative calculation for Penman evaporation without wind data have been performed"
   }
   
   message(PET_formulation, " ", PET_type)
@@ -1801,21 +1159,21 @@ Evapotranspiration.SzilagyiJozsa <- function(data, constants, solar, wind, windf
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.Makkink <- function(data, constants, solar, ...) {
+ET.Makkink <- function(data, constants, solar, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
-    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+    stop("Required data missing for 'Rs.daily'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
-    stop("fail to obtain data of 'n' (daily sunshine hours)")
+    stop("Required data missing for 'n.daily'")
   } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-    stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
+    stop("Required data missing for 'Cd.daily'")
   } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+    stop("Required data missing for 'Precip.daily'")
   }
   
   # Calculating mean temperature 
@@ -1861,16 +1219,16 @@ Evapotranspiration.Makkink <- function(data, constants, solar, ...) {
   
   # Generate summary message for results
   PET_formulation <- "Makkink"
-  PET_type <- "Potential Evaporation"
+  PET_type <- "Potential ET"
 
   if (solar == "data") {
-    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+    message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
-    message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
   } else if (solar == "cloud") {
-    message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
-    message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
   message(PET_formulation, " ", PET_type)
@@ -1885,24 +1243,24 @@ Evapotranspiration.Makkink <- function(data, constants, solar, ...) {
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.BalneyCriddle <- function(data, constants, solar, height, ...) {
+ET.BlaneyCriddle <- function(data, constants, solar, height, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   if (solar == "sunshine hours" & is.null(data$n)) { # sunshine hour data is required
-    stop("fail to obtain data of 'n' (daily sunshine hours)")
+    stop("Required data missing for 'n.daily'")
   } else if (solar == "cloud") {
     if (is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-      stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
+      stop("Required data missing for 'Cd.daily'")
     }
     if (is.null(data$u2) & is.null(data$uz)) {
-      stop("fail to obtain data of wind speed")
+      stop("Required data missing for 'uz.subdaily' or 'u2.subdaily'")
     }
     if (is.null(data$RHmin)) { 
-      stop("fail to obtain 'RHmin' (minimum daily relative humidity)")
+      stop("Required data missing for 'RHmin.daily'")
     } 
   } 
   if (solar == "data" | solar == "monthly precipitation") {
@@ -1911,7 +1269,7 @@ Evapotranspiration.BalneyCriddle <- function(data, constants, solar, height, ...
   # Calculating mean temperature 
   Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
 
-  # Calculations from data and constants for Balney and Criddle
+  # Calculations from data and constants for Blaney and Criddle
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
@@ -1945,7 +1303,7 @@ Evapotranspiration.BalneyCriddle <- function(data, constants, solar, height, ...
   p_y <- 100 * data$n/N.annual # percentage of actual daytime hours for the day comparing to the annual sum of maximum sunshine hours
 
   
-  ET_BC.Daily <- (0.0043 * data$RHmin - data$n/N - 1.41) + bvar * p_y * (0.46 * Ta +8.13) # Balney-Criddle Reference Crop evapotranspiration (mm.day^-1) (S9.7)
+  ET_BC.Daily <- (0.0043 * data$RHmin - data$n/N - 1.41) + bvar * p_y * (0.46 * Ta +8.13) # Blaney-Criddle Reference Crop evapotranspiration (mm.day^-1) (S9.7)
   
   PET.Daily <- ET_BC.Daily
   PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
@@ -1966,21 +1324,21 @@ Evapotranspiration.BalneyCriddle <- function(data, constants, solar, height, ...
   }
   
   # Generate summary message for results
-  PET_formulation <- "Balney-Criddle"
-  PET_type <- "Reference Crop Evapotranspiration"
+  PET_formulation <- "Blaney-Criddle"
+  PET_type <- "Reference Crop ET"
 
   if (solar == "sunshine hours") {
-    message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
   } else if (solar == "cloud") {
-    message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
-    message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
   if (height == TRUE) {
-    message3 <- "Height adjustment has been applied to calculated Balney-Criddle reference crop evapotranspiration"
+    message3 <- "Height adjustment has been applied to calculated Blaney-Criddle reference crop evapotranspiration"
   } else {
-    message3 <- "No height adjustment has been applied to calculated Balney-Criddle reference crop evapotranspiration"
+    message3 <- "No height adjustment has been applied to calculated Blaney-Criddle reference crop evapotranspiration"
   }
   
   message(PET_formulation, " ", PET_type)
@@ -1996,25 +1354,25 @@ Evapotranspiration.BalneyCriddle <- function(data, constants, solar, height, ...
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.Truc <- function(data, constants, solar, humid, ...) {
+ET.Truc <- function(data, constants, solar, humid, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
-    stop("fail to obtain data of 'Rs' (daily solar radiation)")
+    stop("Required data missing for 'Rs.daily'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
-    stop("fail to obtain data of 'n' (daily sunshine hours)")
+    stop("Required data missing for 'n.daily'")
   } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-    stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
+    stop("Required data missing for 'Cd.daily'")
   } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-    stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+    stop("Required data missing for 'Precip.daily'")
   }
 
   if (humid == TRUE & (is.null(data$RHmax)|is.null(data$RHmin))) { # for adjustment for non-humid conditions
-    stop("fail to obtain 'RHmean' (average daily relative humidity)")
+    stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
   } 
   
   # Calculating mean temperature 
@@ -2067,16 +1425,16 @@ Evapotranspiration.Truc <- function(data, constants, solar, humid, ...) {
   
   # Generate summary message for results
   PET_formulation <- "Truc"
-  PET_type <- "Reference Crop Evapotranspiration"
+  PET_type <- "Reference Crop ET"
   
   if (solar == "data") {
-    message1 <- "Solar radiation data has been used directly for calculating evapotranspiration"
+    message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
-    message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
   } else if (solar == "cloud") {
-    message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
-    message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
   if (humid == TRUE) {
@@ -2098,12 +1456,12 @@ Evapotranspiration.Truc <- function(data, constants, solar, humid, ...) {
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.HargreavesSamani <- function(data, constants, ...) {
+ET.HargreavesSamani <- function(data, constants, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   
   # Calculating mean temperature 
@@ -2139,7 +1497,7 @@ Evapotranspiration.HargreavesSamani <- function(data, constants, ...) {
   
   # Generate summary message for results
   PET_formulation <- "Hargreaves-Samani"
-  PET_type <- "Reference Crop Evapotranspiration"
+  PET_type <- "Reference Crop ET"
   
   message(PET_formulation, " ", PET_type)
   message("Evaporative surface: reference crop")
@@ -2152,32 +1510,32 @@ Evapotranspiration.HargreavesSamani <- function(data, constants, ...) {
 
   #-------------------------------------------------------------------------------------
   
-Evapotranspiration.ChapmanAustralian <- function(data, constants, Penpan, solar, alpha, ...) {
+ET.ChapmanAustralian <- function(data, constants, Penpan, solar, alpha, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (Penpan == TRUE) { # Calculate Class-A pan evaporation using Penpan formula
     if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-      stop("fail to obtain data of 'Ta' (average daily temperature), 'vabar' (mean daily actual vapour pressure) and 'vas' (daily saturated vapour pressure)")
+      stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
     }
     if (is.null(data$RHmax)|is.null(data$RHmin)) {
-      stop("fail to obtain data of 'vabar' (mean daily actual vapour pressure)")
+      stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
     }
     if (is.null(data$u2) & is.null(data$uz)) {
-      stop("fail to obtain data of wind speed")
+      stop("Required data missing for 'uz.subdaily' or 'u2.subdaily'")
     }
     if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
-      stop("fail to obtain data of 'Rs' (daily solar radiation)")
+      stop("Required data missing for 'Rs.daily'")
     } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
-      stop("fail to obtain data of 'n' (daily sunshine hours)")
+      stop("Required data missing for 'n.daily'")
     } else if (solar == "cloud" & is.null(data$n)) { # for alternative calculation of sunshine hours using cloud cover
-      stop("fail to obtain data of 'cloud.cover.in.oktas' (daily sunshine hours)")
+      stop("Required data missing for 'Cd.daily'")
     } else if (solar == "monthly precipitation" & is.null(data$Cd)) { # for alternative calculation of cloudiness using monthly precipitation
-      stop("fail to obtain data of 'monthly.precipitation.in.mm' (monthly precipitation)")
+      stop("Required data missing for 'Precip.daily'")
     } 
   }
   if (Penpan == FALSE & is.null(data$Epan)) { # for using Class-A pan evaporation data
-    stop("fail to obtain 'Epan' (daily Class-A pan evaporation)")
+    stop("Required data missing for 'Epan.daily'")
   }
   # check user-input albedo
   if (Penpan == TRUE) {
@@ -2267,13 +1625,13 @@ Evapotranspiration.ChapmanAustralian <- function(data, constants, Penpan, solar,
   
   # Generate summary message for results
   if (solar == "data") {
-    message1 <- "Solar radiation data has been used for calculating evapotranspiration"
+    message1 <- "Solar radiation data have been used for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
-    message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
   } else if (solar == "cloud") {
-    message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
   } else {
-    message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
   if (Penpan == TRUE) {
@@ -2284,7 +1642,7 @@ Evapotranspiration.ChapmanAustralian <- function(data, constants, Penpan, solar,
   
   # Generate summary message for results
   PET_formulation <- "Chapman"
-  PET_type <- "Equivalent Penmen-Monteith Reference Crop Evapotranspiration"
+  PET_type <- "Equivalent Penmen-Monteith Reference Crop ET"
   if (Penpan == TRUE) {
     Surface <- paste("user-defined, albedo =", alpha)
   } else {
@@ -2304,19 +1662,17 @@ Evapotranspiration.ChapmanAustralian <- function(data, constants, Penpan, solar,
 
   #-------------------------------------------------------------------------------------
 
-Evapotranspiration.JensenHaise <- function(data, constants, ...) {
+ET.JensenHaise <- function(data, constants, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
   
   # Calculating mean temperature 
   Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
   
-  # Calculations from data and constants for Jensen-Haise
-  # estimating evapotranspiration using Jensen-Haise
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -2326,7 +1682,9 @@ Evapotranspiration.JensenHaise <- function(data, constants, ...) {
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   
-  ET_JH.Daily <- R_a * Ta / (constants$lambda * 40) # Jensen-Haise daily evapotranspiration by Jensen and Haise  (1963) (mm.day^-1) (Oudin et al., 2005)
+  # estimating evapotranspiration using Jensen-Haise
+
+  ET_JH.Daily <- (0.014 * (Ta*33.8) - 0.37) * R_a *0.0394 / constants$lambda # Jensen-Haise daily evapotranspiration by Jensen and Haise  (1963), *0.0394 for MJ.m^-2.day^-1 to in.day^-1, *33.8 for degree C to degree F 
  
   PET.Daily <- ET_JH.Daily
   PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
@@ -2344,7 +1702,7 @@ Evapotranspiration.JensenHaise <- function(data, constants, ...) {
   
   # Generate summary message for results
   PET_formulation <- "Jensen-Haise"
-  PET_type <- "Potential Evapotranspiration"
+  PET_type <- "Potential ET"
   
   message(PET_formulation, " ", PET_type)
 
@@ -2356,19 +1714,17 @@ Evapotranspiration.JensenHaise <- function(data, constants, ...) {
 
 #-------------------------------------------------------------------------------------
 
-Evapotranspiration.McGuinnessBordne <- function(data, constants, ...) {
+ET.McGuinnessBordne <- function(data, constants, ...) {
   class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
-    stop("fail to obtain data of 'Ta' (average daily temperature)")
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
-
+  
   # Calculating mean temperature 
   Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
-  # Calculations from data and constants for McGuinness-Bordne
-  # estimating evapotranspiration using McGuinness-Bordne
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -2377,8 +1733,10 @@ Evapotranspiration.McGuinnessBordne <- function(data, constants, ...) {
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
-  
-  ET_MB.Daily <- R_a * (Ta + 5) / (constants$lambda * 68) # McGuinness-Bordne daily evapotranspiration by McGuinness-Bordne  (1972) (mm.day^-1) (Oudin et al., 2005)
+
+  # estimating evapotranspiration using McGuinness-Bordne
+
+  ET_MB.Daily <- R_a * (Ta + 5)/ (2.54*1000*68) *1000  # McGuinness-Bordne daily evapotranspiration by McGuinness-Bordne  (1972) (mm.day^-1) (Oudin et al., 2005
   
   PET.Daily <- ET_MB.Daily
   PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
@@ -2396,7 +1754,7 @@ Evapotranspiration.McGuinnessBordne <- function(data, constants, ...) {
   
   # Generate summary message for results
   PET_formulation <- "McGuinness-Bordne"
-  PET_type <- "Potential Evapotranspiration"
+  PET_type <- "Potential ET"
   
   message(PET_formulation, " ", PET_type)
   
@@ -2413,19 +1771,19 @@ Radiation <- function(data, constants, solar, Tdew) {
 
     # Check of specific data requirement
     if (is.null(data$Tmax)) {
-      stop("fail to obtain data of 'Tmax' (daily maximum temperature)")
+      stop("Required data missing for 'Tmax.daily' or 'Temp.subdaily'")
     }
     if (is.null(data$Tmin)) {
-      stop("fail to obtain data of 'Tmin' (daily minimum temperature)")
+      stop("Required data missing for 'Tmin.daily' or 'Temp.subdaily'")
     }
     if (Tdew == TRUE & is.null(data$Tdew)) {
-      stop("fail to obtain data of 'Tdew' (daily dew point temperature")
+      stop("Required data missing for 'Tdew.subdaily'")
     }
     if (Tdew == FALSE & (is.null(data$RHmax)|is.null(data$RHmin))) {
-      stop("fail to obtain data of 'vabar' mean daily actual vapour pressure")
+      stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
     }
     if (is.null(data$n)) {
-      stop("fail to obtain data of 'n' (daily sunshine hours)")
+      stop("Required data missing for 'n.daily'")
     }
     if (solar == "data" | solar == "monthly precipitation") {
       stop("Only 'sunshine hours' and 'cloud' are accepted because estimations of sunshine hours is required")
@@ -2433,7 +1791,7 @@ Radiation <- function(data, constants, solar, Tdew) {
   
     if (is.null(data$Precip)) {
       if ("PA" %in% names(constants) == FALSE) { 
-        stop("fail to obtain data of 'PA' (annual average rainfall)")
+        stop("Required data missing for 'Precip.daily' or required constant missing for 'PA'")
       } # if annual average rainfall is not in data check the constants file
     } 
   
@@ -2602,11 +1960,11 @@ Radiation <- function(data, constants, solar, Tdew) {
   
     # Generate summary message for results
     if (solar == "data") {
-      message1 <- "Sunshine hour data has been used for calculating incoming solar radiation"
+      message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
     } else if (solar == "cloud") {
-      message1 <- "Cloudiness data has been used for calculating sunshine hour and thus incoming solar radiation"
+      message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
     } else {
-      message1 <- "Monthly precipitation data has been used for calculating incoming solar radiation"
+      message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
     }
   
     if (Tdew == TRUE) {
@@ -2620,7 +1978,7 @@ Radiation <- function(data, constants, solar, Tdew) {
   }
   
   #-------------------------------------------------------------------------------------
-  Evapotranspiration.MortonCRAE <- function(data, constants, est, solar, Tdew, ...)  {
+  ET.MortonCRAE <- function(data, constants, est, solar, Tdew, ...)  {
     
     variables <- Radiation(data, constants, solar, Tdew)
     
@@ -2678,15 +2036,15 @@ Radiation <- function(data, constants, solar, Tdew) {
     if (est == "potential ET") {
       ET_Mo.Monthly <- E_TP
       ET_Mo.Average <- E_TP.temp
-      PET_type <- "Potential Evapotranspiration"
+      PET_type <- "Potential ET"
     } else if (est == "wet areal ET") {
       ET_Mo.Monthly <- E_TW
       ET_Mo.Average <- E_TW.temp
-      PET_type <- "Wet-environment Areal Evapotranspiration"
+      PET_type <- "Wet-environment Areal ET"
     } else if (est == "actual areal ET") {
       ET_Mo.Monthly <- E_T_Mo
       ET_Mo.Average <- E_T_Mo.temp
-      PET_type <- "Actual Areal Evapotranspiration"
+      PET_type <- "Actual Areal ET"
     }
     
     PET.Daily <- NULL
@@ -2719,7 +2077,7 @@ Radiation <- function(data, constants, solar, Tdew) {
   
   
   #-----------------------------------------------------------------------------------
-  Evapotranspiration.MortonCRWE <- function(data, constants, est, solar, Tdew, ...) {
+  ET.MortonCRWE <- function(data, constants, est, solar, Tdew, ...) {
 
     constants$epsilonMo <- 0.97 # (Morton, 1983)
     constants$fz <- 25.0 # Wm^-2.mbar^-1 for T >= 0 degree Celcius (Morton, 1983)
@@ -2784,7 +2142,7 @@ Radiation <- function(data, constants, solar, Tdew) {
     if (est == "potential") {
       ET_Mo.Monthly <- E_P
       ET_Mo.Average <- E_P.temp
-      PET_type <- "Potential Evaporation"
+      PET_type <- "Potential ET"
     } else if (est == "shallow lake") {
       ET_Mo.Monthly <- E_W
       ET_Mo.Average <- E_W.temp

@@ -1,5 +1,5 @@
-\name{EvapotranspirationForcings}
-\alias{EvapotranspirationForcings}
+\name{ETForcings}
+\alias{ETForcings}
 
 \title{Plot esimtated evapotranspiration with climate variables
 }
@@ -7,7 +7,7 @@
 Produce plot of daily, monthly and annual averaged estimated evapotranspiration with selected climate variables of the same time step.
 }
 \usage{
-EvapotranspirationForcings(data, results, forcing)
+ETForcings(data, results, forcing)
 
 }
 
@@ -16,7 +16,7 @@ EvapotranspirationForcings(data, results, forcing)
   A list of data named "data" which must contain a component with the name of a climate variable that the estimated evapotranspiration should be plotted against, see \code{forcing}.
   }
   \item{results}{
-  A list named "results" which has been derived from function \code{Evapotranspiration..()}.
+  A list named "results" which has been derived from function \code{ET..()}.
   }
   \item{forcing}{
   A character string as the name of a climate variable that the estimated evapotranspiration should be plotted against, can be any of:
@@ -54,11 +54,11 @@ data("constants")
 funname <- "Penman" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, constants, ...) with class "Penman"
-results <- Evapotranspiration(data, constants, solar="sunshine hours", wind=
+# Call generic function ET(data, constants, ...) with class "Penman"
+results <- ET(data, constants, solar="sunshine hours", wind=
 "yes", windfunction_ver = "1948", alpha = 0.08, z0 = 0.001) 
 # Plot the estimated Penman open-water evaporation against average temperature
-EvapotranspirationForcings(data, results, forcing = "Tmax")
+ETForcings(data, results, forcing = "Tmax")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

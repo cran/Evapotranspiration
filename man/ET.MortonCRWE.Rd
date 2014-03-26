@@ -1,5 +1,5 @@
-\name{Evapotranspiration.MortonCRWE}
-\alias{Evapotranspiration.MortonCRWE}
+\name{ET.MortonCRWE}
+\alias{ET.MortonCRWE}
 
 \title{Morton CRWE Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Morton CRWE formulation for estimating potential evapotranspiration or shallow lake evaporation.
 }
 \usage{
-\method{Evapotranspiration}{MortonCRWE}(data, constants, est, solar, Tdew, \dots)
+\method{ET}{MortonCRWE}(data, constants, est, solar, Tdew, \dots)
 }
 
 \arguments{
@@ -101,8 +101,8 @@ data("constants")
 funname <- "MortonCRWE" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, ...) with class "MortonCRWE"
-results <- Evapotranspiration(data, constants, est = "potential", solar = 
+# Call generic function ET(data, ...) with class "MortonCRWE"
+results <- ET(data, constants, est = "potential", solar = 
 "sunshine hours", Tdew = TRUE) 
 }
 

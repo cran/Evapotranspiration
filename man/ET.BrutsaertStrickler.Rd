@@ -1,5 +1,5 @@
-\name{Evapotranspiration.BrutsaertStrickler}
-\alias{Evapotranspiration.BrutsaertStrickler}
+\name{ET.BrutsaertStrickler}
+\alias{ET.BrutsaertStrickler}
 
 \title{Brutsaert-Strickler Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Brutsaert-Strickler formulation for actual areal evapotranspiration
 }
 \usage{
-\method{Evapotranspiration}{BrutsaertStrickler}(data, constants, solar, alpha, \dots)
+\method{ET}{BrutsaertStrickler}(data, constants, solar, alpha, \dots)
 }
 
 \arguments{
@@ -88,8 +88,8 @@ data("constants")
 funname <- "BrutsaertStrickler"
 class(data) <- funname
 
-# Call generic function Evapotranspiration(data, ...) with class "BrutsaertStrickler"
-results <- Evapotranspiration(data, constants, solar="sunshine.hours", alpha = 0.08)
+# Call generic function ET(data, ...) with class "BrutsaertStrickler"
+results <- ET(data, constants, solar="sunshine.hours", alpha = 0.08)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

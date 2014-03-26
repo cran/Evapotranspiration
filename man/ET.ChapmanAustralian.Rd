@@ -1,5 +1,5 @@
-\name{Evapotranspiration.ChapmanAustralian}
-\alias{Evapotranspiration.ChapmanAustralian}
+\name{ET.ChapmanAustralian}
+\alias{ET.ChapmanAustralian}
 
 \title{Chapman Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Chapman formulation for estimating equivalent Penmen-Monteith reference crop evapotranspiration.
 }
 \usage{
-\method{Evapotranspiration}{ChapmanAustralian}(data, constants, Penpan, solar, alpha, \dots) 
+\method{ET}{ChapmanAustralian}(data, constants, Penpan, solar, alpha, \dots) 
 }
 
 \arguments{
@@ -95,8 +95,8 @@ data("constants")
 funname <- "ChapmanAustralian" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, ...) with class "ChapmanAustralian"
-results <- Evapotranspiration(data, constants, Penpan = TRUE, solar = "sunshine hours", 
+# Call generic function ET(data, ...) with class "ChapmanAustralian"
+results <- ET(data, constants, Penpan = TRUE, solar = "sunshine hours", 
 alpha = 0.23)
 }
 

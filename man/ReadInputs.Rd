@@ -1,35 +1,38 @@
-\name{Reading}
-\alias{Reading}
+\name{ReadInputs}
+\alias{ReadInputs}
 
-\title{Reading raw date and climate data
+\title{ReadInputs raw date and climate data
 }
 \description{
 Load raw date and climate data, perform pre-processing, check for missing and error entries and then compile data list of daily time step.
 }
 \usage{
-Reading(climatedata, constants, stopmissing)
+ReadInputs(climatedata, constants, stopmissing)
 
 }
 
 \arguments{
   \item{climatedata}{
-  A list of data named "climatedata" containing the raw data of date and climate variables. 
-  The list must contain columns named as "Year", "Month" and "Day" to indicate the date.
+  A data frame named "climatedata" containing the raw data of date and climate variables. 
+  The data frame contain objects named as "Year", "Month" and "Day" to indicate the date.
   The climate variables will be of the following names while it is not compulsory to have all of them:
-  "Tmax" - daily maximum temperature in degree Celcius,
-  "Tmin" - daily minimum temperature in degree Celcius, 
-  "Air.temperature.in.Degrees.C" - subdaily temperature in Degree Celcius,
-  "Wind.speed.at.2m.measured.in.km.h" - subdaily wind speed at 2m from ground in km/h,
-  "Wind.speed.measured.in.km.h" - subdaily wind speed measured at the height of wind instrument in km/h,
-  "Solar.radiation.in.MJ/sqm/day" - daily incoming solar radiation,
-  "n" - daily sunshine hours,
-  "cloud.cover.in.oktas" - daily cloud cover in oktas,
-  "precipitation.in.mm" - daily precipitation in mm,
-  "Class.A.pan.evaporation.in.mm" - daily Class-A pan evaporation in mm,
-  "RHmax" - daily maximum relative humidity in percentage,
-  "RHmin" - daily minimum relative humidity in percentage,
-  "Relative.humidity.in.percentage.." - subdaily relative humidity in percentage,
-  "Dew.point.temperature.in.Degrees.C" - subdaily dew point temperature in degree Celcius,
+  
+  "Tmax.daily" - daily maximum temperature in degree Celcius,
+  "Tmin.daily" - daily minimum temperature in degree Celcius, 
+  "Temp.subdaily" - subdaily temperature in degree Celcius,
+  "Tdew.subdaily" - subdaily dew point temperature in degree Celcius,
+  "RHmax.daily" - daily maximum relative humidity in percentage,
+  "RHmin.daily" - daily minimum relative humidity in percentage,
+  "RH.subdaily" - subdaily relative humidity in degree Celcius,
+  "Rs.daily" - daily incoming solar radiation in Millijoules per square metres per day,
+  "n.daily" - daily sunshine hour in hours,
+  "Cd.daily" - daily cloud cover in oktas,
+  "Precip.daily" - daily precipitation in millimitres,
+  "u2.subdaily" - subdaily wind speed measured at 2 metres from the ground surface in kilometres per hour,
+  "uz.subdaily" - subdaily wind speed in kilometres per hour,
+  "Epan.daily" - daily Class-A pan evaporation in millimitres,
+  "Vp.subdaily" - subdaily vapour pressure in hectopascal.
+  
   In order to determine which variables to include in "climatedata", please see \code{Evapotranspiration} for the specific data requirements for different formulations.
   }
   \item{constants}{
@@ -38,7 +41,7 @@ Reading(climatedata, constants, stopmissing)
   These four constants which are constants required to calculate daily sunshine hours from daily cloud cover (Chiew and McMahon, 1991, described as a0, b0, c0, d0 in Equation S3.10 in McMahon et al., 2012), if such calculation will be performed these constants must be included in "constants".
   }
   \item{stopmissing}{
-  A numeric value which represents the maximum percentage of missing data that the user can tolerate. It should be a number between 1 and 99. The percentage of missing data in each input variable is compared to this threshold, below which the missing data will be interpolated and otherwise the program will be terminated due to unsatisfactory data quality.
+  A numeric vector of length 2. The first value represents the maximum percentage of missing data that the user can tolerate; the second value represents the maximum percentage of the duration of missing data to the total data duaration that the user can toleratre. Both values should be numbers between 1 and 99. The percentages of the number and duration of missing data in each input variable are compared to the corresponding threshold, below which the missing data will be interpolated and otherwise the program will be terminated due to unsatisfactory data quality.
   }
   }
 
@@ -109,14 +112,14 @@ Danlu Guo
 \code{evapotranspiration}
 }
 \examples{
-# Reading climate data
+# ReadInputs climate data
 data("climatedata")
 data("constants")
-data <- Reading(climatedata, constants, stopmissing = 40)
+data <- ReadInputs(climatedata, constants, stopmissing = c(10,3))
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{Reading}
+\keyword{ReadInputs}
 \keyword{evapotranspiration}
 \keyword{data pre-processing}
 % __ONLY ONE__ keyword per line

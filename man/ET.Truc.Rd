@@ -1,5 +1,5 @@
-\name{Evapotranspiration.Truc}
-\alias{Evapotranspiration.Truc}
+\name{ET.Truc}
+\alias{ET.Truc}
 
 \title{Truc Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Truc formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{Evapotranspiration}{Truc}(data, constants, solar, humid, \dots) 
+\method{ET}{Truc}(data, constants, solar, humid, \dots) 
 }
 
 \arguments{
@@ -93,8 +93,8 @@ data("constants")
 funname <- "Truc" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, ...) with class "Truc"
-results <- Evapotranspiration(data, constants, solar="sunshine hours", humid = TRUE)
+# Call generic function ET(data, ...) with class "Truc"
+results <- ET(data, constants, solar="sunshine hours", humid = TRUE)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

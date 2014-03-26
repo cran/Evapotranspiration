@@ -1,5 +1,5 @@
-\name{Evapotranspiration.JensenHaise}
-\alias{Evapotranspiration.JensenHaise}
+\name{ET.JensenHaise}
+\alias{ET.JensenHaise}
 
 \title{Jensen-Haise Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Jensen-Haise formulation for estimating potential evapotranspiration.
 }
 \usage{
-\method{Evapotranspiration}{JensenHaise}(data, constants, \dots) 
+\method{ET}{JensenHaise}(data, constants, \dots) 
 }
 
 \arguments{
@@ -57,9 +57,8 @@ This function returns a object of class \code{JensenHaise}. Such objects are lis
   }
 }
 \references{
-MCMAHON, T., PEEL, M., LOWE, L., SRIKANTHAN, R. & MCVICAR, T. 2012. Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
-
 JENSEN, M. E. & HAISE, H. R. 1963. Estimating evapotranspiration from solar radiation. Proceedings of the American Society of Civil Engineers, Journal of the Irrigation and Drainage Division, 89, 15-41.
+
 }
 \author{
 Danlu Guo
@@ -74,8 +73,8 @@ data("constants")
 funname <- "JensenHaise" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, ...) with class "JensenHaise"
-results <- Evapotranspiration(data, constants)
+# Call generic function ET(data, ...) with class "JensenHaise"
+results <- ET(data, constants)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

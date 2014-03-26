@@ -1,5 +1,5 @@
-\name{Evapotranspiration.PenmanMonteith}
-\alias{Evapotranspiration.PenmanMonteith}
+\name{ET.PenmanMonteith}
+\alias{ET.PenmanMonteith}
 
 \title{Penman-Monteith Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Penman-Monteith formulation (including the method for FAO-56 hypothetical short grass and the method for ASCE-EWRI Standardised crop) for estimating reference crop evapotranspiration
 }
 \usage{
-\method{Evapotranspiration}{PenmanMonteith}(data, constants, solar, wind, crop, \dots)
+\method{ET}{PenmanMonteith}(data, constants, solar, wind, crop, \dots)
 }
 
 \arguments{
@@ -97,8 +97,8 @@ data("constants")
 funname <- "PenmanMonteith" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, ...) with class "PenmanMonteith"
-results <- Evapotranspiration(data, constants, solar="sunshine hours", wind="yes", crop="short") 
+# Call generic function ET(data, ...) with class "PenmanMonteith"
+results <- ET(data, constants, solar="sunshine hours", wind="yes", crop="short") 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

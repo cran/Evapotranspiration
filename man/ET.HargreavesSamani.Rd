@@ -1,5 +1,5 @@
-\name{Evapotranspiration.HargreavesSamani}
-\alias{Evapotranspiration.HargreavesSamani}
+\name{ET.HargreavesSamani}
+\alias{ET.HargreavesSamani}
 
 \title{Hargreaves-Samani Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Hargreaves-Samani formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{Evapotranspiration}{HargreavesSamani}(data, constants, \dots)
+\method{ET}{HargreavesSamani}(data, constants, \dots)
 }
 
 \arguments{
@@ -76,8 +76,8 @@ data("constants")
 funname <- "HargreavesSamani" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, ...) with class "HargreavesSamani"
-results <- Evapotranspiration(data, constants)
+# Call generic function ET(data, ...) with class "HargreavesSamani"
+results <- ET(data, constants)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

@@ -1,5 +1,5 @@
-\name{Evapotranspiration.Penpan}
-\alias{Evapotranspiration.Penpan}
+\name{ET.Penpan}
+\alias{ET.Penpan}
 
 \title{Penpan Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Penpan formulation for Class-A pan evaporation.
 }
 \usage{
-\method{Evapotranspiration}{Penpan}(data, constants, solar, alpha, overest, \dots)
+\method{ET}{Penpan}(data, constants, solar, alpha, overest, \dots)
 }
 
 \arguments{
@@ -96,8 +96,8 @@ data("constants")
 funname <- "Penpan"
 class(data) <- funname
 
-# Call generic function Evapotranspiration(data, ...) with class "Penpan"
-results <- Evapotranspiration(data, constants, solar="sunshine hours", alpha = 0.23, overest = TRUE)
+# Call generic function ET(data, ...) with class "Penpan"
+results <- ET(data, constants, solar="sunshine hours", alpha = 0.23, overest = TRUE)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

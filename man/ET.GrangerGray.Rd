@@ -1,5 +1,5 @@
-\name{Evapotranspiration.GrangerGray}
-\alias{Evapotranspiration.GrangerGray}
+\name{ET.GrangerGray}
+\alias{ET.GrangerGray}
 
 \title{Granger-Gray Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Granger-Gray formulation for estimating actual areal evapotranspiration.
 }
 \usage{
-\method{Evapotranspiration}{GrangerGray}(data, constants, solar, windfunction_ver, alpha, \dots)
+\method{ET}{GrangerGray}(data, constants, solar, windfunction_ver, alpha, \dots)
 }
 
 \arguments{
@@ -97,8 +97,8 @@ data("constants")
 funname <- "GrangerGray" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, ...) with class "GrangerGray"
-results <- Evapotranspiration(data, constants, solar="sunshine hours", windfunction_ver = 
+# Call generic function ET(data, ...) with class "GrangerGray"
+results <- ET(data, constants, solar="sunshine hours", windfunction_ver = 
 "1948", alpha = 0.23)
 }
 

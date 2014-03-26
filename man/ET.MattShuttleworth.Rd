@@ -1,5 +1,5 @@
-\name{Evapotranspiration.MattShuttleworth}
-\alias{Evapotranspiration.MattShuttleworth}
+\name{ET.MattShuttleworth}
+\alias{ET.MattShuttleworth}
 
 \title{Matt-Shuttleworth Formulation
 }
@@ -7,13 +7,13 @@
 Implementing the Matt-Shuttleworth formulation for reference crop evapotranspiration
 }
 \usage{
-\method{Evapotranspiration}{MattShuttleworth}(data, constants, solar, alpha, r_s, CH, \dots)
+\method{ET}{MattShuttleworth}(data, constants, solar, alpha, r_s, CH, \dots)
 }
 
 \arguments{
   \item{data}{
   A list of data in class "MattShuttleworth" which contains the following items (climate variables) required by Matt-Shuttleworth formulation:
-  "Ta", "vas", vabar", Tmax", "Tmin", "n" or "Cd" or "Precip", "u2" or "uz"
+  "Tmax", "Tmin", "RHmax", "RHmin" "n" or "Cd" or "Precip", "u2" or "uz"
   }
   \item{constants}{
   A list named "constants" consists of constants required for the calculation of Matt-Schuttleworth formulation which must contain the following items:
@@ -97,8 +97,8 @@ data("constants")
 funname <- "MattShuttleworth"
 class(data) <- funname
 
-# Call generic function Evapotranspiration(data, ...) with class "MattShuttleworth"
-results <- Evapotranspiration(data, constants, solar="sunshine hours", alpha = 0.23, r_s = 70, CH = 
+# Call generic function ET(data, ...) with class "MattShuttleworth"
+results <- ET(data, constants, solar="sunshine hours", alpha = 0.23, r_s = 70, CH = 
 0.12)
 }
 

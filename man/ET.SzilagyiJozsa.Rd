@@ -1,5 +1,5 @@
-\name{Evapotranspiration.SzilagyiJozsa}
-\alias{Evapotranspiration.SzilagyiJozsa}
+\name{ET.SzilagyiJozsa}
+\alias{ET.SzilagyiJozsa}
 
 \title{Szilagyi-Jozsa Formulation
 }
@@ -7,7 +7,7 @@
 Implementing the Szilagyi-Jozsa formulation for estimating actual evapotranspiration
 }
 \usage{
-\method{Evapotranspiration}{SzilagyiJozsa}(data, constants, solar, wind, 
+\method{ET}{SzilagyiJozsa}(data, constants, solar, wind, 
 windfunction_ver, alpha, z0, \dots)
 }
 
@@ -107,8 +107,8 @@ data("constants")
 funname <- "SzilagyiJozsa"
 class(data) <- funname
 
-# Call generic function Evapotranspiration(data, ...) with class "SzilagyiJozsa"
-results <- Evapotranspiration(data, constants, solar="sunshine hours", wind =
+# Call generic function ET(data, ...) with class "SzilagyiJozsa"
+results <- ET(data, constants, solar="sunshine hours", wind =
 "yes", windfunction_ver = "1948", alpha = 0.23, z0 = 0.02)
 
 }

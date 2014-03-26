@@ -1,13 +1,13 @@
-\name{Evapotranspiration}
-\alias{Evapotranspiration}
+\name{ET}
+\alias{ET}
 
-\title{Evapotranspiration Formulations
+\title{ET Formulations
 }
 \description{
 A generic function for estimating evapotranspiration from different formulations according to class of data.
 }
 \usage{
-Evapotranspiration(data, \dots)
+ET(data, \dots)
 
 }
 \arguments{
@@ -36,8 +36,8 @@ data("constants")
 funname <- "Penman" 
 class(data) <- funname 
 
-# Call generic function Evapotranspiration(data, ...) with class "Penman"
-results <- Evapotranspiration(data, constants, solar="sunshine hours", wind=
+# Call generic function ET(data, ...) with class "Penman"
+results <- ET(data, constants, solar="sunshine hours", wind=
 "yes", windfunction_ver = "1948", alpha = 0.08, z0 = 0.001) 
 }
 
