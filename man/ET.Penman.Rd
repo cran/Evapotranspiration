@@ -55,25 +55,25 @@ alpha = 0.08, z0 = 0.001, \dots)
 \value{
 This function returns a object of class \code{Penman}. Such objects are list with components:
 
-  \item{PET.Daily}{
+  \item{ET.Daily}{
   A \code{zoo} object containing daily aggregated estimations of Penman open-water evaporation or potential evapotranspiration.
   }
-  \item{PET.Monthly}{
+  \item{ET.Monthly}{
   A \code{zoo} object containing monthly aggregated estimations of Penman open-water evaporation or potential evapotranspiration.
   }
-  \item{PET.Annual}{
+  \item{ET.Annual}{
   A \code{zoo} object containing annually aggregated estimations of Penman open-water evaporation or potential evapotranspiration.
   }
-  \item{PET.MonthlyAve}{
+  \item{ET.MonthlyAve}{
   A \code{zoo} object containing monthly averaged estimations of daily Penman open-water evaporation or potential evapotranspiration.
   }
-  \item{PET.AnnualAve}{
+  \item{ET.AnnualAve}{
   A \code{zoo} object containing annually averaged estimations of daily Penman open-water evaporation or potential evapotranspiration.
   }
-  \item{PET_formulation}{
+  \item{ET_formulation}{
   A character string containing the name of the formulation used which equals to "Penman".
   }
-  \item{PET_type}{
+  \item{ET_type}{
   A character string containing the type of the estimation obtained which is either "Open-water Evaporation" or "Potential Evapotranspiration".
   }
   \item{message1}{

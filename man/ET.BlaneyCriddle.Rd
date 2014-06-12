@@ -12,7 +12,8 @@ Implementing the Blaney-Criddle formulation for estimating reference crop evapot
 
 \arguments{
   \item{data}{
-  A list of data in class "BlaneyCriddle" which contains the following items (climate variables) required by Blaney-Criddle formulation:
+  A list of data in class "BlaneyCriddle" which contains the following items (climate variables) 
+  required by Blaney-Criddle formulation:
   "Tmax", "Tmin", "RHmin", "n", "u2" or "uz"
   }
   \item{constants}{
@@ -41,25 +42,25 @@ Implementing the Blaney-Criddle formulation for estimating reference crop evapot
 \value{
 This function returns a object of class \code{BlaneyCriddle}. Such objects are list with components:
 
-  \item{PET.Daily}{
+  \item{ET.Daily}{
   A \code{zoo} object containing daily aggregated estimations of Blaney-Criddle reference crop evapotranspiration.
   }
-  \item{PET.Monthly}{
+  \item{ET.Monthly}{
   A \code{zoo} object containing monthly aggregated estimations of Blaney-Criddle reference crop evapotranspiration.
   }
-  \item{PET.Annual}{
+  \item{ET.Annual}{
   A \code{zoo} object containing annually aggregated estimations of Blaney-Criddle reference crop evapotranspiration.
   }
-  \item{PET.MonthlyAve}{
+  \item{ET.MonthlyAve}{
   A \code{zoo} object containing monthly averaged estimations of daily Blaney-Criddle reference crop evapotranspiration.
   }
-  \item{PET.AnnualAve}{
+  \item{ET.AnnualAve}{
   A \code{zoo} object containing annually averaged estimations of daily Blaney-Criddle reference crop evapotranspiration.
   }
-  \item{PET_formulation}{
+  \item{ET_formulation}{
   A character string containing the name of the formulation used which equals to "Blaney-Criddle".
   }
-  \item{PET_type}{
+  \item{ET_type}{
   A character string containing the type of the estimation obtained which is "Reference Crop Evapotranspiration".
   }
   \item{message1}{

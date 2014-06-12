@@ -50,25 +50,25 @@ Implementing the Chapman formulation for estimating equivalent Penmen-Monteith r
 \value{
 This function returns a object of class \code{ChapmanAustralian}. Such objects are list with components:
 
-  \item{PET.Daily}{
+  \item{ET.Daily}{
   A \code{zoo} object containing daily aggregated estimations of Chapman equivalent Penmen-Monteith reference crop evapotranspiration.
   }
-  \item{PET.Monthly}{
+  \item{ET.Monthly}{
   A \code{zoo} object containing monthly aggregated estimations of Chapman equivalent Penmen-Monteith reference crop evapotranspiration.
   }
-  \item{PET.Annual}{
+  \item{ET.Annual}{
   A \code{zoo} object containing annually aggregated estimations of Chapman equivalent Penmen-Monteith reference crop evapotranspiration.
   }
-  \item{PET.MonthlyAve}{
+  \item{ET.MonthlyAve}{
   A \code{zoo} object containing monthly averaged estimations of daily Chapman equivalent Penmen-Monteith reference crop evapotranspiration.
   }
-  \item{PET.AnnualAve}{
+  \item{ET.AnnualAve}{
   A \code{zoo} object containing annually averaged estimations of daily Chapman equivalent Penmen-Monteith reference crop evapotranspiration.
   }
-  \item{PET_formulation}{
+  \item{ET_formulation}{
   A character string containing the name of the formulation used which equals to "Chapman".
   }
-  \item{PET_type}{
+  \item{ET_type}{
   A character string containing the type of the estimation obtained which is "Equivalent Penmen-Monteith Reference Crop Evapotranspiration".
   }
   \item{message1}{

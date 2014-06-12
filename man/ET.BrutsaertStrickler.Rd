@@ -12,7 +12,8 @@ Implementing the Brutsaert-Strickler formulation for actual areal evapotranspira
 
 \arguments{
   \item{data}{
-  A list of data in class "BrutsaertStrickler" which contains the following items (climate variables) required by Brutsaert-Strickler formulation:
+  A list of data in class "BrutsaertStrickler" which contains the following items (climate variables)
+  required by Brutsaert-Strickler formulation:
   "Tmax", "Tmin", "RHmax", "RHmin", "RS", "n" or "Cd", "u2" or "uz"
   }
   \item{constants}{
@@ -27,7 +28,11 @@ Implementing the Brutsaert-Strickler formulation for actual areal evapotranspira
   "sigma" - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.
   }
   \item{solar}{
-  Must be either "data", "sunshine hours", cloud" or "monthly precipitation". "data" indicates that solar radiation data is used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  Must be either "data", "sunshine hours", cloud" or "monthly precipitation". 
+  "data" indicates that solar radiation data is used directly for calculating evapotranspiration; 
+  "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; 
+  "cloud" sunshine hours is to be estimated from cloud data; 
+  "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{alpha}{
   Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface (or surrounding surface for Penpan formulation) representing the portion of the incident radiation that is reflected back at the surface. 
@@ -45,25 +50,25 @@ Implementing the Brutsaert-Strickler formulation for actual areal evapotranspira
 \value{
 This function returns a object of class \code{BrutsaertStrickler}. Such objects are list with components:
 
-  \item{PET.Daily}{
+  \item{ET.Daily}{
   A \code{zoo} object containing daily aggregated estimations of Brutsaert-Strickler actual areal evapotranspiration.
   }
-  \item{PET.Monthly}{
+  \item{ET.Monthly}{
   A \code{zoo} object containing monthly aggregated estimations of Brutsaert-Strickler actual areal evapotranspiration.
   }
-  \item{PET.Annual}{
+  \item{ET.Annual}{
   A \code{zoo} object containing annually aggregated estimations of Brutsaert-Strickler actual areal evapotranspiration.
   }
-  \item{PET.MonthlyAve}{
+  \item{ET.MonthlyAve}{
   A \code{zoo} object containing monthly averaged estimations of daily Brutsaert-Strickler actual areal evapotranspiration.
   }
-  \item{PET.AnnualAve}{
+  \item{ET.AnnualAve}{
   A \code{zoo} object containing annually averaged estimations of daily Brutsaert-Strickler actual areal evapotranspiration.
   }
-  \item{PET_formulation}{
+  \item{ET_formulation}{
   A character string containing the name of the formulation used which equals to "Brutsaert-Strickler".
   }
-  \item{PET_type}{
+  \item{ET_type}{
   A character string containing the type of the estimation obtained which is "Actual Areal Evapotranspiration".
   }
   \item{message1}{

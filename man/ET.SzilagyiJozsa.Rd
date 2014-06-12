@@ -55,25 +55,25 @@ windfunction_ver, alpha, z0, \dots)
 \value{
 This function returns a object of class \code{SzilagyiJozsa}. Such objects are list with components:
 
-  \item{PET.Daily}{
+  \item{ET.Daily}{
   A \code{zoo} object containing daily aggregated estimations of Szilagyi-Jozsa actual evapotranspiration.
   }
-  \item{PET.Monthly}{
+  \item{ET.Monthly}{
   A \code{zoo} object containing monthly aggregated estimations of Szilagyi-Jozsa actual evapotranspiration.
   }
-  \item{PET.Annual}{
+  \item{ET.Annual}{
   A \code{zoo} object containing annually aggregated estimations of Szilagyi-Jozsa actual evapotranspiration.
   }
-  \item{PET.MonthlyAve}{
+  \item{ET.MonthlyAve}{
   A \code{zoo} object containing monthly averaged estimations of daily Szilagyi-Jozsa actual evapotranspiration.
   }
-  \item{PET.AnnualAve}{
+  \item{ET.AnnualAve}{
   A \code{zoo} object containing annually averaged estimations of daily Szilagyi-Jozsa actual evapotranspiration.
   }
-  \item{PET_formulation}{
+  \item{ET_formulation}{
   A character string containing the name of the formulation used which equals to "Szilagyi-Jozsa".
   }
-  \item{PET_type}{
+  \item{ET_type}{
   A character string containing the type of the estimation obtained which is "Actual Evapotranspiration".
   }
   \item{message1}{

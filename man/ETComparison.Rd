@@ -8,7 +8,7 @@ Produce comparison plots for results and statistics from different estimations p
 }
 \usage{
 ETComparison(results1, results2, results3 = NULL, results4 = NULL, results5 = NULL, 
-results6 = NULL, results7 = NULL, type = "Monthly", ymin = NULL, ymax = NULL) 
+results6 = NULL, results7 = NULL, labs, Sdate=NULL, Edate=NULL, type = "Monthly", ylim) 
 
 }
 
@@ -34,13 +34,17 @@ results6 = NULL, results7 = NULL, type = "Monthly", ymin = NULL, ymax = NULL)
   \item{results7}{
   A list named "results" which has been derived from function \code{ET..()} which can be of any class such as "Penman", "PenmanMonteith" and "PriestleyTaylor. The default is NULL if the user requires the comparison among only six sets of results.
   }
-  \item{ymin}{
-  Allows user-defined lower limit of the y-axis for plotting, the default is 0.
+  \item{labs}{
+  A character vector with the length equal to the number of sets of results to compare, defining the labels for the comparison plots}
+  \item{Sdate}{
+  Only used when type = 'Daily', 'Monthly' and 'Annual' to define the start date for the plotting windows, the default is the first day for the estimate evapotranspiration, but can be defined by user in the format "YYYY-MM-DD".
   }
-  \item{ymax}{
-  Allows user-defined upper limit of the y-axis for plotting, the default is 1.5 times of maximum value from the first set of result that is used to compare with others.
+  \item{Edate}{
+  Only used when type = 'Daily', 'Monthly' and 'Annual' to define the end date for the plotting windows, the default is the last day for the estimate evapotranspiration, but can be defined by user in the format "YYYY-MM-DD".
   }
-  
+  \item{ylim}{
+  A numeric vector of length 2 defining the lower and upper limit of the y-axis for plotting, the default is from 0 to 1.5 times of maximum value from the first set of result that is used to compare with others.
+  }
   \item{type}{
   A character string indicating the type of plot produced, can be one of the following:
   "Daily" - comparison plots of estimated daily evapotranspiration;
@@ -83,7 +87,8 @@ class(data) <- funname
 results_PenmanMonteith <- ET(data, constants, solar="sunshine hours", wind="yes", crop="short") 
 
 # Plot the estimated Penman open-water evaporation against average temperature
-ETComparison(results_Penman, results_PenmanMonteith, type = "Monthly", ymin = NULL, ymax = NULL)
+ETComparison(results_Penman, results_PenmanMonteith, type = "Monthly", 
+labs = c("Penman", "Penman-Monteith"))
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

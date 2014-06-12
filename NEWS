@@ -1,68 +1,31 @@
-		CHANGES IN Evapotranspiration VERSION 1.3
+		CHANGES IN Evapotranspiration VERSION 1.4
 
 NEW FEATURES
+    o  In function ReadInputs: Adding checks to ensure processed daily values are physically meaningful (i.e. uz/u2 > 0; Rs > 0; 0 < n < 24; P > 0; Epan > 0; RHmax/RHmin > 0)  
 
-    o  New function ETComparison enables users to compare estimations from multiple formulations by plotting the selected quantitities including daily estimation, monthly aggregation, annual aggregation, monthly average and annual average. For each quantity this function produces comparison plots of time series, non-exceedance probability and box plot of distribution. Comparison can be made across estimations from different formulations, estimations from different versions of the same formulation, or just estimations from the same formulation using different input climate data.
+    o  In function ETComparison: Enabling user-defined label text for the comparison plots
 
-    o  Checks for missing data duration is implemented in function ReadInput (previously Reading). In the function argument a threshold for the maximum duration of missing data can be defined above which the data is not acceptable. 
+    o  In function ETComparison: Enabling user-defined starting and finishing data for comparison plots with types of 'Daily', 'Monthly' and 'Annual' 
 
 SIGNIFICANT USER-VISIBLE CHANGES
 
-    o  Deleted unused variables in the example data set, and shortened the names for the climate variables. The user manual describing the example data set has been updated accordingly.
+    o  The output variable names 'PET.Daily', 'PET.Monthly', 'PET.Annual', 'PET.MonthlyAve' and 'PET.AnnualAve' from ET formulations has been replaced with 'ET.Daily', 'ET.Monthly', 'ET.Annual', 'ET.MonthlyAve' and 'ET.AnnualAve' respectively to avoid confusion
 
-    o  Function Reading has been renamed as ReadInputs.
-
-    o  The 'stopmissing' argument in function ReadInputs now requires an input of a numeric vector of length 2. The first value represents the maximum percentage of missing data that the user can tolerate; the second value represents the maximum percentage of the duration of missing data to the total data duaration that the user can toleratre.
-
-    o  Function Evapotranspiration has been renamed as ET.
+    o  The output variable names 'PET_formulation' and 'PET_type' from ET formulations has been replaced with 'ET_formulation' and 'ET_type' respectively to avoid confusion
     
-    o  Function EvapotranspirationForcin has been renamed as ETForcings.
+    o  Argument 'labs' in ETComparison can be used to define text for lables in comparison plots - see manual for details
 
-    o  Function PlotEvapotranspiration has been renamed as ETPlot. Also for aggregation plots the users can define the start/end dates for the windows of time series plots.
+    o  Arguments 'Sdate' and 'Edate' in ETComparison can be used to define starting and finishing data for comparison plots with types of 'Daily', 'Monthly' and 'Annual' - see manual for details
+
+    o  Arguments 'ymin' and 'ymax' in ETComparison have been replaced with a single arguement 'ylim' with length of 2 - see manual for details
 
 BUG FIXES
-    o Corrected the calculation of Jensen-Haise and McGuinness-Bordne formulations and corresponding manuals
-
-    o Improved function Reading to avoid potential problems with reading subdaily date
-
-    o Corrected the calculation of filling in missing data entries in the raw data of dew point temperature
-
-    o Corrected the user manual for function Reading that the column in the raw data set for solar radiation should be named as "Solar.radiation.in.MJ.per.sqm.per.day" instead of "Solar.radiation.in.MJ/sqm/day"
-
-    o Improved the fix for where the relative humidity in a day is constant (so RHmax=RHmin and this causes skeptical PET estimations from Matt-Shuttleworth formulation) 
+    o  Fixed bugs in the use of argument 'stopmissing' in function ReadInput for checking maximum duration of missing data
     
-    o Corrected typo "Balney-Criddle" to "Blaney-Criddle"
+    o  Fixed bugs in the Matt-Shuttleworth formulation
 
-
-    CHANGES IN Evapotranspiration VERSION 1.2
-
-BUG FIXES
-
-    o Corrected the calculating of annual maximum sunshine hours in Balney-Criddle formulation. The previous version sums up maximum sunshine hours from all record days in each year which may result in      incomplete summation for any incomplete years (in the first year and/or last year) of record. In the updates this is corrected by performing checks on the first and last year of data and automatically adjust the annual maximum sunshine hours for incomplete first/last years of data.
-   
-
-		CHANGES IN Evapotranspiration VERSION 1.1
-
-NEW FEATURES
-
-    o  Incorporated the calculation of Ta, RHmean, vabar and vas into individual formulations (instead of calculating them in function Reading) to make it easier to study the influence of climate variables on the estimation from each formulation
-
-    o  Solar radiation data can be used directly in Function Evapotranspiration..() for different formulations with the argument, please see the documentation for each evapotranspiration formulation for detail.
-
-SIGNIFICANT USER-VISIBLE CHANGES
-
-    o	Updated function Reading for the precipitation data so that precipitation data is now read from raw daily precipitation records which is more accessible than the previously expected subdaily precipiration data.
+    o  Fixed bugs in the use of argument 'solar' in the Morton formulations to be enable using the data of sunshine hours
 
 DEPRECATED & DEFUNCT
 
-   o	Argument "sunshine.hours" in the evapotranspiration formulations is now replaced by "solar", please see the documentation for each evapotranspiration formulation for detail.
-
-BUG FIXES
-
-    o Corrected function ReadOBSEvaporation aggregation method for annual sum for the daily data.
-
-    o Correct the typo "precipiration" -> "precipitation".
-
-    o Fixed the bug in the time step of calculating cloud cover using monthly precipitation data in function Reading.
-
-    o Corrected the calculation of Julian days and number of days in each month in function Reading.
+   o	The value of the argument 'solar' has been updated to be consistent with other formulations - a value of 'sunshine hours' should be used to implement calculations from the data of sunshine hours

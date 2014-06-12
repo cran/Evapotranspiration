@@ -111,31 +111,31 @@ ET.Penman <- function(data, constants, solar, wind, windfunction_ver, alpha = 0.
       Epenman.Daily <-  0.047 * R_s * sqrt(Ta + 9.5) - 2.4 * (R_s/R_a)^2 + 0.09 * (Ta + 20) * (1 - RHmean/100) # Penman open-water evaporation without wind data by Valiantzas (2006) (S4.12)
     }
    
-   PET.Daily <- Epenman.Daily
-   PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-   PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+   ET.Daily <- Epenman.Daily
+   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-   PET.MonthlyAve <- PET.AnnualAve <- NULL
+   ET.MonthlyAve <- ET.AnnualAve <- NULL
    for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
      i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-     PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+     ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
    }
    for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
      i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-     PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+     ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
    }
 
    # Generate summary message for results  
-   PET_formulation <- "Penman" 
+   ET_formulation <- "Penman" 
    if (wind == "no") {
-     PET_type <- "Open-water Evaporation"
+     ET_type <- "Open-water Evaporation"
      Surface <- paste("water, albedo =", alpha, "; roughness height =", z0, "m")
    } else {
      if (alpha != 0.08) {
-       PET_type <- "Potential ET"
+       ET_type <- "Potential ET"
        Surface <- paste("user-defined, albedo =", alpha, "; roughness height =", z0, "m")
      } else if (alpha == 0.08) {
-       PET_type <- "Open-water Evaporation"
+       ET_type <- "Open-water Evaporation"
        Surface <- paste("water, albedo =", alpha, "; roughness height =", z0, "m")
      }
    }
@@ -160,12 +160,12 @@ ET.Penman <- function(data, constants, solar, wind, windfunction_ver, alpha = 0.
      message2 <- "Alternative calculation for Penman evaporation without wind data have been performed"
    }
   
-   message(PET_formulation, " ", PET_type)
+   message(ET_formulation, " ", ET_type)
    message("Evaporative surface: ", Surface)
    message(message1)
    message(message2)
   
-   results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=message1, message2=message2)
+   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
    class(results) <- funname
    return(results)
 }
@@ -282,33 +282,33 @@ ET.PenmanMonteith <- function(data, constants, solar, wind, crop, ...) {
     ET_RC.Daily <- 0.038 * R_s.Monthly * sqrt(Ta.Monthly + 9.5) - 2.4 * (R_s.Monthly/R_a.Monthly)^2 + 0.075 * (Ta.Monthly + 20) * (1 - RHmean.Monthly/100) # Reference crop evapotranspiration without wind data by Valiantzas (2006) (S5.21)
   }
   
-  PET.Daily <- ET_RC.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- ET_RC.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
   if (wind == "no") {
-    PET_formulation <- "Penman-Monteith (without wind data)"
-    PET_type <- "Reference Crop ET"
+    ET_formulation <- "Penman-Monteith (without wind data)"
+    ET_type <- "Reference Crop ET"
     Surface <- paste("short grass, albedo =", alpha, "; roughness height =", z0, "m")
   } else {
     if (crop == "short") {
-      PET_formulation <- "Penman-Monteith FAO56"
-      PET_type <- "Reference Crop ET"
+      ET_formulation <- "Penman-Monteith FAO56"
+      ET_type <- "Reference Crop ET"
       Surface <- paste("FAO-56 hypothetical short grass, albedo =", alpha, "; surface resisitance =", r_s, "sm^-1; crop height =", CH, " m; roughness height =", z0, "m")
     } else {
-      PET_formulation <- "Penman-Monteith ASCE-EWRI Standardised"
-      PET_type <- "Reference Crop ET"
+      ET_formulation <- "Penman-Monteith ASCE-EWRI Standardised"
+      ET_type <- "Reference Crop ET"
       Surface <- paste("ASCE-EWRI hypothetical tall grass, albedo =", alpha, "; surface resisitance =", r_s, "sm^-1; crop height =", CH, " m; roughness height =", z0, "m")
     }
   }
@@ -329,12 +329,12 @@ ET.PenmanMonteith <- function(data, constants, solar, wind, crop, ...) {
     message2 <- "Alternative calculation for reference crop evapotranspiration without wind data have been performed"
   }
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   message("Evaporative surface: ", Surface)
   message(message1)
   message(message2)
   
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=message1, message2=message2)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
   class(results) <- funname
   return(results)
 }
@@ -432,25 +432,25 @@ ET.MattShuttleworth <- function(data, constants, solar, alpha, r_s, CH, ...) {
   VPD50toVPD2 <- (302 * (delta + gamma) + 70 * gamma * u2) / (208 * (delta + gamma) + 70 * gamma * u2) + 1/r_clim * ((302 * (delta + gamma) + 70 * gamma * u2) / (208 * (delta + gamma) + 70 * gamma * u2) * (208 / u2) - (302 / u2)) # ratio of vapour pressure deficits at 50m to vapour pressure deficits at 2m heights (S5.35)
   r_c50 <- 1 / ((0.41)^2) * log((50 - 0.67 * CH) / (0.123 * CH)) * log((50 - 0.67 * CH) / (0.0123 * CH)) * log((2 - 0.08) / 0.0148) / log((50 - 0.08) / 0.0148) # aerodynamic coefficient (s*m^-1) (S5.36)
   
-  E_Tc.Daily <- 1/constants$lambda * (delta * R_ng + (constants$Roua * constants$Ca * u2 * (vas - vabar)) / r_c50) * VPD50toVPD2 / (delta + gamma * (1 + r_s * u2 / r_c50)) # well-watered crop evapotranspiration in a semi-arid and windy location (S5.37)
+  E_Tc.Daily <- 1/constants$lambda * (delta * R_ng + (constants$Roua * constants$Ca * u2 * (vas - vabar)) / r_c50 * VPD50toVPD2) / (delta + gamma * (1 + r_s * u2 / r_c50)) # well-watered crop evapotranspiration in a semi-arid and windy location (S5.37)
   
-  PET.Daily <- E_Tc.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- E_Tc.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
-  PET_formulation <- "Matt-Shuttleworth"
-  PET_type <- "Reference Crop ET"
+  ET_formulation <- "Matt-Shuttleworth"
+  ET_type <- "Reference Crop ET"
   Surface <- paste("user-defined, albedo =", alpha, "; surface resisitance =", r_s, "sm^-1; crop height =", CH, "m")
   
   if (solar == "data") {
@@ -463,11 +463,11 @@ ET.MattShuttleworth <- function(data, constants, solar, alpha, r_s, CH, ...) {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   message("Evaporative surface: ", Surface)
   message(message1)
   
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=message1)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
   class(results) <- funname
   
   return(results)
@@ -545,23 +545,23 @@ ET.PriestleyTaylor <- function(data, constants, solar, alpha, ...) {
   
   E_PT.Daily <- constants$alphaPT * (delta/(delta + gamma) * R_ng / constants$lambda - constants$G / constants$lambda) # well-watered crop evapotranspiration in a semi-arid and windy location (S5.37)
   
-  PET.Daily <- E_PT.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- E_PT.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
-  PET_formulation <- "Priestley-Taylor"
-  PET_type <- "Potential ET"
+  ET_formulation <- "Priestley-Taylor"
+  ET_type <- "Potential ET"
   if (alpha != 0.08) {
     Surface <- paste("user-defined, albedo =", alpha)
   } else if (alpha == 0.08) {
@@ -578,11 +578,11 @@ ET.PriestleyTaylor <- function(data, constants, solar, alpha, ...) {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   message("Evaporative surface: ", Surface)
   message(message1)
   
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=message1)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
   class(results) <- funname
   
   return(results)
@@ -678,23 +678,23 @@ ET.Penpan <- function(data, constants, solar, alpha, overest, ...) {
   }
   
     
-  PET.Daily <- Epenpan.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- Epenpan.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
-  PET_formulation <- "Penpan"
-  PET_type <- "Class-A Pan Evaporation"
+  ET_formulation <- "Penpan"
+  ET_type <- "Class-A Pan Evaporation"
   Surface <- paste("user-defined, albedo =", alpha)
   
   if (solar == "data") {
@@ -707,11 +707,11 @@ ET.Penpan <- function(data, constants, solar, alpha, overest, ...) {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   message("Evaporative surface: ", Surface)
   message(message1)
   
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=message1)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
   class(results) <- funname
   
   return(results)
@@ -804,23 +804,23 @@ ET.BrutsaertStrickler <- function(data, constants, solar, alpha, ...) {
   
   ET_BS_Act.Daily <- (2 * constants$alphaPT - 1) * (delta / (delta + gamma)) * R_ng / constants$lambda - gamma / (delta + gamma) * f_u2 * (vas - vabar) # Brutsaert and Strickler actual areal evapotranspiration (mm.day^-1) Brutsaert and Strickler (1979) (S8.2)
   
-  PET.Daily <- ET_BS_Act.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- ET_BS_Act.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
-  PET_formulation <- "Brutsaert-Strickler"
-  PET_type <- "Actual Areal ET"
+  ET_formulation <- "Brutsaert-Strickler"
+  ET_type <- "Actual Areal ET"
   Surface <- paste("user-defined, albedo =", alpha)
   
   if (solar == "data") {
@@ -833,11 +833,11 @@ ET.BrutsaertStrickler <- function(data, constants, solar, alpha, ...) {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   message("Evaporative surface: ", Surface)
   message(message1)
   
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=message1)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
   class(results) <- funname
   
   return(results)
@@ -936,23 +936,23 @@ ET.GrangerGray <- function(data, constants, solar, windfunction_ver, alpha, ...)
   G_g <- 1 / (0.793 + 0.20 * exp(4.902 * D_p)) + 0.006 * D_p # dimensionless evaporation parameter (S8.5)
   ET_GG_Act.Daily <- delta * G_g / (delta * G_g + gamma) * (R_ng - constants$G) / constants$lambda + gamma * G_g / (delta * G_g + gamma) * Ea # Granger and Gray actual areal evapotranspiration (mm.day^-1) Granger and Gray (1989) (S8.4)
   
-  PET.Daily <- ET_GG_Act.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- ET_GG_Act.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
-  PET_formulation <- "Granger-Gray"
-  PET_type <- "Actual Areal ET"
+  ET_formulation <- "Granger-Gray"
+  ET_type <- "Actual Areal ET"
   Surface <- paste("user-defined, albedo =", alpha)
   
   if (solar == "data") {
@@ -971,11 +971,11 @@ ET.GrangerGray <- function(data, constants, solar, windfunction_ver, alpha, ...)
     message2 <- "Wind data have been used for the calculation of the drying power of air, using Penman 1956 wind function."
   }
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   message("Evaporative surface: ", Surface)
   message(message1)
 
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=message1, message2=message2)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
   class(results) <- funname
   
   return(results)
@@ -1107,23 +1107,23 @@ ET.SzilagyiJozsa <- function(data, constants, solar, wind, windfunction_ver, alp
   E_PT_T_e <- constants$alphaPT * (deltaT_e / (deltaT_e + gamma) * R_ng / constants$lambda) # Priestley-Taylor evapotranspiration at T_e
   E_SJ_Act.Daily <- 2 * E_PT_T_e - Epenman.Daily # actual evapotranspiration by Szilagyi and Jozsa (2008) (S8.7)
   
-  PET.Daily <- E_SJ_Act.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- E_SJ_Act.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
-  PET_formulation <- "Szilagyi-Jozsa"
-  PET_type <- "Actual ET"
+  ET_formulation <- "Szilagyi-Jozsa"
+  ET_type <- "Actual ET"
   Surface <- paste("user-defined, albedo =", alpha, "; roughness height", z0, "m")
   
   if (solar == "data") {
@@ -1146,12 +1146,12 @@ ET.SzilagyiJozsa <- function(data, constants, solar, wind, windfunction_ver, alp
     message2 <- "Alternative calculation for Penman evaporation without wind data have been performed"
   }
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   message("Evaporative surface: ", Surface)
   message(message1)
   message(message2)
   
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=message1, message2=message2)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
   class(results) <- funname
   
   return(results)
@@ -1203,23 +1203,23 @@ ET.Makkink <- function(data, constants, solar, ...) {
   
   Emakkink.Daily <- 0.61 * (delta / (delta + gamma) * R_s/2.45) - 0.12  # potential evapotranspiration by Bruin (1981) (S9.6)
   
-  PET.Daily <- Emakkink.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- Emakkink.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
-  PET_formulation <- "Makkink"
-  PET_type <- "Potential ET"
+  ET_formulation <- "Makkink"
+  ET_type <- "Potential ET"
 
   if (solar == "data") {
     message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
@@ -1231,11 +1231,11 @@ ET.Makkink <- function(data, constants, solar, ...) {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   message("Evaporative surface: open-water")
   message(message1)
   
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=message1)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
   class(results) <- funname
   
   return(results)
@@ -1305,18 +1305,18 @@ ET.BlaneyCriddle <- function(data, constants, solar, height, ...) {
   
   ET_BC.Daily <- (0.0043 * data$RHmin - data$n/N - 1.41) + bvar * p_y * (0.46 * Ta +8.13) # Blaney-Criddle Reference Crop evapotranspiration (mm.day^-1) (S9.7)
   
-  PET.Daily <- ET_BC.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- ET_BC.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   if (height == TRUE) {
@@ -1324,8 +1324,8 @@ ET.BlaneyCriddle <- function(data, constants, solar, height, ...) {
   }
   
   # Generate summary message for results
-  PET_formulation <- "Blaney-Criddle"
-  PET_type <- "Reference Crop ET"
+  ET_formulation <- "Blaney-Criddle"
+  ET_type <- "Reference Crop ET"
 
   if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
@@ -1341,12 +1341,12 @@ ET.BlaneyCriddle <- function(data, constants, solar, height, ...) {
     message3 <- "No height adjustment has been applied to calculated Blaney-Criddle reference crop evapotranspiration"
   }
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   message("Evaporative surface: reference crop")
   message(message1)
   message(message3)
     
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=message1, message3=message3)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message3=message3)
   class(results) <- funname
   
   return(results)
@@ -1409,23 +1409,23 @@ ET.Truc <- function(data, constants, solar, humid, ...) {
     ET_truc.Daily[RHmean < 50] <- 0.013 * (23.88 * R_s + 50) * Ta[RHmean < 50] / (Ta[RHmean < 50] + 15) * (1 + (50 - RHmean[RHmean < 50]) / 70) # Truc reference crop evapotranspiration adjusted for non-humid conditions (RH < 50) by Alexandris et al., (S9.11)
   }
   
-  PET.Daily <- ET_truc.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- ET_truc.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
-  PET_formulation <- "Truc"
-  PET_type <- "Reference Crop ET"
+  ET_formulation <- "Truc"
+  ET_type <- "Reference Crop ET"
   
   if (solar == "data") {
     message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
@@ -1443,12 +1443,12 @@ ET.Truc <- function(data, constants, solar, humid, ...) {
     message4 <- "No adjustment for non-humid conditions has been applied to calculated Truc reference crop evapotranspiration"
   }
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   message("Evaporative surface: reference crop")
   message(message1)
   message(message4)
   
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=message1, message4=message4)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message4=message4)
   class(results) <- funname
   
   return(results)
@@ -1481,28 +1481,28 @@ ET.HargreavesSamani <- function(data, constants, ...) {
   C_HS <- 0.00185 * (data$Tmax - data$Tmin)^2 - 0.0433 * (data$Tmax - data$Tmin) + 0.4023 # empirical coefficient by Hargreaves and Samani (1985) (S9.13)
   ET_HS.Daily <- 0.0135 * C_HS * R_a / constants$lambda * (data$Tmax - data$Tmin)^0.5 * (Ta + 17.8) # reference crop evapotranspiration by Hargreaves and Samani (1985) (S9.12)
 
-  PET.Daily <- ET_HS.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- ET_HS.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
-  PET_formulation <- "Hargreaves-Samani"
-  PET_type <- "Reference Crop ET"
+  ET_formulation <- "Hargreaves-Samani"
+  ET_type <- "Reference Crop ET"
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   message("Evaporative surface: reference crop")
   
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
   class(results) <- funname
   
   return(results)
@@ -1609,18 +1609,18 @@ ET.ChapmanAustralian <- function(data, constants, Penpan, solar, alpha, ...) {
     ET_eqPM.Daily <- A_p * data$Epan + B_p # daily equivalent Penman-Monteith potential evaporation (mm.day^-1)
   }
  
-  PET.Daily <- ET_eqPM.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- ET_eqPM.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
@@ -1641,20 +1641,20 @@ ET.ChapmanAustralian <- function(data, constants, Penpan, solar, alpha, ...) {
   }
   
   # Generate summary message for results
-  PET_formulation <- "Chapman"
-  PET_type <- "Equivalent Penmen-Monteith Reference Crop ET"
+  ET_formulation <- "Chapman"
+  ET_type <- "Equivalent Penmen-Monteith Reference Crop ET"
   if (Penpan == TRUE) {
     Surface <- paste("user-defined, albedo =", alpha)
   } else {
     Surface <- paste("not specified, actual Class-A pan evaporation data is used")
   }
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   message("Evaporative surface: ", Surface)
   message(message1)
   message(message5)
   
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=message1, message5=message5)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message5=message5)
   class(results) <- funname
   
   return(results)
@@ -1686,27 +1686,27 @@ ET.JensenHaise <- function(data, constants, ...) {
 
   ET_JH.Daily <- (0.014 * (Ta*33.8) - 0.37) * R_a *0.0394 / constants$lambda # Jensen-Haise daily evapotranspiration by Jensen and Haise  (1963), *0.0394 for MJ.m^-2.day^-1 to in.day^-1, *33.8 for degree C to degree F 
  
-  PET.Daily <- ET_JH.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- ET_JH.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
-  PET_formulation <- "Jensen-Haise"
-  PET_type <- "Potential ET"
+  ET_formulation <- "Jensen-Haise"
+  ET_type <- "Potential ET"
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
 
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
   class(results) <- funname
   
   return(results)
@@ -1738,27 +1738,27 @@ ET.McGuinnessBordne <- function(data, constants, ...) {
 
   ET_MB.Daily <- R_a * (Ta + 5)/ (2.54*1000*68) *1000  # McGuinness-Bordne daily evapotranspiration by McGuinness-Bordne  (1972) (mm.day^-1) (Oudin et al., 2005
   
-  PET.Daily <- ET_MB.Daily
-  PET.Monthly <- aggregate(PET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  PET.Annual <- aggregate(PET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- ET_MB.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   
-  PET.MonthlyAve <- PET.AnnualAve <- NULL
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    PET.MonthlyAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
   }
   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    PET.AnnualAve[i] <- mean(PET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
   # Generate summary message for results
-  PET_formulation <- "McGuinness-Bordne"
-  PET_type <- "Potential ET"
+  ET_formulation <- "McGuinness-Bordne"
+  ET_type <- "Potential ET"
   
-  message(PET_formulation, " ", PET_type)
+  message(ET_formulation, " ", ET_type)
   
-  results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
   class(results) <- funname
   
   return(results)
@@ -1959,7 +1959,7 @@ Radiation <- function(data, constants, solar, Tdew) {
     }# constraint B_Mo < 0.05 * constants$epsilonMo * sigmaMo * (T_Mo + 274)^4 (S21.64)
   
     # Generate summary message for results
-    if (solar == "data") {
+    if (solar == "sunshine hours") {
       message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
     } else if (solar == "cloud") {
       message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
@@ -2036,39 +2036,39 @@ Radiation <- function(data, constants, solar, Tdew) {
     if (est == "potential ET") {
       ET_Mo.Monthly <- E_TP
       ET_Mo.Average <- E_TP.temp
-      PET_type <- "Potential ET"
+      ET_type <- "Potential ET"
     } else if (est == "wet areal ET") {
       ET_Mo.Monthly <- E_TW
       ET_Mo.Average <- E_TW.temp
-      PET_type <- "Wet-environment Areal ET"
+      ET_type <- "Wet-environment Areal ET"
     } else if (est == "actual areal ET") {
       ET_Mo.Monthly <- E_T_Mo
       ET_Mo.Average <- E_T_Mo.temp
-      PET_type <- "Actual Areal ET"
+      ET_type <- "Actual Areal ET"
     }
     
-    PET.Daily <- NULL
-    PET.Monthly <- ET_Mo.Monthly
-    PET.Annual <- aggregate(PET.Monthly, floor(as.numeric(as.yearmon(data$Date.monthly, "%m/%y"))), FUN = sum)
+    ET.Daily <- NULL
+    ET.Monthly <- ET_Mo.Monthly
+    ET.Annual <- aggregate(ET.Monthly, floor(as.numeric(as.yearmon(data$Date.monthly, "%m/%y"))), FUN = sum)
     
-    PET.MonthlyAve <- PET.AnnualAve <- NULL
+    ET.MonthlyAve <- ET.AnnualAve <- NULL
     for (mon in min(as.POSIXlt(data$Date.monthly)$mon):max(as.POSIXlt(data$Date.monthly)$mon)){
       i = mon - min(as.POSIXlt(data$Date.monthly)$mon) + 1
-      PET.MonthlyAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$mon== mon])
+      ET.MonthlyAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$mon== mon])
     }
     for (year in min(as.POSIXlt(data$Date.monthly)$year):max(as.POSIXlt(data$Date.monthly)$year)){
       i = year - min(as.POSIXlt(data$Date.monthly)$year) + 1
-      PET.AnnualAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$year== year])
+      ET.AnnualAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$year== year])
     }
     
     # Generate summary message for results
-    PET_formulation <- "Morton CRAE"
+    ET_formulation <- "Morton CRAE"
     
-    message(PET_formulation, " ", PET_type)
+    message(ET_formulation, " ", ET_type)
     message(variables$message1)
     message(variables$message6)
 
-    results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=variables$message1, message6=variables$message6)
+    results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=variables$message1, message6=variables$message6)
     class(results) <- funname
     
     return(results)
@@ -2142,35 +2142,35 @@ Radiation <- function(data, constants, solar, Tdew) {
     if (est == "potential") {
       ET_Mo.Monthly <- E_P
       ET_Mo.Average <- E_P.temp
-      PET_type <- "Potential ET"
+      ET_type <- "Potential ET"
     } else if (est == "shallow lake") {
       ET_Mo.Monthly <- E_W
       ET_Mo.Average <- E_W.temp
-      PET_type <- "Shallow Lake Evaporation"
+      ET_type <- "Shallow Lake Evaporation"
     }
 
-    PET.Daily <- NULL
-    PET.Monthly <- ET_Mo.Monthly
-    PET.Annual <- aggregate(PET.Monthly, floor(as.numeric(as.yearmon(data$Date.monthly, "%m/%y"))), FUN = sum)
+    ET.Daily <- NULL
+    ET.Monthly <- ET_Mo.Monthly
+    ET.Annual <- aggregate(ET.Monthly, floor(as.numeric(as.yearmon(data$Date.monthly, "%m/%y"))), FUN = sum)
     
-    PET.MonthlyAve <- PET.AnnualAve <- NULL
+    ET.MonthlyAve <- ET.AnnualAve <- NULL
     for (mon in min(as.POSIXlt(data$Date.monthly)$mon):max(as.POSIXlt(data$Date.monthly)$mon)){
       i = mon - min(as.POSIXlt(data$Date.monthly)$mon) + 1
-      PET.MonthlyAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$mon== mon])
+      ET.MonthlyAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$mon== mon])
     }
     for (year in min(as.POSIXlt(data$Date.monthly)$year):max(as.POSIXlt(data$Date.monthly)$year)){
       i = year - min(as.POSIXlt(data$Date.monthly)$year) + 1
-      PET.AnnualAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$year== year])
+      ET.AnnualAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$year== year])
     }
     
     # Generate summary message for results
-    PET_formulation <- "Morton CRWE"
+    ET_formulation <- "Morton CRWE"
     
-    message(PET_formulation, " ", PET_type)
+    message(ET_formulation, " ", ET_type)
     message(variables$message1)
     message(variables$message6)
 
-    results <- list(PET.Daily=PET.Daily, PET.Monthly=PET.Monthly, PET.Annual=PET.Annual, PET.MonthlyAve=PET.MonthlyAve, PET.AnnualAve=PET.AnnualAve, PET_formulation=PET_formulation, PET_type=PET_type, message1=variables$message1, message6=variables$message6)
+    results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=variables$message1, message6=variables$message6)
     class(results) <- funname
     
     return(results)

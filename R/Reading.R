@@ -39,21 +39,22 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
   ndays <- aggregate(ndays.temp, as.yearmon(Date.daily, "%m/%y"), FUN = max)
   
   # check acceptable % missing data
-  if (is.na(as.numeric(stopmissing))) {
-    stop("Please use a numeric value for the maximum allowable percentage of missing data")
-  }
-  if (!is.na(as.numeric(stopmissing))) {
+  if (is.na(as.numeric(stopmissing[1])) | is.na(as.numeric(stopmissing[1]))) {
+    stop("Please use two numeric values for the maximum allowable percentage of missing data and continuous missing data")
+  } else {
     if (length(stopmissing)!=2) {
-      stop("Please input a vector of length 2 for argument 'stopmissing'")
+    stop("Please input a vector of length 2 for argument 'stopmissing'")
+    } else {
+      for (counter in 1:2) {
+        if (as.numeric(stopmissing[counter]) < 1 | as.numeric(stopmissing[counter]) > 99) {
+          stop("Please use values between 1 and 99 for the maximum allowable percentage of missing data")
+        }
+      }
     }
   }
-  if (!is.na(as.numeric(stopmissing))) {
-    if (as.numeric(stopmissing) < 1 | as.numeric(stopmissing) > 99) {
-      stop("Please use a value between 1 and 99 for the maximum allowable percentage of missing data")
-    }
-  } 
   
-  message(paste("The maximum acceptable percentage of missing data is", stopmissing, "%"))
+  message(paste("The maximum acceptable percentage of missing data is", stopmissing[1], "%"))
+  message(paste("The maximum acceptable percentage of continuous missing data is", stopmissing[2], "%"))
   
   # Check if data 'Tmax.daily' and 'Tmin.daily' exist
   
@@ -67,8 +68,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$Tmax.daily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -81,7 +82,7 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    Tmax.temp <- zoo(climatedata$Tmax.daily, as.Date(Date.subdaily))
+    Tmax.temp <- zoo(as.vector(climatedata$Tmax.daily), as.Date(Date.subdaily))
     Tmax <- aggregate(Tmax.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
     message(paste("Number of days increments when Tmax has errors: ", sum(Tmax>100)))
     message("Monthly averages have been calculated to adjust data with error")
@@ -89,8 +90,7 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       Tmax[as.POSIXlt(time(Tmax))$mon==m & as.numeric(Tmax)>100] = mean(Tmax[as.POSIXlt(time(Tmax))$mon==m & as.numeric(Tmax)<100])
       Tmax[as.POSIXlt(time(Tmax))$mon==m & is.na(Tmax)] = mean(Tmax[as.POSIXlt(time(Tmax))$mon==m & !is.na(Tmax)])
     }
-  } else {
-    if ("Temp.subdaily" %in% (colnames(climatedata))) {
+  } else if ("Temp.subdaily" %in% (colnames(climatedata))) {
       message("Warning: missing data of 'Temp.daily'(daily maximum temperature), calculated from subdaily 'Temp.subdaily'")
       if ("TRUE" %in% (is.na(climatedata$Temp.subdaily))) {
         message("Warning: missing values in 'Temp.subdaily'")
@@ -101,8 +101,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         x <- as.numeric(!is.na(climatedata$Temp.subdaily))
         df <- data.frame(x, zcount = NA)
         df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-        for(i in 2:nrow(df)) {
-          df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+        for(counter in 2:nrow(df)) {
+          df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
         }
         message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
         
@@ -114,16 +114,15 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
           }
           message("Monthly averages have been calculated to fill missing data entries")
         }
-        temp.temp <- zoo(climatedata$Temp.subdaily, as.Date(Date.subdaily))
+        temp.temp <- zoo(as.vector(climatedata$Temp.subdaily), as.Date(Date.subdaily))
         for (m in 0:11) {
           temp.temp[as.POSIXlt(time(temp.temp))$mon==m & is.na(temp.temp)] = mean(temp.temp[as.POSIXlt(time(temp.temp))$mon==m & !is.na(temp.temp)])
         }
-        Temp <- aggregate(temp.temp, as.Date(Date.subdaily, "%d/%m/%y"), FUN = max)
+        Tmax <- aggregate(temp.temp, as.Date(Date.subdaily, "%d/%m/%y"), FUN = max)
       }
     } else {
       Tmax <- NULL
     }
-  }
   
   if ("Tmin.daily" %in% (colnames(climatedata))) {  
     if ("TRUE" %in% (is.na(climatedata$Tmin.daily))) {
@@ -134,8 +133,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$Tmin.daily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -148,7 +147,7 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    Tmin.temp <- zoo(climatedata$Tmin.daily, as.Date(Date.subdaily))
+    Tmin.temp <- zoo(as.vector(climatedata$Tmin.daily), as.Date(Date.subdaily))
     Tmin <- aggregate(Tmin.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
     message(paste("Number of days increments when Tmin has errors: ", sum(Tmin>100)))
     message("Monthly averages have been calculated to adjust data with error")
@@ -166,8 +165,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$Temp.subdaily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -179,7 +178,7 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         }
         message("Monthly averages have been calculated to fill missing data entries")
       }
-      temp.temp <- zoo(climatedata$Temp.subdaily, as.Date(Date.subdaily))
+      temp.temp <- zoo(as.vector(climatedata$Temp.subdaily), as.Date(Date.subdaily))
       for (m in 0:11) {
         temp.temp[as.POSIXlt(time(temp.temp))$mon==m & is.na(temp.temp)] = mean(temp.temp[as.POSIXlt(time(temp.temp))$mon==m & !is.na(temp.temp)])
       }
@@ -201,8 +200,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$u2.subdaily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -215,8 +214,9 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    u2.temp <- zoo(climatedata$u2.subdaily*1000/3600, as.Date(Date.subdaily))
+    u2.temp <- zoo(as.vector(climatedata$u2.subdaily*1000/3600), as.Date(Date.subdaily))
     for (m in 0:11) {
+      u2.temp[as.POSIXlt(time(u2.temp))$mon==m &  as.numeric(u2.temp)<0] = mean(u2.temp[as.POSIXlt(time(u2.temp))$mon==m &  as.numeric(u2.temp)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
       u2.temp[as.POSIXlt(time(u2.temp))$mon==m &  as.numeric(is.na(u2.temp))] = mean(u2.temp[as.POSIXlt(time(u2.temp))$mon==m &  as.numeric(!is.na(u2.temp))]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
     }
     u2 <- aggregate(u2.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
@@ -230,8 +230,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$uz.subdaily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -244,11 +244,13 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    uz.temp <- zoo(climatedata$uz.subdaily*1000/3600, as.Date(Date.subdaily)) 
+    uz.temp <- zoo(as.vector(climatedata$uz.subdaily*1000/3600), as.Date(Date.subdaily)) 
     for (m in 0:11) {
+      uz.temp[as.POSIXlt(time(uz.temp))$mon==m &  as.numeric(uz.temp)<0] = mean(uz.temp[as.POSIXlt(time(uz.temp))$mon==m &  as.numeric(uz.temp)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
       uz.temp[as.POSIXlt(time(uz.temp))$mon==m &  as.numeric(is.na(uz.temp))] = mean(uz.temp[as.POSIXlt(time(uz.temp))$mon==m &  as.numeric(!is.na(uz.temp))]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
     }
     uz <- aggregate(uz.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean) 
+    u2 <- NULL
   } else {
     u2 <- NULL
     uz <- NULL
@@ -257,16 +259,16 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
   # Check if data 'Rs.daily' exists
   if ('Rs.daily' %in% (colnames(climatedata))) {  
     if ("TRUE" %in% (is.na(climatedata$Rs.daily))) {
-      message("Warning: missing values in 'Tdew.subdaily'")
-      message(paste("Number of missing values in Tdew.subdaily: ", sum(is.na(climatedata$Rs.daily))))
+      message("Warning: missing values in 'Rs.subdaily'")
+      message(paste("Number of missing values in Rs.subdaily: ", sum(is.na(climatedata$Rs.daily))))
       message(paste("% missing data: ", signif(sum(is.na(climatedata$Rs.daily))/nrow(climatedata) * 100, digits = -3), "%"))
       
       x <- df <- NULL
       x <- as.numeric(!is.na(climatedata$Rs.daily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -279,10 +281,11 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    Rs.temp <- zoo(climatedata$Rs.daily, as.Date(Date.subdaily))
+    Rs.temp <- zoo(as.vector(climatedata$Rs.daily), as.Date(Date.subdaily))
     Rs <- aggregate(Rs.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
     message("Monthly averages have been calculated to adjust data with error")
     for (m in 0:11) {
+      Rs[as.POSIXlt(time(Rs))$mon==m &  as.numeric(Rs)<0] = mean(Rs[as.POSIXlt(time(Rs))$mon==m &  as.numeric(Rs)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
       Rs[as.POSIXlt(time(Rs))$mon==m & is.na(Rs)] = mean(Rs[as.POSIXlt(time(Rs))$mon==m & !is.na(Rs)])
     }
   } else {
@@ -298,8 +301,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$n.daily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -312,8 +315,10 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    n.temp <- zoo(climatedata$n.daily, as.Date(Date.subdaily))  
+    n.temp <- zoo(as.vector(climatedata$n.daily), as.Date(Date.subdaily))  
     for (m in 0:11) {
+      n.temp[as.POSIXlt(time(n.temp))$mon==m &  as.numeric(n.temp)<0] = mean(n.temp[as.POSIXlt(time(n.temp))$mon==m &  as.numeric(n.temp)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
+      n.temp[as.POSIXlt(time(n.temp))$mon==m &  as.numeric(n.temp)>24] = mean(n.temp[as.POSIXlt(time(n.temp))$mon==m &  as.numeric(n.temp)<24]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
       n.temp[as.POSIXlt(time(n.temp))$mon==m &  as.numeric(is.na(n.temp))] = mean(n.temp[as.POSIXlt(time(n.temp))$mon==m &  as.numeric(!is.na(n.temp))]) # Changing to monthly mean 
     }
     n <- aggregate(n.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
@@ -332,8 +337,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$Cd.daily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -346,7 +351,7 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    C0.temp <- zoo(climatedata$Cd.daily, as.Date(Date.subdaily)) 
+    C0.temp <- zoo(as.vector(climatedata$Cd.daily), as.Date(Date.subdaily)) 
     for (m in 0:11) {
       C0.temp[as.POSIXlt(time(C0.temp))$mon==m &  as.numeric(is.na(C0.temp))] = mean(C0.temp[as.POSIXlt(time(C0.temp))$mon==m &  as.numeric(!is.na(C0.temp))]) # Changing to monthly mean 
     }
@@ -366,8 +371,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$Precip.daily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -380,8 +385,9 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    P.temp <- zoo(climatedata$Precip.daily, as.Date(Date.subdaily)) 
+    P.temp <- zoo(as.vector(climatedata$Precip.daily), as.Date(Date.subdaily)) 
     for (m in 0:11) {
+      P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(P.temp)<0] = mean(P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(P.temp)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
       P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(is.na(P.temp))] = mean(P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(!is.na(P.temp))]) # Changing to monthly mean 
     }
     Precip <- aggregate(P.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
@@ -394,7 +400,7 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         Cd.temp[m] <- 1 # calculation of cloudiness (number of tenths of sky covered by cloud) based on monthly precipitation (mm) (S3.12)
       }
     }
-    Cd.temp <- zoo(Cd.temp, as.Date(Date.daily))
+    Cd.temp <- zoo(as.vector(Cd.temp), as.Date(Date.daily))
     Cd <- Precip
     for (m in 1:length(Cd)) {
       Cd[as.yearmon(time(Cd)) == as.yearmon(time(Cd.temp))[m]] <- Cd.temp[m]
@@ -414,8 +420,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$Precip.daily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -428,8 +434,9 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    P.temp <- zoo(climatedata$Precip.daily, as.Date(Date.subdaily)) 
+    P.temp <- zoo(as.vector(climatedata$Precip.daily), as.Date(Date.subdaily)) 
     for (m in 0:11) {
+      P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(P.temp)<0] = mean(P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(P.temp)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
       P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(is.na(P.temp))] = mean(P.temp[as.POSIXlt(time(P.temp))$mon==m &  as.numeric(!is.na(P.temp))]) # Changing to monthly mean 
     }
     Precip <- aggregate(P.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
@@ -447,8 +454,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$Epan.daily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -461,8 +468,9 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    Epan.temp <- zoo(climatedata$Epan.daily, as.Date(Date.subdaily)) 
+    Epan.temp <- zoo(as.vector(climatedata$Epan.daily), as.Date(Date.subdaily)) 
     for (m in 0:11) {
+      Epan.temp[as.POSIXlt(time(Epan.temp))$mon==m &  as.numeric(Epan.temp)<0] = mean(Epan.temp[as.POSIXlt(time(Epan.temp))$mon==m &  as.numeric(Epan.temp)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
       Epan.temp[as.POSIXlt(time(Epan.temp))$mon==m &  as.numeric(is.na(Epan.temp))] = mean(Epan.temp[as.POSIXlt(time(Epan.temp))$mon==m &  as.numeric(!is.na(Epan.temp))]) # Changing to monthly mean 
     }
     Epan <- aggregate(P.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean) 
@@ -480,8 +488,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$RHmax.daily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -494,16 +502,16 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    RHmax.temp <- zoo(climatedata$RHmax.daily, as.Date(Date.subdaily))
+    RHmax.temp <- zoo(as.vector(climatedata$RHmax.daily), as.Date(Date.subdaily))
     RHmax <- aggregate(RHmax.temp, as.Date(Date.subdaily, "%d/%m/%y") ,FUN = mean) 
     for (m in 0:11) {
+      RHmax[as.POSIXlt(time(RHmax))$mon==m &  as.numeric(RHmax)<0] = mean(RHmax[as.POSIXlt(time(RHmax))$mon==m &  as.numeric(RHmax)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
       RHmax[as.POSIXlt(time(RHmax))$mon==m & is.na(RHmax)] = mean(RHmax[as.POSIXlt(time(RHmax))$mon==m & !is.na(RHmax)])
     }
     message(paste("Number of days increments when RHmax has errors: ", sum(RHmax>100)))
     message("'RHmax.daily' with values > 100% has been adjusted to 100%")
     RHmax[RHmax>100] = 100
-  } else {
-    if ("RH.subdaily" %in% (colnames(climatedata))) {
+  } else if ("RH.subdaily" %in% (colnames(climatedata))) {
       message("Warning: missing data of 'RHmax.daily'(daily maximum relative humidity), calculated from subdaily 'RH.subdaily'")
       if ("TRUE" %in% (is.na(climatedata$RH.subdaily))) {
         message("Warning: missing values in 'RH.subdaily'")
@@ -514,8 +522,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         x <- as.numeric(!is.na(climatedata$RH.subdaily))
         df <- data.frame(x, zcount = NA)
         df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-        for(i in 2:nrow(df)) {
-          df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+        for(counter in 2:nrow(df)) {
+          df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
         }
         message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
         
@@ -528,9 +536,10 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
           message("Monthly averages have been calculated to fill missing data entries")
         }
       }
-      RH.temp <- zoo(climatedata$RH.subdaily, as.Date(Date.subdaily))
+      RH.temp <- zoo(as.vector(climatedata$RH.subdaily), as.Date(Date.subdaily))
       RHmax <- aggregate(RH.temp, as.Date(Date.subdaily, "%d/%m/%y"), FUN = max)
       for (m in 0:11) {
+        RHmax[as.POSIXlt(time(RHmax))$mon==m &  as.numeric(RHmax)<0] = mean(RHmax[as.POSIXlt(time(RHmax))$mon==m &  as.numeric(RHmax)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
         RHmax[as.POSIXlt(time(RHmax))$mon==m & is.na(RHmax)] = mean(RHmax[as.POSIXlt(time(RHmax))$mon==m & !is.na(RHmax)])
       }
       message(paste("Number of days increments when RHmax has errors: ", sum(RHmax>100)))
@@ -539,7 +548,6 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
     } else {
       RHmax <- NULL
     }
-  }
   
   if ("RHmin.daily" %in% (colnames(climatedata))) {  
     if ("TRUE" %in% (is.na(climatedata$RHmin.daily))) {
@@ -550,8 +558,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$RHmin.daily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -564,16 +572,16 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    RHmin.temp <- zoo(climatedata$RHmin.daily, as.Date(Date.subdaily))
+    RHmin.temp <- zoo(as.vector(climatedata$RHmin.daily), as.Date(Date.subdaily))
     RHmin <- aggregate(RHmin.temp, as.Date(Date.subdaily, "%d/%m/%y") ,FUN = mean) 
     for (m in 0:11) {
+      RHmin[as.POSIXlt(time(RHmin))$mon==m &  as.numeric(RHmin)<0] = mean(RHmin[as.POSIXlt(time(RHmin))$mon==m &  as.numeric(RHmin)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
       RHmin[as.POSIXlt(time(RHmin))$mon==m & is.na(RHmin)] = mean(RHmin[as.POSIXlt(time(RHmin))$mon==m & !is.na(RHmin)])
     }
     message(paste("Number of days increments when RHmin has errors: ", sum(RHmin>RHmax)))
     message("'RHmin.daily' with values > 'RHmax.daily' has been adjusted to '0.9*RHmax'")
     RHmin[RHmin>=RHmax] = 0.9*RHmax[RHmin>=RHmax] # setting upper bound on minimum RH to ensure that ea < es for all es,ea. 
-  } else {
-    if ("RH.subdaily" %in% (colnames(climatedata))) {
+  } else if ("RH.subdaily" %in% (colnames(climatedata))) {
       message("Warning: missing data of 'RHmin.daily'(daily minimum relative humidity), calculated from subdaily 'RH.subdaily'")
       if ("TRUE" %in% (is.na(climatedata$RH.subdaily))) {
         message("Warning: missing values in 'RH.subdaily'")
@@ -583,8 +591,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         x <- as.numeric(!is.na(climatedata$RH.subdaily))
         df <- data.frame(x, zcount = NA)
         df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-        for(i in 2:nrow(df)) {
-          df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+        for(counter in 2:nrow(df)) {
+          df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
         }
         message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
         
@@ -597,9 +605,10 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
           message("Monthly averages have been calculated to fill missing data entries")
         }
       }
-      RH.temp <- zoo(climatedata$RH.subdaily, as.Date(Date.subdaily))
+      RH.temp <- zoo(as.vector(climatedata$RH.subdaily), as.Date(Date.subdaily))
       RHmin <- aggregate(RH.temp, as.Date(Date.subdaily, "%d/%m/%y"), FUN = min)
       for (m in 0:11) {
+        RHmin[as.POSIXlt(time(RHmin))$mon==m &  as.numeric(RHmin)<0] = mean(RHmin[as.POSIXlt(time(RHmin))$mon==m &  as.numeric(RHmin)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
         RHmin[as.POSIXlt(time(RHmin))$mon==m & is.na(RHmin)] = mean(RHmin[as.POSIXlt(time(RHmin))$mon==m & !is.na(RHmin)])
       }
       message(paste("Number of days increments when RHmin has errors: ", sum(RHmin>RHmax)))
@@ -608,7 +617,6 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
     } else {
       RHmin <- NULL
     }
-  }
   
   # Check if data 'Tdew.subdaily' exists
   if ("Tdew.subdaily" %in% (colnames(climatedata))) {  
@@ -620,8 +628,8 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       x <- as.numeric(!is.na(climatedata$Tdew.subdaily))
       df <- data.frame(x, zcount = NA)
       df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for(i in 2:nrow(df)) {
-        df$zcount[i] <- ifelse(df$x[i] == 0, df$zcount[i - 1] + 1, 0)
+      for(counter in 2:nrow(df)) {
+        df$zcount[counter] <- ifelse(df$x[counter] == 0, df$zcount[counter - 1] + 1, 0)
       }
       message(paste("Maximum duration of missing data as percentage of total duration: ", signif(max(df)/nrow(climatedata) * 100, digits = -3), "%"))
       
@@ -635,7 +643,7 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       }
     }
       
-    Tdew.temp <- zoo(climatedata$Tdew.subdaily, as.Date(Date.subdaily))
+    Tdew.temp <- zoo(as.vector(climatedata$Tdew.subdaily), as.Date(Date.subdaily))
     Tdew <- aggregate(Tdew.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
     message(paste("Number of days increments when Tdew has errors: ", sum(Tdew>100)))
     message("Monthly averages have been calculated to adjust data with error")
@@ -643,8 +651,7 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       Tdew[as.POSIXlt(time(Tdew))$mon==m & is.na(Tdew)] = mean(Tdew[as.POSIXlt(time(Tdew))$mon==m & !is.na(Tdew)])
       Tdew[as.POSIXlt(time(Tdew))$mon==m & as.numeric(Tdew)>100] = mean(Tdew[as.POSIXlt(time(Tdew))$mon==m & as.numeric(Tdew)<100])
     }
-  } else {
-    if ("Vp.subdaily" %in% (colnames(climatedata))) {
+  } else if ("Vp.subdaily" %in% (colnames(climatedata))) {
       message("Warning: missing data of 'Tdew.subdaily', calculated from 'Vp.subdaily'")
       Tdew <- NULL
       if ("TRUE" %in% (is.na(climatedata$Vp.subdaily))) {
@@ -653,7 +660,6 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
     } else {
       Tdew <- NULL
     }
-  }
   
   #-------------------------------------------------------------------------------------
   
