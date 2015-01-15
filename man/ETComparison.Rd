@@ -8,7 +8,7 @@ Produce comparison plots for results and statistics from different estimations p
 }
 \usage{
 ETComparison(results1, results2, results3 = NULL, results4 = NULL, results5 = NULL, 
-results6 = NULL, results7 = NULL, labs, Sdate=NULL, Edate=NULL, type = "Monthly", ylim) 
+results6 = NULL, results7 = NULL,labs, Sdate, Edate, type = "Monthly", ylim) 
 
 }
 
@@ -87,8 +87,9 @@ class(data) <- funname
 results_PenmanMonteith <- ET(data, constants, solar="sunshine hours", wind="yes", crop="short") 
 
 # Plot the estimated Penman open-water evaporation against average temperature
-ETComparison(results_Penman, results_PenmanMonteith, type = "Monthly", 
-labs = c("Penman", "Penman-Monteith"))
+ETComparison(results_Penman, results_PenmanMonteith, 
+labs = c("Penman","PenmanMonteith"), Sdate = NULL, Edate = NULL, 
+type = "Monthly", ylim=c(0,400))
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

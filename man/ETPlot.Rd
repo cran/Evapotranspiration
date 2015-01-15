@@ -7,8 +7,7 @@
 Produce plot of aggregated estimations of evapotranspiration in daily, monthly and annual steps, or averaged daily estimations in monthly or annual steps. 
 }
 \usage{
-ETPlot(results, type = "Aggregation", OBS, OBSplot = FALSE, 
-Sdate = time(results$ET.Daily)[1], 
+ETPlot(results, type = "Aggregation", OBS, OBSplot, Sdate = time(results$ET.Daily)[1], 
 Edate = time(results$ET.Daily)[length(results$ET.Daily)])
 
 }

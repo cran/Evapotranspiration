@@ -12,8 +12,7 @@ Implementing the Brutsaert-Strickler formulation for actual areal evapotranspira
 
 \arguments{
   \item{data}{
-  A list of data in class "BrutsaertStrickler" which contains the following items (climate variables)
-  required by Brutsaert-Strickler formulation:
+  A list of data in class "BrutsaertStrickler" which contains the following items (climate variables) required by Brutsaert-Strickler formulation:
   "Tmax", "Tmin", "RHmax", "RHmin", "RS", "n" or "Cd", "u2" or "uz"
   }
   \item{constants}{
@@ -28,11 +27,7 @@ Implementing the Brutsaert-Strickler formulation for actual areal evapotranspira
   "sigma" - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.
   }
   \item{solar}{
-  Must be either "data", "sunshine hours", cloud" or "monthly precipitation". 
-  "data" indicates that solar radiation data is used directly for calculating evapotranspiration; 
-  "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; 
-  "cloud" sunshine hours is to be estimated from cloud data; 
-  "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  Must be either "data", "sunshine hours", cloud" or "monthly precipitation". "data" indicates that solar radiation data is used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{alpha}{
   Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface (or surrounding surface for Penpan formulation) representing the portion of the incident radiation that is reflected back at the surface. 

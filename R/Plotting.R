@@ -1,3 +1,4 @@
+globalVariables("results")
 ETPlot <- function(results, type = "Aggregation", OBS, OBSplot = FALSE,  Sdate = time(results$ET.Daily)[1], Edate = time(results$ET.Daily)[length(results$ET.Daily)]) { # plot estimations and observations
   
   # Aggregation plot (default)
@@ -13,43 +14,43 @@ ETPlot <- function(results, type = "Aggregation", OBS, OBSplot = FALSE,  Sdate =
     plot.new()
     x.Date <- as.Date(time(results$ET.Daily[which(time(results$ET.Daily) == as.Date(Sdate)):which(time(results$ET.Daily) == as.Date(Edate))]))
     if (!is.null(results$ET.Daily)) {
-      plot(results$ET.Daily[which(as.Date(time(results$ET.Daily)) == x.Date[1]) : which(as.Date(time(results$ET.Daily)) == x.Date[length(x.Date)])], main = paste("Daily", results$PET_formulation, results$PET_type), xlab = "Year", ylab = list(c(results$PET_type, "mm/day")))
+      plot(results$ET.Daily[which(as.Date(time(results$ET.Daily)) == x.Date[1]) : which(as.Date(time(results$ET.Daily)) == x.Date[length(x.Date)])], main = paste("Daily", results$ET_formulation, results$ET_type), xlab = "Year", ylab = list(c(results$ET_type, "mm/day")))
       if (OBSplot == TRUE) {
         if (!is.null(OBS)) {
           if (!is.null(OBS$E_obs.Daily)) {
             lines(OBS$E_obs.Daily[which(as.Date(time(results$ET.Daily)) == x.Date[1]) : which(as.Date(time(results$ET.Daily)) == x.Date[length(x.Date)])], main = "Observed evaporation", type = "o", pch = ".", col = "RED", xlab = "Year", ylab = "Observed evaporation mm/day")
-            legend("topright", inset = .05, c(paste(results$PET_formulation,results$PET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
+            legend("topright", inset = .05, c(paste(results$ET_formulation,results$ET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
           }
         } else {
           warning("No observed data available for plotting, only the estimated values are plotted")
         }
       }
     } else {
-      warning("No daily results obtained from ", results$PET_formulation)
+      warning("No daily results obtained from ", results$ET_formulation)
     }
     par(ask=TRUE)
     
-    plot(results$ET.Monthly[which(as.yearmon(time(results$ET.Monthly)) == as.yearmon(x.Date[1])):which(as.yearmon(time(results$ET.Monthly)) == as.yearmon(x.Date[length(x.Date)]))], ylim = c(0,max(results$ET.Monthly)*1.5), main = paste("Monthly", results$PET_formulation, results$PET_type), type = "o", pch = ".", xlab = "Year", ylab = list(c(results$PET_type, "mm/month")))
+    plot(results$ET.Monthly[which(as.yearmon(time(results$ET.Monthly)) == as.yearmon(x.Date[1])):which(as.yearmon(time(results$ET.Monthly)) == as.yearmon(x.Date[length(x.Date)]))], ylim = c(0,max(results$ET.Monthly)*1.5), main = paste("Monthly", results$ET_formulation, results$ET_type), type = "o", pch = ".", xlab = "Year", ylab = list(c(results$ET_type, "mm/month")))
     if (OBSplot == TRUE) {
       if (!is.null(OBS)) {
         lines(OBS$E_obs.Monthly[which(as.yearmon(time(results$ET.Monthly)) == as.yearmon(x.Date[1])):which(as.yearmon(time(results$ET.Monthly)) == as.yearmon(x.Date[length(x.Date)]))], main = "Observed evaporation", type = "o", pch = ".", ylim = c(0,400), col = "RED", xlab = "Year", ylab = "Observed evaporation mm/month")
-        legend("topright", inset = .05, c(paste(results$PET_formulation,results$PET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
+        legend("topright", inset = .05, c(paste(results$ET_formulation,results$ET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
       } else {
         warning("No observed data available for plotting, only the estimated values are plotted")
       }
     }
-    plot(results$ET.Annual[which(floor(as.numeric(as.yearmon(time(results$ET.Annual)))) == floor(as.numeric(as.yearmon(x.Date[1])))):which(floor(as.numeric(as.yearmon(time(results$ET.Annual)))) == floor(as.numeric(as.yearmon(x.Date[length(x.Date)]))))],  main = paste("Annual", results$PET_formulation, results$PET_type), type = "o", xlab = "Year", ylim = c(0,3000), ylab = list(c(results$PET_type, "mm/year")))
+    plot(results$ET.Annual[which(floor(as.numeric(as.yearmon(time(results$ET.Annual)))) == floor(as.numeric(as.yearmon(x.Date[1])))):which(floor(as.numeric(as.yearmon(time(results$ET.Annual)))) == floor(as.numeric(as.yearmon(x.Date[length(x.Date)]))))],  main = paste("Annual", results$ET_formulation, results$ET_type), type = "o", xlab = "Year", ylim = c(0,3000), ylab = list(c(results$ET_type, "mm/year")))
     if (OBSplot == TRUE) {
       if (!is.null(OBS)) {
         lines(OBS$E_obs.Annual[which(floor(as.numeric(as.yearmon(time(results$ET.Annual)))) == floor(as.numeric(as.yearmon(x.Date[1])))):which(floor(as.numeric(as.yearmon(time(results$ET.Annual)))) == floor(as.numeric(as.yearmon(x.Date[length(x.Date)]))))], main = "Observed evaporation", type = "o", col = "RED", ylim = c(0,3000), xlab = "Year", ylab = "Observed evaporation mm/year")
-        legend("topright", inset = .05, c(paste(results$PET_formulation,results$PET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
+        legend("topright", inset = .05, c(paste(results$ET_formulation,results$ET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
       } else {
         warning("No observed data available for plotting, only the estimated values are plotted")
       }
     }
     
     par(ask=FALSE)
-    paste("Completed plotting aggregations for results calculated by", results$PET_formulation, "formulation")
+    paste("Completed plotting aggregations for results calculated by", results$ET_formulation, "formulation")
   }
   
   # Aggregation plot (default)
@@ -60,11 +61,11 @@ ETPlot <- function(results, type = "Aggregation", OBS, OBSplot = FALSE,  Sdate =
     par(ask=FALSE)
     plot.new()
     # Plots - Average
-    plot(results$ET.MonthlyAve~unique(1:12), main = paste("Monthly average", results$PET_formulation, results$PET_type), type = "o", ylim = c(0, max(results$ET.MonthlyAve)*1.5), xlab = "Month", ylab = list(c("Monthly average", results$PET_type, "mm/day")))
+    plot(results$ET.MonthlyAve~unique(1:12), main = paste("Monthly average", results$ET_formulation, results$ET_type), type = "o", ylim = c(0, max(results$ET.MonthlyAve)*1.5), xlab = "Month", ylab = list(c("Monthly average", results$ET_type, "mm/day")))
     if (OBSplot == TRUE) {
       if (!is.null(OBS)) {
         lines(OBS$E_obs.MonthlyAve~unique(1:12), main = "Observed evaporation", type = "o", ylim = c(0,10), col = "RED", xlab = "Month", ylab = "Monthly average observed evaporation mm")
-        legend("topright", inset = .05, c(paste(results$PET_formulation,results$PET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
+        legend("topright", inset = .05, c(paste(results$ET_formulation,results$ET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
       } else {
         warning("No observed data available for plotting, only the estimated values are plotted")
       }
@@ -72,18 +73,18 @@ ETPlot <- function(results, type = "Aggregation", OBS, OBSplot = FALSE,  Sdate =
     
     par(ask=TRUE)
     
-    plot(results$ET.AnnualAve~unique(as.POSIXlt(data$Date.daily)$year + 1900), main = paste("Annual average", results$PET_formulation, results$PET_type), type = "o", ylim = c(0, max(results$ET.AnnualAve)*1.5), xlab = "Year", ylab = list(c("Annual average", results$PET_type, "mm/day")))
+    plot(results$ET.AnnualAve~unique(as.POSIXlt(data$Date.daily)$year + 1900), main = paste("Annual average", results$ET_formulation, results$ET_type), type = "o", ylim = c(0, max(results$ET.AnnualAve)*1.5), xlab = "Year", ylab = list(c("Annual average", results$ET_type, "mm/day")))
     if (OBSplot == TRUE) {
       if (!is.null(OBS)) {
         lines(OBS$E_obs.AnnualAve~unique(as.POSIXlt(OBS$Date.OBS)$year + 1900), main = "Observed evaporation", type = "o", ylim = c(0,10), col = "RED", xlab = "Year", ylab = "Annual average observed evaporation mm")
-        legend("topright", inset = .05, c(paste(results$PET_formulation,results$PET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
+        legend("topright", inset = .05, c(paste(results$ET_formulation,results$ET_type),"Observed Class-A pan evaporation"), cex = 0.8, col = c("BLACK","RED"), lty = 1)
       } else {
         warning("No observed data available for plotting, only the estimated values are plotted")
       }
     }
     
     par(ask=FALSE)
-    paste("Completed plotting averages for results calculated by", results$PET_formulation, "formulation")
+    paste("Completed plotting averages for results calculated by", results$ET_formulation, "formulation")
   }
   par(ask=FALSE)
 }
@@ -91,7 +92,7 @@ ETPlot <- function(results, type = "Aggregation", OBS, OBSplot = FALSE,  Sdate =
 #-------------------------------------------------------------------------------------
 
 ETComparison <- function(results1, results2, results3 = NULL, results4 = NULL, results5 = NULL, results6 = NULL, results7 = NULL, 
-                         labs, Sdate=NULL, Edate=NULL, type = "Monthly", ylim = NULL) { # plot up to 7 estimations
+                         labs, Sdate, Edate, type = "Monthly", ylim) { # plot up to 7 estimations
   # check number of sets of results to compare and compile list of legend text
   
   if (exists("results1")==F | exists("results2")==F) {
@@ -101,40 +102,35 @@ ETComparison <- function(results1, results2, results3 = NULL, results4 = NULL, r
     stop("Please provide at least results1 and results2 for producing comparison plot")
   }
   
-  if (is.null(ylim)) {
-    ylim = c(0,max(results1$ET.Monthly)*1.5)
-  }
-  
-  
   Ncomp <- 2
   legtext <- vector(mode = "character", length = Ncomp)
-  legtext[1] <- paste(results1$PET_formulation, results1$PET_type, labs[1])
-  legtext[2] <- paste(results2$PET_formulation, results2$PET_type, labs[2])
+  legtext[1] <- paste(results1$ET_formulation, results1$ET_type, labs[1])
+  legtext[2] <- paste(results2$ET_formulation, results2$ET_type, labs[2])
   
   if (!is.null(results3)) {
     Ncomp <- 3
     length(legtext) <- 3
-    legtext[3] <- paste(results3$PET_formulation, results3$PET_type, labs[3])
+    legtext[3] <- paste(results3$ET_formulation, results3$ET_type, labs[3])
   }
   if (!is.null(results4)) {
     Ncomp <- 4
     length(legtext) <- 4
-    legtext[4] <- paste(results4$PET_formulation, results4$PET_type, labs[4])
+    legtext[4] <- paste(results4$ET_formulation, results4$ET_type, labs[4])
   }
   if (!is.null(results5)) {
     Ncomp <- 5
     length(legtext) <- 5
-    legtext[5] <- paste(results5$PET_formulation, results5$PET_type, labs[5])
+    legtext[5] <- paste(results5$ET_formulation, results5$ET_type, labs[5])
   }
   if (!is.null(results6)) {
     Ncomp <- 6
     length(legtext) <- 6
-    legtext[6] <- paste(results6$PET_formulation, results6$PET_type, labs[6])
+    legtext[6] <- paste(results6$ET_formulation, results6$ET_type, labs[6])
   }
   if (!is.null(results7)) {
     Ncomp <- 7
     length(legtext) <- 7
-    legtext[7] <- paste(results7$PET_formulation, results7$PET_type, labs[7])
+    legtext[7] <- paste(results7$ET_formulation, results7$ET_type, labs[7])
   }
   
   if (length(labs)!= Ncomp) {
@@ -248,7 +244,7 @@ ETComparison <- function(results1, results2, results3 = NULL, results4 = NULL, r
     par(ask=TRUE)
     colnames(comp)[2:(Ncomp+1)] <- legtext
     boxplot(comp[,2:(Ncomp+1)], col = c(seq(from=2,to=Ncomp+1)), boxwex = 0.5, range = 0, main = "Box plot of the daily estimations of ET", xlab = "", ylab = "Distribution of daily PET in mm", show.names = FALSE, pars = list(ylim = ylim, cex.lab = 1.9, cex.main = 2.1, par(mar = c(5.1,4.7,4.7,2.1))))
-    legend("topright", inset = .01, c(paste(legtext[1:Ncomp])), cex = (1), col = c(seq(from=2,to=Ncomp+1)), lty = 1)
+    legend("topright", inset = .01, c(paste(legtext[1:Ncomp])), cex = (1), fill = c(seq(from=2,to=Ncomp+1)), bty="o")
   }
   
   if (type == "Monthly") {
@@ -357,7 +353,7 @@ ETComparison <- function(results1, results2, results3 = NULL, results4 = NULL, r
     par(ask=TRUE)
     colnames(comp)[2:(Ncomp+1)] <- legtext
     boxplot(comp[,2:(Ncomp+1)], col = c(seq(from=2,to=Ncomp+1)), main = "Box plot of the monthly estimations of ET", boxwex = 0.5, range = 0, xlab = "", ylab = "Distribution of monthly PET in mm", show.names = FALSE, pars=list(ylim = ylim, cex.lab = 1.9, cex.main = 2.1, par(mar = c(5.1,4.7,4.7,2.1))))
-    legend("topright", inset = .01, c(paste(legtext[1:Ncomp])), cex = (1), col = c(seq(from=2,to=Ncomp+1)), lty = 1)
+    legend("topright", inset = .01, c(paste(legtext[1:Ncomp])), cex = (1), fill = c(seq(from=2,to=Ncomp+1)), bty="o")
     
   }
   
@@ -374,7 +370,7 @@ ETComparison <- function(results1, results2, results3 = NULL, results4 = NULL, r
     if (is.null(results1$ET.Annual) | is.null(results2$ET.Annual)) {
       stop("Unable to compare results because estimations of annual ET are not available in both results1 and results2")
     }
-    x.Date <- floor(as.numeric(as.yearmon(time(results1$ET.Annual[which(time(results1$ET.Annual) == floor(as.numeric(as.yearmon(Sdate)))):which(time(results1$ET.Annual) == floor(as.numeric(as.yearmon(Edate))))]))))
+    x.Date <- floor(as.numeric(as.yearmon(time(results1$ET.Annual[which(time(results$ET.Annual) == floor(as.numeric(as.yearmon(Sdate)))):which(time(results1$ET.Annual) == floor(as.numeric(as.yearmon(Edate))))]))))
     
     comp <- matrix(nrow=length(x.Date),ncol=Ncomp+1)
     comp[,1] <- x.Date
@@ -444,7 +440,7 @@ ETComparison <- function(results1, results2, results3 = NULL, results4 = NULL, r
       lines(comp[,i+2]~floor(as.numeric(as.yearmon(comp[,1]))), type = "l", col = i+2)
     }
     
-    legend("topright", inset = .01, c(paste(legtext[1:Ncomp])), cex = (1), col = c(seq(from=2,to=Ncomp+1)), lty = 1)
+    legend("topright", inset = .01, c(paste(legtext[1:Ncomp])), cex = (1), fill = c(seq(from=2,to=Ncomp+1)), bty="o")
     
     # Non-exceedance probability
     par(ask=TRUE)
@@ -467,7 +463,7 @@ ETComparison <- function(results1, results2, results3 = NULL, results4 = NULL, r
     par(ask=TRUE)
     colnames(comp)[2:(Ncomp+1)] <- legtext
     boxplot(comp[,2:(Ncomp+1)], col = c(seq(from=2,to=Ncomp+1)), boxwex = 0.5, range = 0, main = "Box plot of the annual estimations of ET", xlab = "", ylab = "Distribution of annual PET in mm", show.names = FALSE, pars = list(ylim = ylim, cex.lab = 1.9, cex.main = 2.1, par(mar = c(5.1,4.7,4.7,2.1))))
-    legend("topright", inset = .01, c(paste(legtext[1:Ncomp])), cex = (1), col = c(seq(from=2,to=Ncomp+1)), lty = 1)
+    legend("topright", inset = .01, c(paste(legtext[1:Ncomp])), cex = (1), fill = c(seq(from=2,to=Ncomp+1)), bty="o")
   }
   
   if (type == "MonthlyAve") {
@@ -568,7 +564,7 @@ ETComparison <- function(results1, results2, results3 = NULL, results4 = NULL, r
     par(ask=TRUE)
     colnames(comp)[2:(Ncomp+1)] <- legtext
     boxplot(comp[,2:(Ncomp+1)], col = c(seq(from=2,to=Ncomp+1)), boxwex = 0.5, range = 0, main = "Box plot of the monthly average ET", xlab = "", ylab = "Distribution of monthly averaged PET in mm/day", show.names = FALSE, pars = list(ylim = ylim, cex.lab = 1.9, cex.main = 2.1, par(mar = c(5.1,4.7,4.7,2.1))))
-    legend("topright", inset = .01, c(paste(legtext[1:Ncomp])), cex = (1), col = c(seq(from=2,to=Ncomp+1)), lty = 1)
+    legend("topright", inset = .01, c(paste(legtext[1:Ncomp])), cex = (1), fill = c(seq(from=2,to=Ncomp+1)), bty="o")
   }
   
   if (type == "AnnualAve") {
@@ -666,7 +662,7 @@ ETComparison <- function(results1, results2, results3 = NULL, results4 = NULL, r
     par(ask=TRUE)
     colnames(comp)[2:(Ncomp+1)] <- legtext
     boxplot(comp[,2:(Ncomp+1)], col = c(seq(from=2,to=Ncomp+1)), boxwex = 0.5, range = 0, main = "Box plot of the annual average ET", xlab = "", ylab = "Distribution ofannually averaged PET in mm/day", show.names = FALSE, pars = list(ylim = ylim, cex.lab = 1.9, cex.main = 2.1, par(mar = c(5.1,4.7,4.7,2.1))))
-    legend("topright", inset = .01, c(paste(legtext[1:Ncomp])), cex = (1), col = c(seq(from=2,to=Ncomp+1)), lty = 1)
+    legend("topright", inset = .01, c(paste(legtext[1:Ncomp])), cex = (1), fill = c(seq(from=2,to=Ncomp+1)), bty="o")
   }
   par(ask=FALSE)
 }
@@ -693,7 +689,7 @@ ETForcings <- function(data, results, forcing) {
     if (!is.null(results$ET.Daily)) {
       interval <- "daily"
       if (!is.null(data[[forcing]])) {
-        plot(results$ET.Daily~data[[forcing]], main = results$PET_formulation, xlab = paste(interval, Fnames$n[Fnames$v == forcing], Fnames$u[Fnames$v == forcing]), ylab = list(c(results$PET_type, "mm/day")))
+        plot(results$ET.Daily~data[[forcing]], main = results$ET_formulation, xlab = paste(interval, Fnames$n[Fnames$v == forcing], Fnames$u[Fnames$v == forcing]), ylab = list(c(results$ET_type, "mm/day")))
       } else {
         plot(1, type="n", axes=F, xlab="", ylab="")
         text(1, paste("no", forcing, "data to plot"))
@@ -712,7 +708,7 @@ ETForcings <- function(data, results, forcing) {
         } else {
           Fmonthly <- aggregate(data[[forcing]], as.yearmon(data$Date.daily, "%m/%y"), sum)
         }
-        plot(results$ET.Monthly~Fmonthly, main = results$PET_formulation, xlab = paste(interval, Fnames$n[Fnames$v == forcing], Fnames$u[Fnames$v == forcing]), ylab = list(c(results$PET_type, "mm/month")))
+        plot(results$ET.Monthly~Fmonthly, main = results$ET_formulation, xlab = paste(interval, Fnames$n[Fnames$v == forcing], Fnames$u[Fnames$v == forcing]), ylab = list(c(results$ET_type, "mm/month")))
       } else {
         plot(1, type="n", axes=F, xlab="", ylab="")
         text(1, paste("no", forcing, "data to plot"))
@@ -732,7 +728,7 @@ ETForcings <- function(data, results, forcing) {
         } else {
           Fannual <- aggregate(Fmonthly, floor(as.numeric(as.yearmon(data$Date.monthly, "%m/%y"))), sum)
         }
-        plot(results$ET.Annual~Fannual, main = results$PET_formulation, xlab = paste(interval, Fnames$n[Fnames$v == forcing], Fnames$u[Fnames$v == forcing]), ylab = list(c(results$PET_type, "mm/year")))
+        plot(results$ET.Annual~Fannual, main = results$ET_formulation, xlab = paste(interval, Fnames$n[Fnames$v == forcing], Fnames$u[Fnames$v == forcing]), ylab = list(c(results$ET_type, "mm/year")))
       } else {
         plot(1, type="n", axes=F, xlab="", ylab="")
         text(1, paste("no", forcing, "data to plot"))

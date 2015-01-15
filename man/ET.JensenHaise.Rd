@@ -7,7 +7,7 @@
 Implementing the Jensen-Haise formulation for estimating potential evapotranspiration.
 }
 \usage{
-\method{ET}{JensenHaise}(data, constants, \dots) 
+\method{ET}{JensenHaise}(data, constants, solar, \dots) 
 }
 
 \arguments{
@@ -21,6 +21,9 @@ Implementing the Jensen-Haise formulation for estimating potential evapotranspir
   "lambda" - latent heat of vaporisation = 2.45 MJ.kg^-1,
   "lat_rad" - latitude in radians,
   "Gsc" - solar constant = 0.0820 MJ.m^-2.min^-1.
+  }
+  \item{solar}{
+  Must be either "data", "sunshine hours", "cloud" or "monthly precipitation". "data" indicates that solar radiation data is to be used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -74,7 +77,7 @@ funname <- "JensenHaise"
 class(data) <- funname 
 
 # Call generic function ET(data, ...) with class "JensenHaise"
-results <- ET(data, constants)
+results <- ET(data, constants, solar = "sunshine hours")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

@@ -1,13 +1,14 @@
 Package: Evapotranspiration
-Version: 1.4
-Date: 2014-06-12
-Title: Evapotranspiration
-Author: Danlu Guo <danlu.guo@adelaide.edu.au>, Seth Westra <swestra@civeng.adelaide.edu.au>
+Version: 1.5
+Date: 2015-01-13
+Title: Estimating Potential and Actual Evapotranspiration with Multiple
+        Models
+Author: Danlu Guo <danlu.guo@adelaide.edu.au>, Seth Westra <seth.westra@adelaide.edu.au>
 Maintainer: Danlu Guo <danlu.guo@adelaide.edu.au>
 Depends: R (>= 2.10), zoo
-Description: Uses data and constants to calculate potential evapotranspiration (PET) and actual evapotranspiration (AET) from 17 different formulations including Penman, Penman-Monteith FAO 56, Priestley-Taylor and Morton formulations.
+Description: Allows the use of user-defined data and constants to calculate potential evapotranspiration (PET i.e. the amount of evaporation from a surface if sufficient water is available) and actual evapotranspiration (AET i.e. the actual amount of water evaporated from a surface) from 17 different formulations including the Penman, Penman-Monteith FAO 56, Priestley-Taylor and Morton formulations.
 License: GPL (>= 2)
-Packaged: 2014-06-12 06:25:27 UTC; dguo
+Packaged: 2015-01-15 06:47:45 UTC; danlu_000
 NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2014-06-12 09:28:08
+Date/Publication: 2015-01-15 11:44:08

@@ -12,8 +12,7 @@ Implementing the Blaney-Criddle formulation for estimating reference crop evapot
 
 \arguments{
   \item{data}{
-  A list of data in class "BlaneyCriddle" which contains the following items (climate variables) 
-  required by Blaney-Criddle formulation:
+  A list of data in class "BlaneyCriddle" which contains the following items (climate variables) required by Blaney-Criddle formulation:
   "Tmax", "Tmin", "RHmin", "n", "u2" or "uz"
   }
   \item{constants}{

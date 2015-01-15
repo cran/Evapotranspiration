@@ -1,31 +1,27 @@
-		CHANGES IN Evapotranspiration VERSION 1.4
+		CHANGES IN Evapotranspiration VERSION 1.5
 
 NEW FEATURES
-    o  In function ReadInputs: Adding checks to ensure processed daily values are physically meaningful (i.e. uz/u2 > 0; Rs > 0; 0 < n < 24; P > 0; Epan > 0; RHmax/RHmin > 0)  
 
-    o  In function ETComparison: Enabling user-defined label text for the comparison plots
-
-    o  In function ETComparison: Enabling user-defined starting and finishing data for comparison plots with types of 'Daily', 'Monthly' and 'Annual' 
+  NA
 
 SIGNIFICANT USER-VISIBLE CHANGES
 
-    o  The output variable names 'PET.Daily', 'PET.Monthly', 'PET.Annual', 'PET.MonthlyAve' and 'PET.AnnualAve' from ET formulations has been replaced with 'ET.Daily', 'ET.Monthly', 'ET.Annual', 'ET.MonthlyAve' and 'ET.AnnualAve' respectively to avoid confusion
+   o  ET.JensenHaise - Argument "solar" is now required, see manual for usage
 
-    o  The output variable names 'PET_formulation' and 'PET_type' from ET formulations has been replaced with 'ET_formulation' and 'ET_type' respectively to avoid confusion
-    
-    o  Argument 'labs' in ETComparison can be used to define text for lables in comparison plots - see manual for details
-
-    o  Arguments 'Sdate' and 'Edate' in ETComparison can be used to define starting and finishing data for comparison plots with types of 'Daily', 'Monthly' and 'Annual' - see manual for details
-
-    o  Arguments 'ymin' and 'ymax' in ETComparison have been replaced with a single arguement 'ylim' with length of 2 - see manual for details
+   o  ET.MortonCRAE & ET.MortonCRWE - Argument "solar" is now supporting the value of "data" for using direct solar radiation data, see manual for usage
 
 BUG FIXES
-    o  Fixed bugs in the use of argument 'stopmissing' in function ReadInput for checking maximum duration of missing data
-    
-    o  Fixed bugs in the Matt-Shuttleworth formulation
 
-    o  Fixed bugs in the use of argument 'solar' in the Morton formulations to be enable using the data of sunshine hours
+   o  ReadInputs - Fixed bugs when uz input is read by ReadInputs rather than u2
+
+   o  ET.PenmanMonteith - The routine for estimating PET without wind data in ET.PenmanMonteith is only available for estimating monthly PET regarding McMahon et al., 2012
+
+   o  ET.JensenHaise - Updated to include solar radiation as in Jensen & Haise, 1963
+
+   o  ET.SzilagyiJozsa - updated no-wind routing for calculating net incoming solar radiation
+
+   o  ET.McGuinnessBordne - minor corrections
 
 DEPRECATED & DEFUNCT
 
-   o	The value of the argument 'solar' has been updated to be consistent with other formulations - a value of 'sunshine hours' should be used to implement calculations from the data of sunshine hours
+   o  ET.Truc is now replaced by ET.Turc (fixed spelling error)

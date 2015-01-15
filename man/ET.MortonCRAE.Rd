@@ -7,7 +7,7 @@
 Implementing the Morton CRAE formulation for estimating potential evapotranspiration, wet-environment areal evapotranspiration and actual areal evapotranspiration.
 }
 \usage{
-\method{ET}{MortonCRAE}(data, constants, est, solar, Tdew, \dots)
+\method{ET}{MortonCRAE}(data, constants, est, solar, Tdew, alpha=NULL, \dots)
 }
 
 \arguments{
@@ -33,13 +33,16 @@ Implementing the Morton CRAE formulation for estimating potential evapotranspira
   "lambdaMo" - Latent heat of vaporisation in Morton's procedure, = 28.5W.day.kg^-1 when T >= 0 degree Celcius, = 28.5*1.15W.day.kg^-1 when T < 0 degree Celcius.
   }
   \item{solar}{
-  Must be either "sunshine hours" or "cloud". "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data.
+  Must be either "sunshine hours" or "data". "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "data" indicates that direct solar radiation measurements are used.
   }
   \item{est}{
   Must be either "potential ET", "wet areal ET" or "actual areal ET". "potential ET" proceeds to estimating potential evapotranspiration; "wet areal ET" proceeds to estimating wet-environmental areal evapotranspiration; "actual areal ET" proceeds to estimating actual areal evapotranspiraion
   }
   \item{Tdew}{
   Logical, must be either TRUE or FALSE, indicating if real data of dew point temperature is used for calculating the radiation in Morton's formulations, if TRUE the data will be used and if FALSE the dew point temperature will be calculated from data of daily vapour pressure.
+  }
+  \item{alpha}{
+  Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface (or surrounding surface for Penpan formulation) representing the portion of the incident radiation that is reflected back at the surface. The default is 0.08 for open-water surface which is for the calculation of Penman open-water evaporation, all other values will trigger the calculation of Penman potential evapotranspriation.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.

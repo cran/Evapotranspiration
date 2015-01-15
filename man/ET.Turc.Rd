@@ -1,22 +1,22 @@
-\name{ET.Truc}
-\alias{ET.Truc}
+\name{ET.Turc}
+\alias{ET.Turc}
 
-\title{Truc Formulation
+\title{Turc Formulation
 }
 \description{
-Implementing the Truc formulation for estimating reference crop evapotranspiration.
+Implementing the Turc formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{ET}{Truc}(data, constants, solar, humid, \dots) 
+\method{ET}{Turc}(data, constants, solar, humid, \dots) 
 }
 
 \arguments{
   \item{data}{
-  A list of data in class "Truc" which contains the following items (climate variables) required by Truc formulation:
+  A list of data in class "Turc" which contains the following items (climate variables) required by Turc formulation:
   "Tmax", "Tmin", "Rs", "n" or "Cd"
   }
   \item{constants}{
-  A list named "constants" consists of constants required for the calculation of Truc formulation which must contain the following items:
+  A list named "constants" consists of constants required for the calculation of Turc formulation which must contain the following items:
   "Elev" - ground elevation above mean sea level in m,
   "lambda" - latent heat of vaporisation = 2.45 MJ.kg^-1,
   "lat_rad" - latitude in radians,
@@ -29,7 +29,7 @@ Implementing the Truc formulation for estimating reference crop evapotranspirati
   Must be either "data", "sunshine hours", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
   }
   \item{humid}{
-  Must be TRUE or FALSE, indicating if adjustment for non-humid conditions is applied in Truc formulation (Alexandris et al., 2008, Equation 5b).
+  Must be TRUE or FALSE, indicating if adjustment for non-humid conditions is applied in Turc formulation (Alexandris et al., 2008, Equation 5b).
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -42,25 +42,25 @@ Implementing the Truc formulation for estimating reference crop evapotranspirati
 }
 
 \value{
-This function returns a object of class \code{Truc}. Such objects are list with components:
+This function returns a object of class \code{Turc}. Such objects are list with components:
 
   \item{ET.Daily}{
-  A \code{zoo} object containing daily aggregated estimations of Truc reference crop evapotranspiration.
+  A \code{zoo} object containing daily aggregated estimations of Turc reference crop evapotranspiration.
   }
   \item{ET.Monthly}{
-  A \code{zoo} object containing monthly aggregated estimations of Truc reference crop evapotranspiration.
+  A \code{zoo} object containing monthly aggregated estimations of Turc reference crop evapotranspiration.
   }
   \item{ET.Annual}{
-  A \code{zoo} object containing annually aggregated estimations of Truc reference crop evapotranspiration.
+  A \code{zoo} object containing annually aggregated estimations of Turc reference crop evapotranspiration.
   }
   \item{ET.MonthlyAve}{
-  A \code{zoo} object containing monthly averaged estimations of daily Truc reference crop evapotranspiration.
+  A \code{zoo} object containing monthly averaged estimations of daily Turc reference crop evapotranspiration.
   }
   \item{ET.AnnualAve}{
-  A \code{zoo} object containing annually averaged estimations of daily Truc reference crop evapotranspiration.
+  A \code{zoo} object containing annually averaged estimations of daily Turc reference crop evapotranspiration.
   }
   \item{ET_formulation}{
-  A character string containing the name of the formulation used which equals to "Truc".
+  A character string containing the name of the formulation used which equals to "Turc".
   }
   \item{ET_type}{
   A character string containing the type of the estimation obtained which is "Reference Crop Evapotranspiration".
@@ -69,7 +69,7 @@ This function returns a object of class \code{Truc}. Such objects are list with 
   A message to inform the users about how solar radiation has been calculated by using which data.
   }
   \item{message4}{
-  A message to inform the users about if adjustment for non-humid conditions has been applied to calculated Truc reference crop evapotranspiration.
+  A message to inform the users about if adjustment for non-humid conditions has been applied to calculated Turc reference crop evapotranspiration.
   }
 }
 \references{
@@ -89,17 +89,17 @@ Danlu Guo
 data("processeddata")
 data("constants")
 
-# Set data class to be "Truc" to call function
-funname <- "Truc" 
+# Set data class to be "Turc" to call function
+funname <- "Turc" 
 class(data) <- funname 
 
-# Call generic function ET(data, ...) with class "Truc"
+# Call generic function ET(data, ...) with class "Turc"
 results <- ET(data, constants, solar="sunshine hours", humid = TRUE)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
-\keyword{Truc}
+\keyword{Turc}
 \keyword{evapotranspiration}
 \keyword{reference crop evapotranspiration}
 % __ONLY ONE__ keyword per line
