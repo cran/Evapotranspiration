@@ -1,27 +1,16 @@
-		CHANGES IN Evapotranspiration VERSION 1.5
+		CHANGES IN Evapotranspiration VERSION 1.6
 
 NEW FEATURES
-
-  NA
+    
 
 SIGNIFICANT USER-VISIBLE CHANGES
+    o  Allowing daily input of raw climate data into ReadInputs()
 
-   o  ET.JensenHaise - Argument "solar" is now required, see manual for usage
-
-   o  ET.MortonCRAE & ET.MortonCRWE - Argument "solar" is now supporting the value of "data" for using direct solar radiation data, see manual for usage
+    o  Allowing blank values for arguments "Sdate", "Edate" and "ylim" for ETComparison()
 
 BUG FIXES
-
-   o  ReadInputs - Fixed bugs when uz input is read by ReadInputs rather than u2
-
-   o  ET.PenmanMonteith - The routine for estimating PET without wind data in ET.PenmanMonteith is only available for estimating monthly PET regarding McMahon et al., 2012
-
-   o  ET.JensenHaise - Updated to include solar radiation as in Jensen & Haise, 1963
-
-   o  ET.SzilagyiJozsa - updated no-wind routing for calculating net incoming solar radiation
-
-   o  ET.McGuinnessBordne - minor corrections
+    o  Allowing the use of u2 without when uz data is unavilable for ReadInputs()
+    
+    o  Correct the unit of solar radiation into MJ (i.e.megajoule) in ReadInputs.Rd
 
 DEPRECATED & DEFUNCT
-
-   o  ET.Truc is now replaced by ET.Turc (fixed spelling error)

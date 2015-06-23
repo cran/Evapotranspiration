@@ -441,15 +441,9 @@ ET.MattShuttleworth <- function(data, constants, solar, alpha, r_s, CH, ...) {
   r_clim[r_clim == 0] <- 0.1 # correction for r_clim = 0
   u2[u2 == 0] <- 0.1 # correction for u2 = 0
   VPD50toVPD2 <- (302 * (delta + gamma) + 70 * gamma * u2) / (208 * (delta + gamma) + 70 * gamma * u2) + 1/r_clim * ((302 * (delta + gamma) + 70 * gamma * u2) / (208 * (delta + gamma) + 70 * gamma * u2) * (208 / u2) - (302 / u2)) # ratio of vapour pressure deficits at 50m to vapour pressure deficits at 2m heights (S5.35)
-  deltap <- 4098 * (0.6108 * exp((17.27 * 20)/(20+237.3))) / ((Ta + 237.3)^2) # assume Tpref = 20
-  r_climp <- 104 * (1.26*(deltap+1.67)/(deltap+gamma)-1)
   r_c50 <- 1 / ((0.41)^2) * log((50 - 0.67 * CH) / (0.123 * CH)) * log((50 - 0.67 * CH) / (0.0123 * CH)) * log((2 - 0.08) / 0.0148) / log((50 - 0.08) / 0.0148) # aerodynamic coefficient (s*m^-1) (S5.36)
   
-  r_s1 <- (r_c50/u2 + (VPD50toVPD2)*r_climp)/(302/u2 + (VPD50toVPD2)*r_climp)*((deltap+gamma)*302/u2+70*gamma)/gamma
-  r_s2 <- (deltap+gamma)*r_c50/(gamma*u2)
-  
-  r_sc <- r_s1/1 - r_s2 # assumed reference crop KcFAO = 1
-  E_Tc.Daily <- (delta * R_ng + (constants$Roua * constants$Ca * u2 * (vas - vabar)) / r_c50 * VPD50toVPD2) / (delta + gamma * (1 + r_sc * u2 / r_c50)) # well-watered crop evapotranspiration in a semi-arid and windy location (S5.37)
+  E_Tc.Daily <- 1/constants$lambda * (delta * R_ng + (constants$Roua * constants$Ca * u2 * (vas - vabar)) / r_c50 * VPD50toVPD2) / (delta + gamma * (1 + r_s * u2 / r_c50)) # well-watered crop evapotranspiration in a semi-arid and windy location (S5.37)
   
   ET.Daily <- E_Tc.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)

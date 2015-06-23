@@ -8,7 +8,8 @@ Produce comparison plots for results and statistics from different estimations p
 }
 \usage{
 ETComparison(results1, results2, results3 = NULL, results4 = NULL, results5 = NULL, 
-results6 = NULL, results7 = NULL,labs, Sdate, Edate, type = "Monthly", ylim) 
+results6 = NULL, results7 = NULL, labs, Sdate = NULL, Edate = NULL, 
+type = "Monthly", ylim = rep(NA,2)) 
 
 }
 
@@ -37,13 +38,13 @@ results6 = NULL, results7 = NULL,labs, Sdate, Edate, type = "Monthly", ylim)
   \item{labs}{
   A character vector with the length equal to the number of sets of results to compare, defining the labels for the comparison plots}
   \item{Sdate}{
-  Only used when type = 'Daily', 'Monthly' and 'Annual' to define the start date for the plotting windows, the default is the first day for the estimate evapotranspiration, but can be defined by user in the format "YYYY-MM-DD".
+  Only used when type = 'Daily', 'Monthly' and 'Annual' to define the start date for the plotting windows, which can be defined by user in the format "YYYY-MM-DD"; if missing the default is the first day of data is used.
   }
   \item{Edate}{
-  Only used when type = 'Daily', 'Monthly' and 'Annual' to define the end date for the plotting windows, the default is the last day for the estimate evapotranspiration, but can be defined by user in the format "YYYY-MM-DD".
+  Only used when type = 'Daily', 'Monthly' and 'Annual' to define the end date for the plotting windows, which can be defined by user in the format "YYYY-MM-DD"; if missing the default is the last day of data is used. 
   }
   \item{ylim}{
-  A numeric vector of length 2 defining the lower and upper limit of the y-axis for plotting, the default is from 0 to 1.5 times of maximum value from the first set of result that is used to compare with others.
+  A numeric vector of length 2 defining the lower and upper limit of the y-axis for plotting, if missing the default is from 0 to 1.5 times of maximum value from the first set of result that is used to compare with others.
   }
   \item{type}{
   A character string indicating the type of plot produced, can be one of the following:
@@ -87,9 +88,8 @@ class(data) <- funname
 results_PenmanMonteith <- ET(data, constants, solar="sunshine hours", wind="yes", crop="short") 
 
 # Plot the estimated Penman open-water evaporation against average temperature
-ETComparison(results_Penman, results_PenmanMonteith, 
-labs = c("Penman","PenmanMonteith"), Sdate = NULL, Edate = NULL, 
-type = "Monthly", ylim=c(0,400))
+ETComparison(results_Penman, results_PenmanMonteith, type = "Monthly", ylim=c(0,400),
+labs=c("Penman","PenmanMonteith"))
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

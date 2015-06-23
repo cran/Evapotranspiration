@@ -7,7 +7,7 @@
 Load raw date and climate data, perform pre-processing, check for missing and error entries and then compile data list of daily time step.
 }
 \usage{
-ReadInputs(climatedata, constants, stopmissing)
+ReadInputs(climatedata, constants, stopmissing, timestep)
 
 }
 
@@ -24,7 +24,7 @@ ReadInputs(climatedata, constants, stopmissing)
   "RHmax.daily" - daily maximum relative humidity in percentage,
   "RHmin.daily" - daily minimum relative humidity in percentage,
   "RH.subdaily" - subdaily relative humidity in degree Celcius,
-  "Rs.daily" - daily incoming solar radiation in Millijoules per square metres per day,
+  "Rs.daily" - daily incoming solar radiation in Megajoules per square metres per day,
   "n.daily" - daily sunshine hour in hours,
   "Cd.daily" - daily cloud cover in oktas,
   "Precip.daily" - daily precipitation in millimitres,
@@ -42,6 +42,9 @@ ReadInputs(climatedata, constants, stopmissing)
   }
   \item{stopmissing}{
   A numeric vector of length 2. The first value represents the maximum percentage of missing data that the user can tolerate; the second value represents the maximum percentage of the duration of missing data to the total data duaration that the user can toleratre. Both values should be numbers between 1 and 99. The percentages of the number and duration of missing data in each input variable are compared to the corresponding threshold, below which the missing data will be interpolated and otherwise the program will be terminated due to unsatisfactory data quality.
+  }
+  \item{timestep}{
+  Should be either "daily" or "subdaily" to specify the time step of raw climate data used.
   }
   }
 
@@ -115,7 +118,7 @@ Danlu Guo
 # ReadInputs climate data
 data("climatedata")
 data("constants")
-data <- ReadInputs(climatedata, constants, stopmissing = c(10,3))
+data <- ReadInputs(climatedata, constants, stopmissing = c(10,3),timestep="subdaily")
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

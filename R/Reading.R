@@ -5,7 +5,7 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c("funname"))
 # A Function for reading, checking and doing basic calculation from data for Evapotranspiration functions #
 # Timestep - daily
 
-ReadInputs <- function(climatedata, constants, stopmissing) {
+ReadInputs <- function(climatedata, constants, stopmissing,timestep) {
   
   # Checking if all data required are available, give error message if not
   
@@ -21,22 +21,41 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
   }
   
   # Date
-  Date.subdaily <- strptime(paste(climatedata$Day, "/", climatedata$Month, "/", climatedata$Year, " ", climatedata$Hour, sep=""), "%d/%m/%Y %H")
-  Date.daily <- unique(as.Date(Date.subdaily, "%d/%m/%y"))
-  Date.monthly <- unique(as.yearmon(Date.subdaily, "%d/%m/%y"))
-  
-  # Julian day
-  J.temp <- zoo(Date.subdaily$yday+1,as.Date(Date.subdaily)) # Julian calendar day; 1 added in to that first Jan = day 1
-  J <- aggregate(J.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-  
-  # Number of month
-  i.temp  <- unique(as.yearmon(Date.daily, "%m/%y"))
-  i  <- (i.temp - trunc(i.temp))*12 + 1    #Month 
-  
-  # Number of days in a month
-  ndays.temp <- zoo(climatedata$Day, as.Date(Date.subdaily))
-  ndays.temp <- aggregate(ndays.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-  ndays <- aggregate(ndays.temp, as.yearmon(Date.daily, "%m/%y"), FUN = max)
+  if (timestep=="subdaily") {
+    Date.subdaily <- strptime(paste(climatedata$Day, "/", climatedata$Month, "/", climatedata$Year, " ", climatedata$Hour, sep=""), "%d/%m/%Y %H")
+    Date.daily <- unique(as.Date(Date.subdaily, "%d/%m/%y"))
+    Date.monthly <- unique(as.yearmon(Date.subdaily, "%d/%m/%y"))
+    
+    # Julian day
+    J.temp <- zoo(Date.subdaily$yday+1,as.Date(Date.subdaily)) # Julian calendar day; 1 added in to that first Jan = day 1
+    J <- aggregate(J.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
+    
+    # Number of month
+    i.temp  <- unique(as.yearmon(Date.daily, "%m/%y"))
+    i  <- (i.temp - trunc(i.temp))*12 + 1    #Month 
+    
+    # Number of days in a month
+    ndays.temp <- zoo(climatedata$Day, as.Date(Date.subdaily))
+    ndays.temp <- aggregate(ndays.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
+    
+  } else if (timestep=="daily") {
+    Date.daily <- strptime(paste(climatedata$Day, "/", climatedata$Month, "/", climatedata$Year, sep=""), "%d/%m/%Y")
+    Date.monthly <- unique(as.yearmon(Date.daily, "%d/%m/%y"))
+    
+    # Julian day
+    J.temp <- zoo(Date.daily$yday+1,as.Date(Date.daily)) # Julian calendar day; 1 added in to that first Jan = day 1
+    J <- aggregate(J.temp, as.Date(Date.daily, "%d/%m/%y"),mean)
+    
+    # Number of month
+    i.temp  <- unique(as.yearmon(Date.daily, "%m/%y"))
+    i  <- (i.temp - trunc(i.temp))*12 + 1    #Month 
+    
+    # Number of days in a month
+    ndays.temp <- zoo(climatedata$Day, as.Date(Date.daily))
+    ndays.temp <- aggregate(ndays.temp, as.Date(Date.daily, "%d/%m/%y"),mean)
+    
+  }
+   ndays <- aggregate(ndays.temp, as.yearmon(Date.daily, "%m/%y"), FUN = max)
   
   # check acceptable % missing data
   if (is.na(as.numeric(stopmissing[1])) | is.na(as.numeric(stopmissing[1]))) {
@@ -82,9 +101,14 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    Tmax.temp <- zoo(as.vector(climatedata$Tmax.daily), as.Date(Date.subdaily))
-    Tmax <- aggregate(Tmax.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
-    message(paste("Number of days increments when Tmax has errors: ", sum(Tmax>100)))
+    if (timestep == "subdaily") {
+      Tmax.temp <- zoo(as.vector(climatedata$Tmax.daily), as.Date(Date.subdaily))
+      Tmax <- aggregate(Tmax.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
+    } else if (timestep == "daily") {
+      Tmax.temp <- zoo(as.vector(climatedata$Tmax.daily), as.Date(Date.daily))
+      Tmax <- aggregate(Tmax.temp, as.Date(Date.daily, "%d/%m/%y"),mean)
+    } 
+     message(paste("Number of days increments when Tmax has errors: ", sum(Tmax>100)))
     message("Monthly averages have been calculated to adjust data with error")
     for (m in 0:11) {
       Tmax[as.POSIXlt(time(Tmax))$mon==m & as.numeric(Tmax)>100] = mean(Tmax[as.POSIXlt(time(Tmax))$mon==m & as.numeric(Tmax)<100])
@@ -147,8 +171,13 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    Tmin.temp <- zoo(as.vector(climatedata$Tmin.daily), as.Date(Date.subdaily))
-    Tmin <- aggregate(Tmin.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
+    if (timestep=="subdaily") {
+      Tmin.temp <- zoo(as.vector(climatedata$Tmin.daily), as.Date(Date.subdaily))
+      Tmin <- aggregate(Tmin.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
+    } else if (timestep=="daily") {
+      Tmin.temp <- zoo(as.vector(climatedata$Tmin.daily), as.Date(Date.daily))
+      Tmin <- aggregate(Tmin.temp, as.Date(Date.daily, "%d/%m/%y"),mean)
+    }
     message(paste("Number of days increments when Tmin has errors: ", sum(Tmin>100)))
     message("Monthly averages have been calculated to adjust data with error")
     for (m in 0:11) {
@@ -220,6 +249,7 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
       u2.temp[as.POSIXlt(time(u2.temp))$mon==m &  as.numeric(is.na(u2.temp))] = mean(u2.temp[as.POSIXlt(time(u2.temp))$mon==m &  as.numeric(!is.na(u2.temp))]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
     }
     u2 <- aggregate(u2.temp, as.Date(Date.subdaily, "%d/%m/%y"),mean)
+    uz <- NULL
   } else if ("uz.subdaily" %in% (colnames(climatedata))) {
     if ("TRUE" %in% (is.na(climatedata$uz.subdaily))) {
       message("Warning: missing data of 'u2.subdaily', calculated from 'uz.subdaily")
@@ -502,8 +532,15 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    RHmax.temp <- zoo(as.vector(climatedata$RHmax.daily), as.Date(Date.subdaily))
-    RHmax <- aggregate(RHmax.temp, as.Date(Date.subdaily, "%d/%m/%y") ,FUN = mean) 
+    if (timestep=="subdaily") {
+      RHmax.temp <- zoo(as.vector(climatedata$RHmax.daily), as.Date(Date.subdaily))
+      RHmax <- aggregate(RHmax.temp, as.Date(Date.subdaily, "%d/%m/%y") ,FUN = mean) 
+      
+    } else if (timestep=="daily") {
+      RHmax.temp <- zoo(as.vector(climatedata$RHmax.daily), as.Date(Date.daily))
+      RHmax <- aggregate(RHmax.temp, as.Date(Date.daily, "%d/%m/%y") ,FUN = mean) 
+      
+    }
     for (m in 0:11) {
       RHmax[as.POSIXlt(time(RHmax))$mon==m &  as.numeric(RHmax)<0] = mean(RHmax[as.POSIXlt(time(RHmax))$mon==m &  as.numeric(RHmax)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
       RHmax[as.POSIXlt(time(RHmax))$mon==m & is.na(RHmax)] = mean(RHmax[as.POSIXlt(time(RHmax))$mon==m & !is.na(RHmax)])
@@ -572,8 +609,15 @@ ReadInputs <- function(climatedata, constants, stopmissing) {
         message("Monthly averages have been calculated to fill missing data entries")
       }
     }
-    RHmin.temp <- zoo(as.vector(climatedata$RHmin.daily), as.Date(Date.subdaily))
-    RHmin <- aggregate(RHmin.temp, as.Date(Date.subdaily, "%d/%m/%y") ,FUN = mean) 
+    if (timestep=="daily") {
+      RHmin.temp <- zoo(as.vector(climatedata$RHmin.daily), as.Date(Date.daily))
+      RHmin <- aggregate(RHmin.temp, as.Date(Date.daily, "%d/%m/%y") ,FUN = mean) 
+      
+    } else if (timestep=="subdaily") {
+      RHmin.temp <- zoo(as.vector(climatedata$RHmin.daily), as.Date(Date.subdaily))
+      RHmin <- aggregate(RHmin.temp, as.Date(Date.subdaily, "%d/%m/%y") ,FUN = mean) 
+      
+    }
     for (m in 0:11) {
       RHmin[as.POSIXlt(time(RHmin))$mon==m &  as.numeric(RHmin)<0] = mean(RHmin[as.POSIXlt(time(RHmin))$mon==m &  as.numeric(RHmin)>0]) # Changing to monthly mean (once again doesn't affect large portion of the sample)
       RHmin[as.POSIXlt(time(RHmin))$mon==m & is.na(RHmin)] = mean(RHmin[as.POSIXlt(time(RHmin))$mon==m & !is.na(RHmin)])
