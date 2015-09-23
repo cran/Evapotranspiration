@@ -1,16 +1,21 @@
-		CHANGES IN Evapotranspiration VERSION 1.6
+		CHANGES IN Evapotranspiration VERSION 1.7
 
 NEW FEATURES
-    
+
+    o  Four new models added to ET...() - ET.Hamon (PET), ET.Linacre (AET), ET.Romanenko (PET) and ET.Abtew (AET)
+
+    o  for ET.MortonCRAE(), ET.MortonCRWE() - Allow the use of actual solar radiation data, with arguments 'solar' = "data" and user specified alpha value (see manual for details)
+
+    o  for ET.Penpan() - Allow flexible choice of estimation for either the Class-A pan evaporation, with argument 'est' == "pan"; or potential evapotranspiration, with argument 'est' == "potential ET" and to 'pan_coeff' to specify the pan coefficient (see manual for details)
+
+    o  ReadInputs - Allow user-defined timestep of raw data, with argument 'timestep' of either "daily" or "subdaily"
 
 SIGNIFICANT USER-VISIBLE CHANGES
-    o  Allowing daily input of raw climate data into ReadInputs()
-
-    o  Allowing blank values for arguments "Sdate", "Edate" and "ylim" for ETComparison()
+NA
 
 BUG FIXES
-    o  Allowing the use of u2 without when uz data is unavilable for ReadInputs()
-    
-    o  Correct the unit of solar radiation into MJ (i.e.megajoule) in ReadInputs.Rd
+
+    o  ReadInputs - Fix bugs in ReadInputs due to inconsistency in time steps in data
 
 DEPRECATED & DEFUNCT
+NA

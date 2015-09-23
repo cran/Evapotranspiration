@@ -601,31 +601,29 @@ ET.PriestleyTaylor <- function(data, constants, solar, alpha, ...) {
 
   #-------------------------------------------------------------------------------------
 
-ET.Penpan <- function(data, constants, solar, alpha, overest, ...) {
+ET.Penpan <- function (data, constants, solar, alpha, est, pan_coeff=NULL, overest, ...) {
   class(data) <- funname
-  
-  # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax) | is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
-  if (is.null(data$RHmax)|is.null(data$RHmin)) {
+  if (is.null(data$RHmax) | is.null(data$RHmin)) {
     stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
   }
   if (is.null(data$u2) & is.null(data$uz)) {
     stop("Required data missing for 'uz.subdaily' or 'u2.subdaily'")
   }
-  
-  if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+  if (solar == "data" & is.null(data$Rs)) {
     stop("Required data missing for 'Rs.daily'")
-  } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
+  }
+  else if (solar == "sunshine hours" & is.null(data$n)) {
     stop("Required data missing for 'n.daily'")
-  } else if (solar == "cloud" & is.null(data$Cd)) { # for alternative calculation of sunshine hours using cloud cover
+  }
+  else if (solar == "cloud" & is.null(data$Cd)) {
     stop("Required data missing for 'Cd.daily'")
-  } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
+  }
+  else if (solar == "monthly precipitation" & is.null(data$Precip)) {
     stop("Required data missing for 'Precip.daily'")
   }
-  
-  # check user-input albedo
   if (is.na(as.numeric(alpha))) {
     stop("Please use a numeric value for the alpha (albedo of evaporative surface)")
   }
@@ -633,100 +631,107 @@ ET.Penpan <- function(data, constants, solar, alpha, overest, ...) {
     if (as.numeric(alpha) < 0 | as.numeric(alpha) > 1) {
       stop("Please use a value between 0 and 1 for the alpha (albedo of evaporative surface)")
     }
-  } 
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
-  # Saturated vapour pressure
-  vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
-  vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
-  vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-  
-  # Vapour pressure
-  vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
-  
-  # Calculations from data and constants for Penpan
-  
-  P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
-  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
-  gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
-  d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
-  delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
-  w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
-  N <- 24/pi * w_s # calculating daily values
-  R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
-  R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
-  
+  }
+  Ta <- (data$Tmax + data$Tmin)/2
+  vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax/(data$Tmax + 237.3))
+  vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin/(data$Tmin + 237.3))
+  vas <- (vs_Tmax + vs_Tmin)/2
+  vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2
+  P <- 101.3 * ((293 - 0.0065 * constants$Elev)/293)^5.26
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta + 237.3)))/((Ta + 
+                                                                237.3)^2)
+  gamma <- 0.00163 * P/constants$lambda
+  d_r2 <- 1 + 0.033 * cos(2 * pi/365 * data$J)
+  delta2 <- 0.409 * sin(2 * pi/365 * data$J - 1.39)
+  w_s <- acos(-tan(constants$lat_rad) * tan(delta2))
+  N <- 24/pi * w_s
+  R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * 
+                                               sin(delta2) + cos(constants$lat_rad) * cos(delta2) * 
+                                               sin(w_s))
+  R_so <- (0.75 + (2 * 10^-5) * constants$Elev) * R_a
   if (solar == "data") {
     R_s <- data$Rs
-  } else if (solar!="monthly precipitation") {
-    # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
-  } else {
-    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-    R_s <- (0.85 - 0.047*data$Cd)*R_a 
   }
-  
-  # Wind speed
+  else if (solar != "monthly precipitation") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * 
+      R_a
+  }
+  else {
+    R_s <- (0.85 - 0.047 * data$Cd) * R_a
+  }
   if (is.null(data$u2)) {
-    u2 <- data$uz * 4.87 / log(67.8*constants$z - 5.42) # Equation S5.20 for PET formulations other than Penman
-  } else {
+    u2 <- data$uz * 4.87/log(67.8 * constants$z - 5.42)
+  }
+  else {
     u2 <- data$u2
   }
-  
-  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
-  # For short grass
-  P_rad <- 1.32 + 4 * 10^(-4) * abs(constants$lat) + 8 * 10^(-5) * (constants$lat)^2 # pan radiation factor (S6.6)
-  f_dir <- -0.11 + 1.31 * R_s / R_a # fraction of R_S that os direct (S6.5)
-  R_span <- (f_dir * P_rad + 1.42 * (1 - f_dir) + 0.42 * alpha) * R_s # total shortwave radiation received (S6.4)
-  R_npan <-(1 - constants$alphaA) * R_span - R_nl # net radiation at the pan (S6.3)
-  f_pan_u <-1.201 + 1.621 * u2 # (S6.2)
-  
-  Epenpan.Daily <- delta / (delta + constants$ap * gamma) * R_npan / constants$lambda + constants$ap * gamma / (delta + constants$ap * gamma) * f_pan_u * (vas - vabar) # Penpan estimation of Class-A pan evaporation (S6.1)
+  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * 
+    ((data$Tmax + 273.2)^4 + (data$Tmin + 273.2)^4)/2 * 
+    (1.35 * R_s/R_so - 0.35)
+  P_rad <- 1.32 + 4 * 10^(-4) * abs(constants$lat) + 8 * 10^(-5) * 
+    (constants$lat)^2
+  f_dir <- -0.11 + 1.31 * R_s/R_a
+  R_span <- (f_dir * P_rad + 1.42 * (1 - f_dir) + 0.42 * alpha) * 
+    R_s
+  R_npan <- (1 - constants$alphaA) * R_span - R_nl
+  f_pan_u <- 1.201 + 1.621 * u2
+  Epenpan.Daily <- delta/(delta + constants$ap * gamma) * 
+    R_npan/constants$lambda + constants$ap * gamma/(delta + 
+                                                      constants$ap * gamma) * f_pan_u * (vas - vabar)
   if (overest == TRUE) {
-    Epenpan.Daily <- Epenpan.Daily / 1.078 # adjusted by 1.078 to balance overestimation observed by McMahon 
+    if (est == "potential ET") {
+      Epenpan.Daily <- Epenpan.Daily/1.078*pan_coeff
+    } else {
+      Epenpan.Daily <- Epenpan.Daily/1.078
+    }
   }
   
-    
   ET.Daily <- Epenpan.Daily
-  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, 
+                                               "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, 
+                                                               "%m/%y"))), FUN = sum)
   ET.MonthlyAve <- ET.AnnualAve <- NULL
-  for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
+  for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)) {
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon == 
+                                        mon])
   }
-  for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
+  for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)) {
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year == 
+                                       year])
   }
-  
-  # Generate summary message for results
   ET_formulation <- "Penpan"
-  ET_type <- "Class-A Pan Evaporation"
+  if (est == "potential ET") {
+    ET_type <- "potential ET"
+  } else if (est == "pan") {
+    ET_type <- "Class-A Pan Evaporation"
+  }
   Surface <- paste("user-defined, albedo =", alpha)
-  
   if (solar == "data") {
     message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
-  } else if (solar == "sunshine hours") {
+  }
+  else if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
-  } else if (solar == "cloud") {
+  }
+  else if (solar == "cloud") {
     message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
-  } else {
+  }
+  else {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
-  
   message(ET_formulation, " ", ET_type)
   message("Evaporative surface: ", Surface)
   message(message1)
-  
-  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
+  results <- list(ET.Daily = ET.Daily, ET.Monthly = ET.Monthly, 
+                  ET.Annual = ET.Annual, ET.MonthlyAve = ET.MonthlyAve, 
+                  ET.AnnualAve = ET.AnnualAve, ET_formulation = ET_formulation, 
+                  ET_type = ET_type, message1 = message1)
   class(results) <- funname
-  
   return(results)
 }
+
 
   #-------------------------------------------------------------------------------------
 
@@ -1472,6 +1477,186 @@ ET.Turc <- function(data, constants, solar, humid, ...) {
 
   #-------------------------------------------------------------------------------------
 
+ET.Hamon <- function(data, constants, ...) {
+  Ta <- (data$Tmax + data$Tmin) / 2 
+  
+  # Saturated vapour pressure
+  vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+  vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+  vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
+  
+  ET_Hamon.Daily <- 0.55 * 25.4 * (data$n/12)^2 * (216.7 * vas * 10 / (Ta + 273.3))/100 # Rosenberry et al., 2004 
+  
+  ET.Daily <- ET_Hamon.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
+  for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
+    i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+  }
+  for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
+    i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+  }
+  
+  # Generate summary message for results
+  ET_formulation <- "Hamon"
+  ET_type <- "Potential ET"
+  
+  message(ET_formulation, " ", ET_type)
+  
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
+  class(results) <- funname
+  
+  return(results)
+} 
+# Oudin et al., 2005
+
+  #-------------------------------------------------------------------------------------
+
+ET.Linacre <- function(data, constants, ...) {
+  Ta <- (data$Tmax + data$Tmin) / 2 
+  T_m <- Ta + 0.006 * constants$Elev
+  ET_Linacre.Daily <- (500 * T_m /(100 - constants$lat)+15*(Ta - data$Tdew))/(80 - Ta)
+  
+  ET.Daily <- ET_Linacre.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
+  for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
+    i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+  }
+  for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
+    i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+  }
+  
+  # Generate summary message for results
+  ET_formulation <- "Linacre"
+  ET_type <- "Actual ET"
+  
+  message(ET_formulation, " ", ET_type)
+  
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
+  class(results) <- funname
+  
+  return(results)
+}
+# Linacre ET. 1977. A simple formula for estimating evaporation rates in various climates, using temperature data alone. AgriculturalMeteorology 18: 409-424.
+
+  #-------------------------------------------------------------------------------------
+
+ET.Romanenko <- function(data, constants, ...) {
+  Ta <- (data$Tmax + data$Tmin) / 2 
+  
+  # Saturated vapour pressure
+  vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+  vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+  vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
+  
+  # Vapour pressure
+  vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
+  
+  ET_Romanenko.Daily <- 4.5 * (1 + Ta / 25)^2 * (1 - vabar/vas)
+  ET.Daily <- ET_Romanenko.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
+  for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
+    i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+  }
+  for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
+    i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+  }
+  
+  # Generate summary message for results
+  ET_formulation <- "Romanenko"
+  ET_type <- "Actual ET"
+  
+  message(ET_formulation, " ", ET_type)
+  
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
+  class(results) <- funname
+  
+  return(results)
+}
+# Oudin et al., 2005
+
+#-------------------------------------------------------------------------------------
+
+ET.Abtew <- function(data, constants, solar, ...) {
+  # Calculating mean temperature 
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
+  
+  # Calculations from data and constants for Penman
+  
+  P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+  gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
+  d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
+  delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
+  w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
+  N <- 24/pi * w_s # calculating daily values
+  R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+  R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
+  
+  if (solar == "data") {
+    R_s <- data$Rs
+  } else if (solar!="monthly precipitation") {
+    # calculate R_s from sunshine hours - data or estimation using cloudness
+    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
+  } else {
+    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
+    R_s <- (0.85 - 0.047*data$Cd)*R_a 
+  }
+  
+  ET_Abtew.Daily <- 0.52 * R_s/constants$lambda
+  
+  ET.Daily <- ET_Abtew.Daily
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
+  for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
+    i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+  }
+  for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
+    i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+  }
+  
+  # Generate summary message for results
+  ET_formulation <- "Abtew"
+  ET_type <- "Actual ET"
+  
+  if (solar == "data") {
+    message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
+  } else if (solar == "sunshine hours") {
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
+  } else if (solar == "cloud") {
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
+  }
+  
+  
+  message(ET_formulation, " ", ET_type)
+  message(message1)
+  
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
+  class(results) <- funname
+  
+  return(results)
+}
+# Abtew, W. (1996), EVAPOTRANSPIRATION MEASUREMENTS AND MODELING FOR THREE WETLAND SYSTEMS IN SOUTH FLORIDA. JAWRA Journal of the American Water Resources Association, 32: 465-473. doi: 10.1111/j.1752-1688.1996.tb04044.x
+  #-------------------------------------------------------------------------------------
+
 ET.HargreavesSamani <- function(data, constants, ...) {
   class(data) <- funname
   
@@ -1802,365 +1987,408 @@ ET.McGuinnessBordne <- function(data, constants, ...) {
   #####################################################
 
   # Calculate radiation variables
-Radiation <- function(data, constants, solar, Tdew, alpha=NULL) {
+Radiation <- function (data, constants, solar, Tdew, alpha = NULL) {
   class(data) <- funname
-
-    # Check of specific data requirement
-    if (is.null(data$Tmax)) {
-      stop("Required data missing for 'Tmax.daily' or 'Temp.subdaily'")
+  if (is.null(data$Tmax)) {
+    stop("Required data missing for 'Tmax.daily' or 'Temp.subdaily'")
+  }
+  if (is.null(data$Tmin)) {
+    stop("Required data missing for 'Tmin.daily' or 'Temp.subdaily'")
+  }
+  if (Tdew == TRUE & is.null(data$Tdew)) {
+    stop("Required data missing for 'Tdew.subdaily'")
+  }
+  if (Tdew == FALSE & (is.null(data$RHmax) | is.null(data$RHmin))) {
+    stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
+  }
+  if (is.null(data$n)) {
+    stop("Required data missing for 'n.daily'")
+  }
+  if (solar == "monthly precipitation") {
+    stop("Only 'data', 'sunshine hours' and 'cloud' are accepted because estimations of sunshine hours is required")
+  }
+  if (is.null(data$Precip)) {
+    if ("PA" %in% names(constants) == FALSE) {
+      stop("Required data missing for 'Precip.daily' or required constant missing for 'PA'")
     }
-    if (is.null(data$Tmin)) {
-      stop("Required data missing for 'Tmin.daily' or 'Temp.subdaily'")
-    }
-    if (Tdew == TRUE & is.null(data$Tdew)) {
-      stop("Required data missing for 'Tdew.subdaily'")
-    }
-    if (Tdew == FALSE & (is.null(data$RHmax)|is.null(data$RHmin))) {
-      stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
-    }
-    if (is.null(data$n)) {
-      stop("Required data missing for 'n.daily'")
-    }
-    if (solar == "monthly precipitation") {
-      stop("Only 'data', 'sunshine hours' and 'cloud' are accepted because estimations of sunshine hours is required")
-    }  
+  }
   
-    if (is.null(data$Precip)) {
-      if ("PA" %in% names(constants) == FALSE) { 
-        stop("Required data missing for 'Precip.daily' or required constant missing for 'PA'")
-      } # if annual average rainfall is not in data check the constants file
-    } 
-  
-    # Convert daily data to required monthly data
-    Tmax_Mo <- aggregate(data$Tmax, as.yearmon(data$Date.daily, "%m/%y"), FUN = max)
-    Tmin_Mo <- aggregate(data$Tmin, as.yearmon(data$Date.daily, "%m/%y"), FUN = min)
-    T_Mo <- (Tmax_Mo + Tmin_Mo) / 2
-    
-    # Dew point temperature 
-    if (Tdew == TRUE) {
-      Tdew_Mo <- aggregate(data$Tdew, as.yearmon(data$Date.daily, "%m/%y"), FUN = mean)
-    } else {
-      # Saturated vapour pressure
-      vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
-      vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
-      vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-      
-      # Vapour pressure
-      vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
-      
-      vabar_Mo <- aggregate(vabar, as.yearmon(data$Date.daily, "%m/%y"), FUN = mean)
-      Tdew_Mo <- (116.9 + 237.3*log(vabar_Mo)) / (16.78 - log(vabar_Mo))
-    }
-    
-    # calculating ratio of daily sunshine hours to maximum daily sunshine hours, according to Morton's, averaged over all records
-    
-    # Slope of saturation vapour pressure curve [kPa/C]
-    delta <- 4098 * (0.6108 * exp(17.27 * T_Mo / (T_Mo + 237.3)))/ (T_Mo + 237.3)^2 # Equation S2.4 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 13 in Allen et al, 1998. 
-    
-    # Mean daily maximum sunshine hours
-    deltas <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar declination (rad) (S3.7)
-    omegas <- acos(-tan(constants$lat_rad) * tan(deltas)) # sunset hour angle (rad) (S3.8)
-    
+  T_Mo.temp <- (data$Tmax+data$Tmin)/2
+  T_Mo <- aggregate(T_Mo.temp, as.yearmon(data$Date.daily,"%m/%y"), FUN = mean)
+  #Tmax_Mo <- aggregate(data$Tmax, as.yearmon(data$Date.daily, 
+  #                                           "%m/%y"), FUN = max)
+  #Tmin_Mo <- aggregate(data$Tmin, as.yearmon(data$Date.daily, 
+  #                                           "%m/%y"), FUN = min)
+  #T_Mo <- (Tmax_Mo + Tmin_Mo)/2
+  if (Tdew == TRUE) {
+    Tdew_Mo <- aggregate(data$Tdew, as.yearmon(data$Date.daily, 
+                                               "%m/%y"), FUN = mean)
+  }
+  else {
+    vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax/(data$Tmax + 
+                                                 237.3))
+    vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin/(data$Tmin + 
+                                                 237.3))
+    vas <- (vs_Tmax + vs_Tmin)/2
+    vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2
+    vabar_Mo <- aggregate(vabar, as.yearmon(data$Date.daily, 
+                                            "%m/%y"), FUN = mean)
+    Tdew_Mo <- (116.9 + 237.3 * log(vabar_Mo))/(16.78 - 
+                                                  log(vabar_Mo))
+  }
+  delta <- 4098 * (0.6108 * exp(17.27 * T_Mo/(T_Mo + 237.3)))/(T_Mo + 
+                                                                 237.3)^2
+  deltas <- 0.409 * sin(2 * pi/365 * data$J - 1.39)
+  omegas <- acos(-tan(constants$lat_rad) * tan(deltas))
   if (solar == "sunshine hours") {
-    N <- 24/pi * omegas # calculating daily values
-    
-    S_daily <- data$n/N # daily ratios
+    N <- 24/pi * omegas
+    S_daily <- data$n/N
     for (i in 1:length(S_daily)) {
       if (S_daily[i] > 1) {
         S_daily[i] <- 1
       }
-    } # Criteria daily sunshine hours <= maximum daily sunshine hours
-    
-    S <- mean(S_daily) # according to Morton's, averaged over all records
-    
-    # Annual average rainfall
+    }
+    S <- mean(S_daily)
     if ("PA" %in% names(constants) == TRUE) {
       PA <- constants$PA
-    } else {
-      PA <- mean(aggregate(data$Precip, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum))
     }
-    
-    
-    # Update the following constant values for CRWE and CRLE  
-    if (class(data) == "MortonCRLE" | class(data) =="MortonCRWE") {
-      constants$epsilonMo <- 0.97 # (Morton, 1983)
-      constants$fz <- 25.0 # Wm^-2.mbar^-1 for T >= 0 degree Celcius (Morton, 1983)
-      constants$b0 <- 1.12 # (Morton, 1983)
-      constants$b1 <- 13 # W.m^-2 (Morton, 1983)
-      constants$b2 <- 1.12 # (Morton, 1983)
+    else {
+      PA <- mean(aggregate(data$Precip, floor(as.numeric(as.yearmon(data$Date.daily, 
+                                                                    "%m/%y"))), FUN = sum))
     }
-    # calculate radiation
-    ptops <- ((288 - 0.0065 * constants$Elev) / 288)^5.256 # ratio of atmospheric pressure to sea-level pressure (S21.3)
-    alpha_zd <- 0.26 - 0.00012 * PA * sqrt(ptops) * (1 + abs(constants$lat/42) + (constants$lat/42)^2) # zenith value of the dry-season snow-free clear sky albedo 
-    if (alpha_zd < 0.11) { 
-      alpha_zd <- 0.11 
-    } else {
+    if (class(data) == "MortonCRLE" | class(data) == "MortonCRWE") {
+      constants$epsilonMo <- 0.97
+      constants$fz <- 25
+      constants$b0 <- 1.12
+      constants$b1 <- 13
+      constants$b2 <- 1.12
+    }
+    ptops <- ((288 - 0.0065 * constants$Elev)/288)^5.256
+    alpha_zd <- 0.26 - 0.00012 * PA * sqrt(ptops) * (1 + 
+                                                       abs(constants$lat/42) + (constants$lat/42)^2)
+    if (alpha_zd < 0.11) {
+      alpha_zd <- 0.11
+    }
+    else {
       if (alpha_zd > 0.17) {
         alpha_zd <- 0.17
-      } else {
+      }
+      else {
         alpha_zd <- alpha_zd
       }
-    } # constraint 0.11 <= alpha_zd <= 0.17 (S21.7)
-    vD_Mo <- 6.11 * exp(constants$alphaMo * Tdew_Mo / (Tdew_Mo + constants$betaMo)) # Saturation vapour pressure at dew point temperature (S21.8)
-    v_Mo <- 6.11 * exp(constants$alphaMo * T_Mo / (T_Mo + constants$betaMo)) # Saturation vapour pressure at air temperature (S21.10)
-    deltaMo <- constants$alphaMo * constants$betaMo * v_Mo/((T_Mo+constants$betaMo)^2) # mbar slope of vapour pressure curve (S21.12)
-    thetaMo <- (23.2 * sin((29.5 * data$i - 94) * pi/180)) * pi/180 # angle of extra-terrestrial global radiation (S21.14)
-    Z_Mo <- acos(cos(constants$lat_rad - thetaMo)) # (S21.16)
+    }
+    vD_Mo <- 6.11 * exp(constants$alphaMo * Tdew_Mo/(Tdew_Mo + 
+                                                       constants$betaMo))
+    v_Mo <- 6.11 * exp(constants$alphaMo * T_Mo/(T_Mo + 
+                                                   constants$betaMo))
+    deltaMo <- constants$alphaMo * constants$betaMo * v_Mo/((T_Mo + 
+                                                               constants$betaMo)^2)
+    thetaMo <- (23.2 * sin((29.5 * data$i - 94) * pi/180)) * 
+      pi/180
+    Z_Mo <- acos(cos(constants$lat_rad - thetaMo))
     for (i in 1:length(Z_Mo)) {
       if (cos(Z_Mo[i]) < 0.001) {
         Z_Mo[i] <- acos(0.001)
-      } 
-    }# constraint cosZ_Mo >= 0.001 (S21.19)
-    omegaMo <- acos(1 - cos(Z_Mo)/(cos(constants$lat_rad)*cos(thetaMo))) # (S21.20)
-    cosz <- cos(Z_Mo) + (sin(omegaMo)/omegaMo - 1) * cos(constants$lat_rad) * cos(thetaMo) # (S21.23)
-    etaMo <- 1 + 1/60*sin((29.5 * data$i - 106) * pi/180) # (S21.25)
-    G_E <- 1354/(etaMo^2) * omegaMo/pi * cosz # Extra-terrestrial blobal radiation (S21.27)
-    alpha_zz <- matrix(NA,length(v_Mo),1)
-    alpha_zz[1:length(v_Mo)] <- alpha_zd # zenith value of snow-free clear sky albedo (S21.29)
+      }
+    }
+    omegaMo <- acos(1 - cos(Z_Mo)/(cos(constants$lat_rad) * 
+                                     cos(thetaMo)))
+    cosz <- cos(Z_Mo) + (sin(omegaMo)/omegaMo - 1) * cos(constants$lat_rad) * 
+      cos(thetaMo)
+    etaMo <- 1 + 1/60 * sin((29.5 * data$i - 106) * pi/180)
+    G_E <- 1354/(etaMo^2) * omegaMo/pi * cosz
+    alpha_zz <- matrix(NA, length(v_Mo), 1)
+    alpha_zz[1:length(v_Mo)] <- alpha_zd
     for (i in 1:length(v_Mo)) {
-      if (alpha_zz[i] < 0.11) { 
-        alpha_zz[i] <- 0.11 
-      } else {
+      if (alpha_zz[i] < 0.11) {
+        alpha_zz[i] <- 0.11
+      }
+      else {
         if (alpha_zz[i] > 0.5 * (0.91 - vD_Mo/v_Mo)) {
           alpha_zz[i] <- 0.91 - vD_Mo/v_Mo
-        } else {
         }
-      } # constraint 0.11 <= alpha_zz <= 0.5 * (0.91 - vD_Mo/v_Mo) (S21.30)
+        else {
+        }
+      }
     }
-    
-    # Update the alpha_zz value for CRWE and CRLE
-    if (class(data) == "MortonCRLE" | class(data) =="MortonCRWE") {
+    if (class(data) == "MortonCRLE" | class(data) == "MortonCRWE") {
       alpha_zz[1:length(v_Mo)] <- 0.05
     }
-    
-    c_0 <- as.vector(v_Mo - vD_Mo) # (S21.32)
+    c_0 <- as.vector(v_Mo - vD_Mo)
     for (i in 1:length(c_0)) {
-      if (c_0[i] < 0) { 
+      if (c_0[i] < 0) {
         c_0[i] <- 0
-      } else {
+      }
+      else {
         if (c_0[i] > 1) {
           c_0[i] <- 1
-        } else {
+        }
+        else {
           c_0[i] <- c_0[i]
         }
-      } # constraint 0 <= c_0 <= 1 (S21.34) 
+      }
     }
-    alpha_z <- alpha_zz + (1 - c_0^2) * (0.34 - alpha_zz) # zenith value of clear-sky albedo (S21.35)
-    alpha_0 <- alpha_z * (exp(1.08) - ((2.16 * cos(Z_Mo))/pi + sin(Z_Mo)) * exp(0.012 * Z_Mo * 180/pi)) / (1.473 * (1 - sin(Z_Mo))) # clear-sky albedo (S21.37)
-    W_Mo <- vD_Mo/(0.49 + T_Mo/129) # mm, precipirable water (S21.39)
-    c_1 <- as.vector(21 - T_Mo) #(S21.41)
+    alpha_z <- alpha_zz + (1 - c_0^2) * (0.34 - alpha_zz)
+    alpha_0 <- alpha_z * (exp(1.08) - ((2.16 * cos(Z_Mo))/pi + 
+                                         sin(Z_Mo)) * exp(0.012 * Z_Mo * 180/pi))/(1.473 * 
+                                                                                     (1 - sin(Z_Mo)))
+    W_Mo <- vD_Mo/(0.49 + T_Mo/129)
+    c_1 <- as.vector(21 - T_Mo)
     for (i in 1:length(c_1)) {
       if (c_1[i] < 0) {
         c_1[i] <- 0
-      } else {
+      }
+      else {
         if (c_1[i] > 5) {
           c_1[i] <- 5
-        } else {
+        }
+        else {
           c_1[i] <- c_1[i]
         }
-      } 
-    }# constraint 0 <= c_1 <= 5 (S21.43)
-    j_Mo <- (0.5 + 2.5 * (cosz)^2) * exp(c_1 * (ptops - 1)) # turbidity coefficient (S21.44)
-    tauMo <- exp(-0.089 * (ptops * 1/cosz)^0.75 - 0.083 * (j_Mo/cosz)^0.9 - 0.029*(W_Mo/cosz)^0.6) # transmittancy of clear sky to direct bean radiation (S21.46)
-    tauaMo <- as.vector(exp(-0.0415 * (j_Mo/cosz)^0.9 - (0.0029)^0.5 * (W_Mo/cosz)^0.3)) # proportion of tau_Mo that is the result of absorption
+      }
+    }
+    j_Mo <- (0.5 + 2.5 * (cosz)^2) * exp(c_1 * (ptops - 
+                                                  1))
+    tauMo <- exp(-0.089 * (ptops * 1/cosz)^0.75 - 0.083 * 
+                   (j_Mo/cosz)^0.9 - 0.029 * (W_Mo/cosz)^0.6)
+    tauaMo <- as.vector(exp(-0.0415 * (j_Mo/cosz)^0.9 - 
+                              (0.0029)^0.5 * (W_Mo/cosz)^0.3))
     for (i in 1:length(tauaMo)) {
-      if (tauaMo[i] < exp(-0.0415 * (as.matrix(j_Mo/cosz)[i])^0.9 - 0.029 * (as.matrix(W_Mo/cosz)[i])^0.6)) {
-        tauaMo[i] <- exp(-0.0415 * (as.matrix(j_Mo/cosz)[i])^0.9 - 0.029 * (as.matrix(W_Mo/cosz)[i])^0.6)
-      } else {
+      if (tauaMo[i] < exp(-0.0415 * (as.matrix(j_Mo/cosz)[i])^0.9 - 
+                            0.029 * (as.matrix(W_Mo/cosz)[i])^0.6)) {
+        tauaMo[i] <- exp(-0.0415 * (as.matrix(j_Mo/cosz)[i])^0.9 - 
+                           0.029 * (as.matrix(W_Mo/cosz)[i])^0.6)
+      }
+      else {
         tauaMo[i] <- tauaMo[i]
       }
-    }# constraint tauaMo >= exp(-0.0415 * (j_Mo/cosz)^0.9 - 0.029 * (W_Mo/cosz)^0.6) (S21.51)
-    G_0 <- G_E * tauMo * (1 + (1 - tauMo/tauaMo) * (1 + alpha_0 * tauMo)) # Wm^-2, clear-sky global radiation (S21.52)
-    G_Mo <- S * G_0 + (0.08 + 0.30 * S) * (1 - S) * G_E # Wm^-2, incident global radiation (S21.54)
-    alpha_Mo <- alpha_0 * (S + (1 - S) * (1 - Z_Mo/330 * 180/pi)) # average albedo (S21.56)
-    c_2 <- as.vector(10 * (vD_Mo/v_Mo - S - 0.42)) # (S21.59)
+    }
+    G_0 <- G_E * tauMo * (1 + (1 - tauMo/tauaMo) * (1 + 
+                                                      alpha_0 * tauMo))
+    G_Mo <- S * G_0 + (0.08 + 0.3 * S) * (1 - S) * G_E
+    alpha_Mo <- alpha_0 * (S + (1 - S) * (1 - Z_Mo/330 * 
+                                            180/pi))
+    c_2 <- as.vector(10 * (vD_Mo/v_Mo - S - 0.42))
     for (i in 1:length(c_2)) {
       if (c_2[i] < 0) {
         c_2[i] <- 0
-      } else {
+      }
+      else {
         if (c_2[i] > 1) {
           c_2[i] <- 1
-        } else {
+        }
+        else {
           c_2[i] <- c_2[i]
         }
       }
-    }# constraint 0 <= c_2 <= 1 
-    rouMo <- 0.18 * ((1 - c_2) * (1 - S)^2 + c_2 * (1 - S)^0.5) * 1/ptops # proportional increase in atmospheric radiation due to clouds (S21.60)
-    B_Mo <- as.vector(constants$epsilonMo * constants$sigmaMo * (T_Mo +273)^4 * (1 - (0.71 + 0.007 * vD_Mo * ptops) * (1 + rouMo))) # Wm^-2, net longwave radiation loss for soil-plant surface at air temperature (S21.62)
+    }
+    rouMo <- 0.18 * ((1 - c_2) * (1 - S)^2 + c_2 * (1 - 
+                                                      S)^0.5) * 1/ptops
+    B_Mo <- as.vector(constants$epsilonMo * constants$sigmaMo * 
+                        (T_Mo + 273)^4 * (1 - (0.71 + 0.007 * vD_Mo * ptops) * 
+                                            (1 + rouMo)))
     for (i in 1:length(B_Mo)) {
-      if (B_Mo[i] < 0.05 * constants$epsilonMo * constants$sigmaMo * (T_Mo[i] + 274)^4) {
-        B_Mo[i] <- 0.05 * constants$epsilonMo * constants$sigmaMo * (T_Mo[i] + 274)^4
-      } else {
+      if (B_Mo[i] < 0.05 * constants$epsilonMo * constants$sigmaMo * 
+            (T_Mo[i] + 274)^4) {
+        B_Mo[i] <- 0.05 * constants$epsilonMo * constants$sigmaMo * 
+          (T_Mo[i] + 274)^4
+      }
+      else {
         B_Mo[i] <- B_Mo[i]
-      } 
-    }# constraint B_Mo < 0.05 * constants$epsilonMo * sigmaMo * (T_Mo + 274)^4 (S21.64)
-  } else if (solar == "data") {
+      }
+    }
+  }
+  else if (solar == "data") {
     alpha_Mo = alpha
-    vD_Mo <- 6.11 * exp(constants$alphaMo * Tdew_Mo / (Tdew_Mo + constants$betaMo)) # Saturation vapour pressure at dew point temperature (S21.8)
-    v_Mo <- 6.11 * exp(constants$alphaMo * T_Mo / (T_Mo + constants$betaMo)) # Saturation vapour pressure at air temperature (S21.10)
-    ptops <- ((288 - 0.0065 * constants$Elev) / 288)^5.256 # ratio of atmospheric pressure to sea-level pressure (S21.3)
-    deltaMo <- constants$alphaMo * constants$betaMo * v_Mo/((T_Mo+constants$betaMo)^2) # mbar slope of vapour pressure curve (S21.12)
+    vD_Mo <- 6.11 * exp(constants$alphaMo * Tdew_Mo/(Tdew_Mo + 
+                                                       constants$betaMo))
+    v_Mo <- 6.11 * exp(constants$alphaMo * T_Mo/(T_Mo + 
+                                                   constants$betaMo))
+    ptops <- ((288 - 0.0065 * constants$Elev)/288)^5.256
+    deltaMo <- constants$alphaMo * constants$betaMo * v_Mo/((T_Mo + 
+                                                               constants$betaMo)^2)
     G_E = NULL
-    G_Mo = NULL
+    R_s <- data$Rs
+    G_Mo <- aggregate(R_s*10^6/86400, as.yearmon(data$Date.daily, 
+                                                 "%m/%y"), FUN = mean) 
     S = NULL
-    B_Mo = NULL
-  }
+    Ta <- (data$Tmax + data$Tmin)/2
+    P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
+    delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
+    gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
+    d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
+    delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
+    w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
+    N <- 24/pi * w_s # calculating daily values
+    R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
+    R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
+    # Saturated vapour pressure
+    vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
+    vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
+    vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
     
-    # Generate summary message for results
-    if (solar == "sunshine hours") {
-      message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
-    } else if (solar == "cloud") {
-      message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
-    } else {
-      message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
-    }
-  
-    if (Tdew == TRUE) {
-      message6 <- "Data of dew point temperature has been used"
-    } else {
-      message6 <- "Data of average vapour pressure has been used to estimate dew point pressure"
-    }
-  
-    variables <- list(Tmax_Mo=Tmax_Mo, Tmin_Mo=Tmin_Mo, T_Mo=T_Mo, Tdew_Mo=Tdew_Mo, S=S, ptops=ptops, vD_Mo=vD_Mo, v_Mo=v_Mo, deltaMo=deltaMo, G_E=G_E, G_Mo=G_Mo, alpha_Mo=alpha_Mo, B_Mo=B_Mo, message1=message1, message6=message6)
-    return(variables)
+    # Vapour pressure
+    vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
+    #if(any(as.vector(vabar)<0)) {
+    #  vabar[vabar<0] <- 0
+    #}
+    B_Mo <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) *10^6/86400# estimated net outgoing longwave radiation (S3.3)
+    B_Mo <- aggregate(B_Mo, as.yearmon(data$Date.daily, 
+                                       "%m/%y"), FUN = mean)
   }
+  if (solar == "sunshine hours") {
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
+  }
+  else if (solar == "cloud") {
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
+  }
+  else {
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
+  }
+  if (Tdew == TRUE) {
+    message6 <- "Data of dew point temperature has been used"
+  }
+  else {
+    message6 <- "Data of average vapour pressure has been used to estimate dew point pressure"
+  }
+  variables <- list(T_Mo = T_Mo, Tdew_Mo = Tdew_Mo, S = S, ptops = ptops, 
+                    vD_Mo = vD_Mo, v_Mo = v_Mo, deltaMo = deltaMo, G_E = G_E, 
+                    G_Mo = G_Mo, alpha_Mo = alpha_Mo, B_Mo = B_Mo, message1 = message1, 
+                    message6 = message6)
+  return(variables)
+}
+
   
   #-------------------------------------------------------------------------------------
-  ET.MortonCRAE <- function(data, constants, est, solar, Tdew, alpha=NULL, ...)  {
-    
-    variables <- Radiation(data, constants, solar, Tdew)
-    
-    # Morton's CRAE procedure
-    if (solar == "sunshine hours") {
-      R_T <- (1 - variables$alpha_Mo) * variables$G_Mo - variables$B_Mo # Wm^-2, net radiation at soil-plant surface at air temperature (S21.66)
-    } else if (solar == "data") {
-      variables$alpha_Mo <- alpha
-      Rs_Mo <- aggregate(data$Rs, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-      R_T <- (1 - variables$alpha_Mo) * Rs_Mo
-    }
-
-    R_TC <- as.vector(R_T) # Wm^-2, (S21.68)
-    for (i in 1:length(R_TC)) {
-      if (R_TC[i] < 0) {
-        R_TC[i] <- 0
-      } else {
-        R_TC[i] <- R_TC[i]
-      } # constraint R_TC >= 0 
-    }
-    xiMo <- 1/(0.28 * (1 + variables$vD_Mo/variables$v_Mo) + R_TC * variables$deltaMo / (variables$ptops * constants$gammaps * (1/variables$ptops)^0.5 * constants$b0 * constants$fz * (variables$v_Mo - variables$vD_Mo))) # a dimensionless stability factor (S21.69)
-    for (i in 1:length(xiMo)) {
-      if (xiMo[i] < 1) {
-        xiMo[i] <- 1
-      } else {
-        xiMo[i] <- xiMo[i]
-      } # constraint xiMo >= 1 
-    }
-    f_T <- (1/variables$ptops)^0.5 * constants$fz / xiMo # vapour transfer coefficient (S21.71)
-    lambdaMo1 <- constants$gammaps * variables$ptops + 4 * constants$epsilonMo * constants$sigmaMo * (variables$T_Mo + 274)^3 / f_T # heat transfer coefficient (S21.73)
-    # Iteration for equilibrium temperature T_p
-    T_p <- variables$T_Mo
-    for (i in 1:99999) {
-      v_p <- 6.11 * exp((constants$alphaMo * T_p)/(T_p + constants$betaMo)) # mbar, saturation vapour pressure at equilibrium temperature (S21.77)
-      delta_p <- constants$alphaMo * constants$betaMo * v_p/((T_p + constants$betaMo)^2) # mbar slope of vapour pressure curve (S21.78)
-      delta_T_p <- (R_T/f_T + variables$vD_Mo - v_p + lambdaMo1 * (variables$T_Mo - T_p)) / (delta_p + lambdaMo1) # change in T_p (S21.75)
-      T_p <- T_p + delta_T_p # T_p for next iteration (S21.76)
-      if (abs(max(na.omit(delta_T_p))) < 0.01) break
-    }
-    v_p <- 6.11 * exp((constants$alphaMo * T_p)/(T_p + constants$betaMo)) # mbar, saturation vapour pressure at equilibrium temperature (S21.77)
-    delta_p <- constants$alphaMo * constants$betaMo * v_p/((T_p + constants$betaMo)^2) # mbar slope of vapour pressure curve (S21.78)
-    
-    # Apply Morton Potential Point Evaporation
-    E_TP.temp <- R_T - lambdaMo1 * f_T * (T_p - variables$T_Mo) # Wm^-2, potential evapotranspiration (S21.79)
-    # Apply Morton Potential Wet Evaporation
-    R_TP <- E_TP.temp + variables$ptops * constants$gammaps * f_T * (T_p - variables$T_Mo) # Wm^-2, net radiation at the soil-plant surface for equilibrium temperature (S21.81)
-    E_TW.temp <- constants$b1 + constants$b2 * R_TP / (1 + variables$ptops * constants$gammaps / delta_p) # Wm^-2, wet-environment areal evapotranspiration (S21.84)
-    # Apply Morton Potential Areal Evaporation
-    E_T_Mo.temp <- 2 * E_TW.temp - E_TP.temp # Wm^-2, actual areal evapotranspiration (S21.86)
-    
-    # Convert evaporation in power unit of W.m^-2 to evaporation units of mm.day^-1
-    E_TP.temp <- 1/(constants$lambdaMo) * E_TP.temp # mm.day^-1 (S21.88)
-    E_TW.temp <- 1/(constants$lambdaMo) * E_TW.temp # mm.day^-1 (S21.89)
-    E_T_Mo.temp <- 1/(constants$lambdaMo) * E_T_Mo.temp # mm.day^-1 (S21.90)
-    
-    # Calculate monthly evaporation in mm.month^-1
-    E_TP <- E_TP.temp * data$ndays
-    E_TW <- E_TW.temp * data$ndays
-    E_T_Mo <- E_T_Mo.temp * data$ndays
-    
-    if (est == "potential ET") {
-      ET_Mo.Monthly <- E_TP
-      ET_Mo.Average <- E_TP.temp
-      ET_type <- "Potential ET"
-    } else if (est == "wet areal ET") {
-      ET_Mo.Monthly <- E_TW
-      ET_Mo.Average <- E_TW.temp
-      ET_type <- "Wet-environment Areal ET"
-    } else if (est == "actual areal ET") {
-      ET_Mo.Monthly <- E_T_Mo
-      ET_Mo.Average <- E_T_Mo.temp
-      ET_type <- "Actual Areal ET"
-    }
-    
-    ET.Daily <- NULL
-    ET.Monthly <- ET_Mo.Monthly
-    ET.Annual <- aggregate(ET.Monthly, floor(as.numeric(as.yearmon(data$Date.monthly, "%m/%y"))), FUN = sum)
-    
-    ET.MonthlyAve <- ET.AnnualAve <- NULL
-    for (mon in min(as.POSIXlt(data$Date.monthly)$mon):max(as.POSIXlt(data$Date.monthly)$mon)){
-      i = mon - min(as.POSIXlt(data$Date.monthly)$mon) + 1
-      ET.MonthlyAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$mon== mon])
-    }
-    for (year in min(as.POSIXlt(data$Date.monthly)$year):max(as.POSIXlt(data$Date.monthly)$year)){
-      i = year - min(as.POSIXlt(data$Date.monthly)$year) + 1
-      ET.AnnualAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$year== year])
-    }
-    
-    # Generate summary message for results
-    ET_formulation <- "Morton CRAE"
-    
-    message(ET_formulation, " ", ET_type)
-    message(variables$message1)
-    message(variables$message6)
-
-    results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=variables$message1, message6=variables$message6)
-    class(results) <- funname
-    
-    return(results)
-    # End of Morton's CRAE procedure
-  }
+ET.MortonCRAE <- function (data, constants, est, solar, Tdew, alpha = NULL, ...){
+  variables <- Radiation(data, constants, solar, Tdew, alpha)
   
+  R_T <- (1 - variables$alpha_Mo) * variables$G_Mo - variables$B_Mo # Wm^-2, net radiation at soil-plant surface at air temperature (S21.66)
+  
+  
+  R_TC <- as.vector(R_T)
+  for (i in 1:length(R_TC)) {
+    if (R_TC[i] < 0) {
+      R_TC[i] <- 0
+    }
+    else {
+      R_TC[i] <- R_TC[i]
+    }
+  }
+  xiMo <- 1/(0.28 * (1 + variables$vD_Mo/variables$v_Mo) + 
+               R_TC * variables$deltaMo/(variables$ptops * constants$gammaps * 
+                                           (1/variables$ptops)^0.5 * constants$b0 * constants$fz * 
+                                           (variables$v_Mo - variables$vD_Mo)))
+  for (i in 1:length(xiMo)) {
+    if (xiMo[i] < 1) {
+      xiMo[i] <- 1
+    }
+    else {
+      xiMo[i] <- xiMo[i]
+    }
+  }
+  f_T <- (1/variables$ptops)^0.5 * constants$fz/xiMo
+  lambdaMo1 <- constants$gammaps * variables$ptops + 4 * constants$epsilonMo * 
+    constants$sigmaMo * (variables$T_Mo + 274)^3/f_T
+  T_p <- variables$T_Mo
+  for (i in 1:99999) {
+    v_p <- 6.11 * exp((constants$alphaMo * T_p)/(T_p + constants$betaMo))
+    delta_p <- constants$alphaMo * constants$betaMo * v_p/((T_p + 
+                                                              constants$betaMo)^2)
+    delta_T_p <- (R_T/f_T + variables$vD_Mo - v_p + lambdaMo1 * 
+                    (variables$T_Mo - T_p))/(delta_p + lambdaMo1)
+    T_p <- T_p + delta_T_p
+    if (abs(max(na.omit(delta_T_p))) < 0.01) 
+      break
+  }
+  v_p <- 6.11 * exp((constants$alphaMo * T_p)/(T_p + constants$betaMo))
+  delta_p <- constants$alphaMo * constants$betaMo * v_p/((T_p + 
+                                                            constants$betaMo)^2)
+  E_TP.temp <- R_T - lambdaMo1 * f_T * (T_p - variables$T_Mo)
+  R_TP <- E_TP.temp + variables$ptops * constants$gammaps * 
+    f_T * (T_p - variables$T_Mo)
+  E_TW.temp <- constants$b1 + constants$b2 * R_TP/(1 + variables$ptops * 
+                                                     constants$gammaps/delta_p)
+  E_T_Mo.temp <- 2 * E_TW.temp - E_TP.temp
+  E_TP.temp <- 1/(constants$lambdaMo) * E_TP.temp
+  E_TW.temp <- 1/(constants$lambdaMo) * E_TW.temp
+  E_T_Mo.temp <- 1/(constants$lambdaMo) * E_T_Mo.temp
+  E_TP <- E_TP.temp * data$ndays
+  E_TW <- E_TW.temp * data$ndays
+  E_T_Mo <- E_T_Mo.temp * data$ndays
+  if (est == "potential ET") {
+    ET_Mo.Monthly <- E_TP
+    ET_Mo.Average <- E_TP.temp
+    ET_type <- "Potential ET"
+  }
+  else if (est == "wet areal ET") {
+    ET_Mo.Monthly <- E_TW
+    ET_Mo.Average <- E_TW.temp
+    ET_type <- "Wet-environment Areal ET"
+  }
+  else if (est == "actual areal ET") {
+    ET_Mo.Monthly <- E_T_Mo
+    ET_Mo.Average <- E_T_Mo.temp
+    ET_type <- "Actual Areal ET"
+  }
+  ET.Daily <- NULL
+  ET.Monthly <- ET_Mo.Monthly
+  ET.Annual <- aggregate(ET.Monthly, floor(as.numeric(as.yearmon(data$Date.monthly, 
+                                                                 "%m/%y"))), FUN = sum)
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
+  for (mon in min(as.POSIXlt(data$Date.monthly)$mon):max(as.POSIXlt(data$Date.monthly)$mon)) {
+    i = mon - min(as.POSIXlt(data$Date.monthly)$mon) + 1
+    ET.MonthlyAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$mon == 
+                                             mon])
+  }
+  for (year in min(as.POSIXlt(data$Date.monthly)$year):max(as.POSIXlt(data$Date.monthly)$year)) {
+    i = year - min(as.POSIXlt(data$Date.monthly)$year) + 
+      1
+    ET.AnnualAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$year == 
+                                            year])
+  }
+  ET_formulation <- "Morton CRAE"
+  message(ET_formulation, " ", ET_type)
+  message(variables$message1)
+  message(variables$message6)
+  results <- list(ET.Daily = ET.Daily, ET.Monthly = ET.Monthly, 
+                  ET.Annual = ET.Annual, ET.MonthlyAve = ET.MonthlyAve, 
+                  ET.AnnualAve = ET.AnnualAve, ET_formulation = ET_formulation, 
+                  ET_type = ET_type, message1 = variables$message1, message6 = variables$message6)
+  class(results) <- funname
+  return(results)
+}
   
   #-----------------------------------------------------------------------------------
-  ET.MortonCRWE <- function(data, constants, est, solar, Tdew, alpha=NULL, ...) {
+ET.MortonCRWE <- function(data, constants, est, solar, Tdew, alpha = NULL, ...) {
 
     constants$epsilonMo <- 0.97 # (Morton, 1983)
     constants$fz <- 25.0 # Wm^-2.mbar^-1 for T >= 0 degree Celcius (Morton, 1983)
     constants$b0 <- 1.12 # (Morton, 1983)
     constants$b1 <- 13 # W.m^-2 (Morton, 1983)
     constants$b2 <- 1.12 # (Morton, 1983)
-    variables <- Radiation(data, constants, solar, Tdew)
     
     # Morton's CRWE procedure
     
     alpha_zz <- 0.05
     
     # Morton's CRAE procedure
-    if (solar == "sunshine hours") {
-      R_W <- (1 - variables$alpha_Mo) * variables$G_Mo - variables$B_Mo # Wm^-2, net radiation at soil-plant surface at air temperature (S21.66)
-    } else if (solar == "data") {
-      variables$alpha_Mo = alpha
-      Rs_Mo <- aggregate(data$Rs, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-      R_W <- (1 - variables$alpha_Mo) * Rs_Mo
-    }
- 
-    R_TC <- as.vector(R_W) # Wm^-2, (S21.68)
+    
+    variables <- Radiation(data, constants, solar, Tdew, alpha)
+    
+    R_W <- (1 - variables$alpha_Mo) * variables$G_Mo - variables$B_Mo # Wm^-2, net radiation at soil-plant surface at air temperature (S21.66)
+    
+    
+    R_TC <- as.vector(R_W)
     for (i in 1:length(R_TC)) {
       if (R_TC[i] < 0) {
         R_TC[i] <- 0
-      } else {
+      }
+      else {
         R_TC[i] <- R_TC[i]
-      } # constraint R_TC >= 0 
+      }
     }
+
     xiMo <- 1/(0.28 * (1 + variables$vD_Mo/variables$v_Mo) + R_TC * variables$deltaMo / (variables$ptops * constants$gammaps * (1/variables$ptops)^0.5 * constants$b0 * constants$fz * (variables$v_Mo - variables$vD_Mo))) # a dimensionless stability factor (S21.69)
     for (i in 1:length(xiMo)) {
       if (xiMo[i] < 1) {

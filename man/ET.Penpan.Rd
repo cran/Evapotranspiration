@@ -7,7 +7,7 @@
 Implementing the Penpan formulation for Class-A pan evaporation.
 }
 \usage{
-\method{ET}{Penpan}(data, constants, solar, alpha, overest, \dots)
+\method{ET}{Penpan}(data, constants, solar, alpha, est, pan_coeff=NULL, overest, \dots)
 }
 
 \arguments{
@@ -37,6 +37,12 @@ Implementing the Penpan formulation for Class-A pan evaporation.
   }
   \item{overest}{
   Must be TRUE or FALSE, indicating if adjustment for the overestimation (i.e. divided by 1.078) of Class-A pan evaporation for Australian data is applied in Penpan formulation.
+  }
+  \item{est}{
+  Must be either "pan" or "potential ET" to specify if estimation for the Class-A pan evaporation or potential evapotranspriation is performed.
+  }
+  \item{pan_coeff}{
+  Only required if est == "potential ET", which defines the pan coefficient.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -97,7 +103,8 @@ funname <- "Penpan"
 class(data) <- funname
 
 # Call generic function ET(data, ...) with class "Penpan"
-results <- ET(data, constants, solar="sunshine hours", alpha = 0.23, overest = TRUE)
+results <- ET(data, constants, solar="sunshine hours", alpha = 0.23, est = "potential ET", 
+pan_coeff = 0.71, overest = TRUE)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the
