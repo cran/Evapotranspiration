@@ -7,42 +7,61 @@
 Implementing the Morton CRWE formulation for estimating potential evapotranspiration or shallow lake evaporation.
 }
 \usage{
-\method{ET}{MortonCRWE}(data, constants, est, solar, Tdew, alpha=NULL, \dots)
+\method{ET}{MortonCRWE}(data, constants, ts="monthly", est="potential ET", 
+solar="sunshine hours", Tdew=TRUE, alpha = NULL, \dots)
 }
 
 \arguments{
   \item{data}{
-  A list of data in class "MortonCRWE" which contains the following items (climate variables) required by Morton CRWE formulation:
-  "Tmax", "Tmin", "Tdew", "n" or "Cd".
+  A list of data which contains the following items (climate variables) required by Morton CRWE formulation:\cr
+  \emph{Tmax}, \emph{Tmin}, \emph{Tdew}, \emph{Rs} or \emph{n} or \emph{Cd}
   }
   \item{constants}{
-  A list named "constants" consists of constants required for the calculation of Morton CRWE formulation which must contain the following items:
-  "Elev" - ground elevation above mean sea level in m,
-  "lat_rad" - latitude in radians,
-  "PA" - annual precipitation in mm, required when precipitation data is not available,
-  "epsilonMo"" - surface emissivity = 0.92 for CRWE model (Morton, 1983)
-  "fz" - A constant in Morton's procedure = 25.0 Wm^-2.mbar^-1 for T >= 0 degree Celcius, and = 28.75 Wm^-2.mbar^-1 for T >= 0 degree Celcius for CRWE model (Morton, 1983)
-  "b0" - a constants in Morton's procedure, = 1.12 for CRWE model (Morton, 1983)
-  "b1" - a constant in Morton's procedure, = 13 for CRWE model (Morton, 1983)
-  "b2 - a constant in Morton's procedure, = 1.12 for CRWE model (Morton, 1983)
-  "gammaps" - Produce of Psychrometric constant and atmospheric pressure as sea level, = 0.66 mbar. degree Celcius^-1 for CRAE model for T >= 0 degree Celcius, = 0.66/1.15 mbar. degree Celcius^-1 for CRAE model for T < 0 degree Celcius (Morton, 1983),
-  "lat" - latitude in degrees,
-  "alphaMo" - a constant in Morton's procedure, = 17.27 when T >= 0 degree Celcius, = 21.88 when T < 0 degree Celcius (Morton, 1983),
-  "betaMo" - a constant in Morton's procedure, = 237.3 degree Celcius  when T >= 0 degree Celcius,, = 2655. degree Celcius, when T < 0 degree Celcius (Morton, 1983),
-  "sigmaMo" - Stefan-Boltzmann constant in Morton's procedure, = 5.67e-08 W.m^-2.K^-4 (Morton, 1983),
-  "lambdaMo" - Latent heat of vaporisation in Morton's procedure, = 28.5W.day.kg^-1 when T >= 0 degree Celcius, = 28.5*1.15W.day.kg^-1 when T < 0 degree Celcius.
+  A list named \code{constants} consists of constants required for the calculation of Morton CRWE formulation which must contain the following items:\cr
+  \emph{Elev} - ground elevation above mean sea level in m,\cr
+  \emph{lat_rad} - latitude in radians,\cr
+  \emph{PA} - annual precipitation in mm, required when precipitation data is not available,\cr
+  \emph{z} - height of wind instrument in m,\cr
+  \emph{sigma} - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1,\cr
+  \emph{lat} - latitude in degrees,\cr
+ \emph{epsilonMo} - surface emissivity = 0.92 (Morton, 1986),\cr
+  \emph{fz} - A constant in Morton's procedure = 25.0 Wm^-2.mbar^-1 for T >= 0 degree Celcius, and = 28.75 Wm^-2.mbar^-1 for T >= 0 degree Celcius for CRWE model (Morton, 1986),\cr
+  \emph{b0} - A constants in Morton's procedure, = 1.12 for CRWE model, (Morton, 1986)
+  \emph{b1} - A constant in Morton's procedure, = 13 for CRWE model (Morton, 1986),\cr
+  \emph{b2} - A constant in Morton's procedure, = 1.12 for CRWE model (Morton, 1986),\cr
+  \emph{gammaps} - Produce of Psychrometric constant and atmospheric pressure as sea level, = 0.66 mbar. degree Celcius^-1 for T >= 0 degree Celcius, = 0.66/1.15 mbar. degree Celcius^-1 for T < 0 degree Celcius (Morton, 1983),\cr
+  \cr
+  \emph{alphaMo} - a constant in Morton's procedure, = 17.27 when T >= 0 degree Celcius, = 21.88 when T < 0 degree Celcius (Morton, 1983),\cr
+  \emph{betaMo} - a constant in Morton's procedure, = 237.3 degree Celcius  when T >= 0 degree Celcius, = 265.5 degree Celcius, when T < 0 degree Celcius (Morton, 1983),\cr
+  \emph{sigmaMo} - Stefan-Boltzmann constant in Morton's procedure, = 5.67e-08 W.m^-2.K^-4 (Morton, 1983),\cr
+  \emph{lambdaMo} - Latent heat of vaporisation in Morton's procedure, = 28.5W.day.kg^-1 when T >= 0 degree Celcius, = 28.5*1.15W.day.kg^-1 when T < 0 degree Celcius,\cr
+  }
+  \item{ts}{
+  Must be either \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Default is \code{monthly}.
   }
   \item{solar}{
-  Must be either "sunshine hours" or "data". "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "data" indicates that direct solar radiation measurements are used.
+  Must be either \code{data}, \code{sunshine hours}, \code{cloud} or \code{monthly precipitation}:\cr
+  \code{data} indicates that solar radiation data is to be used directly for calculating evapotranspiration; \cr
+  \code{sunshine hours} indicates that solar radiation is to be calculated using the real data of sunshine hours;\cr
+  \code{cloud} sunshine hours is to be estimated from cloud data; \cr
+  \code{monthly precipitation} indicates that solar radiation is to be calculated directly from monthly precipitation.\cr
+  Default is \code{sunshine hours}.
   }
   \item{est}{
-  Must be either "potential" or "shallow lake". "potential" proceeds to estimating potential evapotranspiration; "shallow lake" proceeds to estimating shallow lake evaporation.
+  Must be either \code{potential ET} or \code{shallow lake ET}:\cr
+  \code{potential ET} proceeds to estimating potential evapotranspiration;\cr
+  \code{shallow lake ET} proceeds to estimating shallow lake evaporation.\cr
+  Default is \code{potential ET}.
   }
   \item{Tdew}{
-  Logical, must be either TRUE or FALSE, indicating if real data of dew point temperature is used for calculating the radiation in Morton's formulations, if TRUE the data will be used and if FALSE the dew point temperature will be calculated from data of daily vapour pressure.
+   Must be \code{T} or \code{F}, indicating if real data of dew point temperature is used for calculating the radiation in Morton's formulations, if \code{T} the data will be used and if \code{F} the dew point temperature will be calculated from data of daily vapour pressure.
+   Default is \code{T} for using actual dew point temperature data.
   }
   \item{alpha}{
-  Only needed if solar == "data". Can be any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface (or surrounding surface for Penpan formulation) representing the portion of the incident radiation that is reflected back at the surface. The default is 0.08 for open-water surface which is for the calculation of Penman open-water evaporation, all other values will trigger the calculation of Penman potential evapotranspriation.
+  Only needed if argument \code{solar} has value of \code{data}. \cr
+ Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface representing the portion of the incident radiation that is reflected back at the surface. \cr
+  Default is \code{NULL} in line with the default use of sunshine hours to estimate solar radiation (i.e. argument \code{solar} is \code{sunshine hours}.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -50,33 +69,44 @@ Implementing the Morton CRWE formulation for estimating potential evapotranspira
 }
 
 \details{
-  The type of evapotranspiration calculated can be selected through argument \code{est}, please see "Arguments" for details.
-  The alternative calculation options can be selected through argument \code{solar} and \code{Tdew}, please see "Arguments" for details.
+  The type of evapotranspiration calculated can be selected through argument \code{est}, please see \code{Arguments} for details.
+  The alternative calculation options can be selected through argument \code{solar} and \code{Tdew}, please see \code{Arguments} for details.
 }
 
 \value{
-This function returns a object of class \code{MortonCRWE}. Such objects are list with components:
+The function prints a calculation summary to the screen containign the following elements:\cr
+- ET model name and ET quantity estimated (i.e. the value of argument \code{est}) \cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- If the actual dew point temperature data are used (i.e. the value of argument \code{Tdew})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
+\cr
+
+The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_MortonCRWE.csv} in the working directory:
 
   \item{ET.Daily}{
-  A \code{zoo} object containing daily aggregated estimations of MortonCRWE potential evapotranspiration or shallow lake evaporation.
+  Daily aggregated estimations of MortonCRWE potential evapotranspiration or shallow lake evaporation.
   }
   \item{ET.Monthly}{
-  A \code{zoo} object containing monthly aggregated estimations of MortonCRWE potential evapotranspiration or shallow lake evaporation.
+  Monthly aggregated estimations of MortonCRWE potential evapotranspiration or shallow lake evaporation.
   }
   \item{ET.Annual}{
-  A \code{zoo} object containing annually aggregated estimations of MortonCRWE potential evapotranspiration or shallow lake evaporation.
+  Annually aggregated estimations of MortonCRWE potential evapotranspiration or shallow lake evaporation.
   }
   \item{ET.MonthlyAve}{
-  A \code{zoo} object containing monthly averaged estimations of daily MortonCRWE potential evapotranspiration or shallow lake evaporation.
+  Monthly averaged estimations of daily MortonCRWE potential evapotranspiration or shallow lake evaporation.
   }
   \item{ET.AnnualAve}{
-  A \code{zoo} object containing annually averaged estimations of daily MortonCRWE potential evapotranspiration or shallow lake evaporation.
+  Annually averaged estimations of daily MortonCRWE potential evapotranspiration or shallow lake evaporation.
   }
   \item{ET_formulation}{
-  A character string containing the name of the formulation used which equals to "MortonCRWE".
+  Name of the formulation used which equals to \code{MortonCRWE}.
   }
   \item{ET_type}{
-  A character string containing the type of the estimation obtained which is either "Potential Evapotranspiration" or "Shallow Lake Evaporation".
+  Type of the estimation obtained which is either \code{Potential Evapotranspiration} or \code{Shallow Lake Evaporation}.
   }
   \item{message1}{
   A message to inform the users about how solar radiation has been calculated by using which data.
@@ -86,27 +116,25 @@ This function returns a object of class \code{MortonCRWE}. Such objects are list
   }
 }
 \references{
-MCMAHON, T., PEEL, M., LOWE, L., SRIKANTHAN, R. & MCVICAR, T. 2012. Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
+McMahon, T., Peel, M., Lowe, L., Srikanthan, R. & McVicar, T. 2012. \emph{Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis}. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
 
-MORTON, F. I. 1986. Practical Estimates of Lake Evaporation. Journal of Applied Meteorology, 25, 371-388.
-
+Morton, F.I. 1983, \emph{Operational estimates of lake evaporation}. Journal of Hydrology, vol. 66, no. 1-4, pp. 77-100.
 }
 \author{
 Danlu Guo
 }
-
+\seealso{
+\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.MortonCRWE}}
+}
 \examples{
-# Use processed existing data set from kent Town, Adelaide
+# Use processed existing data set and constants from kent Town, Adelaide
 data("processeddata")
 data("constants")
 
-# Set data class to be "MortonCRWE" to call function
-funname <- "MortonCRWE" 
-class(data) <- funname 
-
-# Call generic function ET(data, ...) with class "MortonCRWE"
-results <- ET(data, constants, est = "potential", solar = 
-"sunshine hours", Tdew = TRUE) 
+# Call ET.MortonCRWE under the generic function ET
+results <- ET.MortonCRWE(data, constants, ts="monthly",
+est="potential ET", solar="sunshine hours", 
+Tdew=TRUE, alpha = NULL) 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

@@ -1,15 +1,104 @@
 
-ET <- function(data, ...) UseMethod("ET")
+ET <- function(data, constants, ts="daily", crop=NULL, alpha=NULL, ...) {
+  if ( all(any(is.null(data$RHmax),is.null(data$RHmin)),
+           is.null(data$Rs),is.null(data$n),is.null(data$Cd),is.null(data$Precip),
+           is.null(data$uz),
+           any(is.null(data$Tmax),is.null(data$Tmin))) ) { # no data available
+    stop("No ET model is suitable according to the data availability")
+    
+  } else if ( all(is.null(data$RHmax),is.null(data$RHmin),
+                  is.null(data$Rs),is.null(data$n),is.null(data$Cd),is.null(data$Precip),
+                  is.null(data$uz),!is.null(data$Tmax),!is.null(data$Tmin) )) { # Only Tmax/Tmin available
+    message("No ET model specified, choose the Hargreaves-Samani model according to the data availability")
+    class(data) <- "HargreavesSamani"
+    results<-ET.HargreavesSamani(data, constants, ts)
+  } else if ( all(any(is.null(data$RHmax),is.null(data$RHmin)),is.null(data$uz)) &
+                any(!is.null(data$Rs),!is.null(data$n),!is.null(data$Cd),!is.null(data$Precip)) &
+                all(!is.null(data$Tmax),!is.null(data$Tmin)) ) { # Tmax/Tmin & any Rs data available
+    message("No ET model specified, choose the Makkink model according to the data availability")
+    
+    if (!is.null(data$Rs)) {
+      solar = "data"
+    } else if (!is.null(data$n)) {
+      solar = "sunshine hours"
+    } else if (!is.null(data$Cd)) {
+      solar = "cloud"
+    } else if (!is.null(data$Precip)) {
+      solar = "monthly precipitation"
+    } 
+    class(data) <- "Makkink"
+    results<-ET.Makkink(data, constants, ts,  solar=solar)
+  } else if ( all(is.null(data$uz) &
+                    any(!is.null(data$Rs),!is.null(data$n),!is.null(data$Cd),!is.null(data$Precip)) &
+                    all(!is.null(data$Tmax),!is.null(data$Tmin), 
+                        !is.null(data$RHmax),!is.null(data$RHmin))) &
+                !is.null(alpha) ) { # Tmax/Tmin & any Rs & RHmax/RHmin data available
+    message("No ET model specified, choose the Priestley-Taylor model according to the data availability")
+    if (!is.null(data$Rs)) {
+      solar = "data"
+    } else if (!is.null(data$n)) {
+      solar = "sunshine hours"
+    } else if (!is.null(data$Cd)) {
+      solar = "cloud"
+    } else if (!is.null(data$Precip)) {
+      solar = "monthly precipitation"
+    } 
+    results<-ET.PriestleyTaylor(data, constants, ts,  solar=solar,alpha=alpha)
+  } else if ( all(any(!is.null(data$Rs),!is.null(data$n),!is.null(data$Cd),!is.null(data$Precip)) &
+                    all(!is.null(data$Tmax),!is.null(data$Tmin), 
+                        !is.null(data$RHmax),!is.null(data$RHmin),
+                        !is.null(data$uz))) ) { # All data available & crop specified
+    if (!is.null(crop) & any(crop=="short",crop=="tall")) {
+      message("No ET model specified, choose the Penman-Monteith model according to the data availability")
+      
+      wind = "yes"
+      if (!is.null(data$Rs)) {
+        solar = "data"
+      } else if (!is.null(data$n)) {
+        solar = "sunshine hours"
+      } else if (!is.null(data$Cd)) {
+        solar = "cloud"
+      } else if (!is.null(data$Precip)) {
+        solar = "monthly precipitation"
+      } 
+      class(data) <- "PenmanMonteith"
+      results<-ET.PenmanMonteith(data, constants, ts,  solar=solar, wind=wind, crop=crop)
+    } else if (is.null(alpha)) {
+      message("No ET model specified and no valid evaporative surface specified, estimate the Penman model for open-water evaporation according to the data availability")
+      
+      wind = "yes"
+      alpha=0.08
+      z0=0.001
+      if (!is.null(data$Rs)) {
+        solar = "data"
+      } else if (!is.null(data$n)) {
+        solar = "sunshine hours"
+      } else if (!is.null(data$Cd)) {
+        solar = "cloud"
+      } else if (!is.null(data$Precip)) {
+        solar = "monthly precipitation"
+      } 
+      class(data) <- "Penman"
+      results <- ET.Penman(data, constants, ts,  solar=solar, wind=wind, windfunction_ver=1948, alpha=alpha, z0=z0)
+    }
+    
+  } 
+  #UseMethod("ET",data)
+  #return(results)
+  
+  
+}
 
   #-------------------------------------------------------------------------------------
   
-ET.Penman <- function(data, constants, solar, wind, windfunction_ver, alpha = 0.08, z0 = 0.001, ...) {
-  class(data) <- funname
+ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind="yes", windfunction_ver=1948, alpha = 0.08, z0 = 0.001, ...) {
+  #class(data) <- "funname"
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
     stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
+
   if (wind == "yes") { # wind data is required
     if (is.null(data$RHmax)|is.null(data$RHmin)) {
       stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
@@ -111,19 +200,19 @@ ET.Penman <- function(data, constants, solar, wind, windfunction_ver, alpha = 0.
       Epenman.Daily <-  0.047 * R_s * sqrt(Ta + 9.5) - 2.4 * (R_s/R_a)^2 + 0.09 * (Ta + 20) * (1 - RHmean/100) # Penman open-water evaporation without wind data by Valiantzas (2006) (S4.12)
     }
    
-   ET.Daily <- Epenman.Daily
-   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  ET.Daily <- Epenman.Daily
   
-   ET.MonthlyAve <- ET.AnnualAve <- NULL
-   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
-     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
-     ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
-   }
-   for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
-     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
-     ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
-   }
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+  ET.MonthlyAve <- ET.AnnualAve <- NULL
+  for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
+    i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
+    ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
+  }
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+  for (year in min(as.POSIXlt(data$Date.daily)$year):max(as.POSIXlt(data$Date.daily)$year)){
+    i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
+    ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
+  }
 
    # Generate summary message for results  
    ET_formulation <- "Penman" 
@@ -164,16 +253,48 @@ ET.Penman <- function(data, constants, solar, wind, windfunction_ver, alpha = 0.
    message("Evaporative surface: ", Surface)
    message(message1)
    message(message2)
+   
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
   
-   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
-   class(results) <- funname
-   return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    #message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_Penman.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_Penman.csv", col.names=F, append= T, sep=',' )
+  }
+  #class(results) <- funname
+  invisible(results)
+  
 }
 
   #-------------------------------------------------------------------------------------
 
-ET.PenmanMonteith <- function(data, constants, solar, wind, crop, ...) {
-  class(data) <- funname
+ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours", wind="yes", crop="short", ...) {
+  #class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
@@ -346,14 +467,46 @@ ET.PenmanMonteith <- function(data, constants, solar, wind, crop, ...) {
   message(message2)
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
-  class(results) <- funname
-  return(results)
+  
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_PenmanMonteith.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_PenmanMonteith.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
+  
 }
 
   #-------------------------------------------------------------------------------------
 
-ET.MattShuttleworth <- function(data, constants, solar, alpha, r_s, CH, ...) { 
-  class(data) <- funname
+ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hours", alpha=0.23, r_s=70, CH=0.12, ...) { 
+  #class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
@@ -479,15 +632,46 @@ ET.MattShuttleworth <- function(data, constants, solar, alpha, r_s, CH, ...) {
   message(message1)
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
-  class(results) <- funname
   
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_MattShuttleworth.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_MattShuttleworth.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
+  # write to csv file
+
 }
 
   #-------------------------------------------------------------------------------------
 
-ET.PriestleyTaylor <- function(data, constants, solar, alpha, ...) {  
-  class(data) <- funname
+ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hours", alpha=0.23, ...) {  
+  #class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
@@ -594,15 +778,45 @@ ET.PriestleyTaylor <- function(data, constants, solar, alpha, ...) {
   message(message1)
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
-  class(results) <- funname
   
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_PriestleyTaylor.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_PriestleyTaylor.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 
   #-------------------------------------------------------------------------------------
 
-ET.Penpan <- function (data, constants, solar, alpha, est, pan_coeff=NULL, overest, ...) {
-  class(data) <- funname
+ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alpha=0.23, est="potential ET", pan_coeff=0.71, overest=FALSE, ...) {
+  #class(data) <- funname
   if (is.null(data$Tmax) | is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
   }
@@ -702,7 +916,7 @@ ET.Penpan <- function (data, constants, solar, alpha, est, pan_coeff=NULL, overe
     ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year == 
                                        year])
   }
-  ET_formulation <- "Penpan"
+  ET_formulation <- "PenPan"
   if (est == "potential ET") {
     ET_type <- "potential ET"
   } else if (est == "pan") {
@@ -723,20 +937,55 @@ ET.Penpan <- function (data, constants, solar, alpha, est, pan_coeff=NULL, overe
   }
   message(ET_formulation, " ", ET_type)
   message("Evaporative surface: ", Surface)
+  if (ET_type == "potential ET") {
+    message("Pan coeffcient: ", pan_coeff)
+  }
   message(message1)
+  
   results <- list(ET.Daily = ET.Daily, ET.Monthly = ET.Monthly, 
                   ET.Annual = ET.Annual, ET.MonthlyAve = ET.MonthlyAve, 
                   ET.AnnualAve = ET.AnnualAve, ET_formulation = ET_formulation, 
                   ET_type = ET_type, message1 = message1)
-  class(results) <- funname
-  return(results)
+  
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_PenPan.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_PenPan.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 
 
   #-------------------------------------------------------------------------------------
 
-ET.BrutsaertStrickler <- function(data, constants, solar, alpha, ...) {
-  class(data) <- funname
+ET.BrutsaertStrickler <- function(data, constants, ts="daily", solar="sunshine hours", alpha=0.23, ...) {
+  #class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
@@ -854,15 +1103,45 @@ ET.BrutsaertStrickler <- function(data, constants, solar, alpha, ...) {
   message(message1)
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
-  class(results) <- funname
   
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_BrutsaertStrickler.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_BrutsaertStrickler.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 
   #-------------------------------------------------------------------------------------
 
-ET.GrangerGray <- function(data, constants, solar, windfunction_ver, alpha, ...) {
-  class(data) <- funname
+ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", windfunction_ver=1948, alpha=0.23, ...) {
+  #class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
@@ -990,17 +1269,48 @@ ET.GrangerGray <- function(data, constants, solar, windfunction_ver, alpha, ...)
   message(ET_formulation, " ", ET_type)
   message("Evaporative surface: ", Surface)
   message(message1)
-
-  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
-  class(results) <- funname
+  message(message2)
   
-  return(results)
+  results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
+  
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_GrangerGray.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_GrangerGray.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 
   #-------------------------------------------------------------------------------------
 
-ET.SzilagyiJozsa <- function(data, constants, solar, wind, windfunction_ver, alpha, z0, ...) {
-  class(data) <- funname
+ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours", wind="yes", windfunction_ver=1948, alpha=0.23, z0=0.2, ...) {
+  #class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
@@ -1173,15 +1483,45 @@ ET.SzilagyiJozsa <- function(data, constants, solar, wind, windfunction_ver, alp
   message(message2)
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
-  class(results) <- funname
   
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_SzilagyiJozsa.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_SzilagyiJozsa.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 
   #-------------------------------------------------------------------------------------
 
-ET.Makkink <- function(data, constants, solar, ...) {
-  class(data) <- funname
+ET.Makkink <- function(data, constants, ts="daily", solar="sunshine hours", ...) {
+  #class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
@@ -1240,7 +1580,7 @@ ET.Makkink <- function(data, constants, solar, ...) {
   
   # Generate summary message for results
   ET_formulation <- "Makkink"
-  ET_type <- "Potential ET"
+  ET_type <- "Reference crop ET"
 
   if (solar == "data") {
     message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
@@ -1253,19 +1593,48 @@ ET.Makkink <- function(data, constants, solar, ...) {
   }
   
   message(ET_formulation, " ", ET_type)
-  message("Evaporative surface: open-water")
   message(message1)
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
-  class(results) <- funname
   
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_Makkink.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_Makkink.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 
   #-------------------------------------------------------------------------------------
 
-ET.BlaneyCriddle <- function(data, constants, solar, height, ...) {
-  class(data) <- funname
+ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours", height=FALSE, ...) {
+  #class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
@@ -1340,7 +1709,7 @@ ET.BlaneyCriddle <- function(data, constants, solar, height, ...) {
     ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
   
-  if (height == TRUE) {
+  if (height == T) {
     ET_BC.Daily = ET_BC.Daily * (1 + 0.1 * constants$Elev/1000) # with adjustment for site elevation by Allen and Pruitt (1986) (S9.9) 
   }
   
@@ -1356,7 +1725,7 @@ ET.BlaneyCriddle <- function(data, constants, solar, height, ...) {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
-  if (height == TRUE) {
+  if (height == T) {
     message3 <- "Height adjustment has been applied to calculated Blaney-Criddle reference crop evapotranspiration"
   } else {
     message3 <- "No height adjustment has been applied to calculated Blaney-Criddle reference crop evapotranspiration"
@@ -1368,15 +1737,45 @@ ET.BlaneyCriddle <- function(data, constants, solar, height, ...) {
   message(message3)
     
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message3=message3)
-  class(results) <- funname
   
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_PriestleyTaylor.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_PriestleyTaylor.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 
   #-------------------------------------------------------------------------------------
 
-ET.Turc <- function(data, constants, solar, humid, ...) {
-  class(data) <- funname
+ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=FALSE, ...) {
+  #class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
@@ -1470,14 +1869,48 @@ ET.Turc <- function(data, constants, solar, humid, ...) {
   message(message4)
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message4=message4)
-  class(results) <- funname
   
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_Turc.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_Turc.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 
   #-------------------------------------------------------------------------------------
 
-ET.Hamon <- function(data, constants, ...) {
+ET.Hamon <- function(data, ts="daily", ...) {
+  # Check of specific data requirement
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
+  }
   Ta <- (data$Tmax + data$Tmin) / 2 
   
   # Saturated vapour pressure
@@ -1506,17 +1939,56 @@ ET.Hamon <- function(data, constants, ...) {
   ET_type <- "Potential ET"
   
   message(ET_formulation, " ", ET_type)
-  
+
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
-  class(results) <- funname
   
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_Hamon.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_Hamon.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 } 
 # Oudin et al., 2005
 
   #-------------------------------------------------------------------------------------
 
-ET.Linacre <- function(data, constants, ...) {
+ET.Linacre <- function(data, constants, ts="daily", ...) {
+  # Check of specific data requirement
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
+  }
+  # Check of specific data requirement
+  if (is.null(data$Tdew)) { 
+    stop("Required data missing for 'Tdew.daily' or 'Tdew.subdaily'")
+  }
+  
   Ta <- (data$Tmax + data$Tmin) / 2 
   T_m <- Ta + 0.006 * constants$Elev
   ET_Linacre.Daily <- (500 * T_m /(100 - constants$lat)+15*(Ta - data$Tdew))/(80 - Ta)
@@ -1542,15 +2014,52 @@ ET.Linacre <- function(data, constants, ...) {
   message(ET_formulation, " ", ET_type)
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
-  class(results) <- funname
-  
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_Linacre.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_Linacre.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 # Linacre ET. 1977. A simple formula for estimating evaporation rates in various climates, using temperature data alone. AgriculturalMeteorology 18: 409-424.
 
   #-------------------------------------------------------------------------------------
 
-ET.Romanenko <- function(data, constants, ...) {
+ET.Romanenko <- function(data, ts="daily", ...) {
+  # Check of specific data requirement
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
+  }
+  # Check of specific data requirement
+  if (is.null(data$RHmax)|is.null(data$RHmin)) { 
+    stop("Required data missing for 'RHmax.daily' and 'RHmin.daily', or 'RH.subdaily'")
+  }
   Ta <- (data$Tmax + data$Tmin) / 2 
   
   # Saturated vapour pressure
@@ -1583,15 +2092,58 @@ ET.Romanenko <- function(data, constants, ...) {
   message(ET_formulation, " ", ET_type)
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
-  class(results) <- funname
-  
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_Romanenko.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_Romanenko.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 # Oudin et al., 2005
 
 #-------------------------------------------------------------------------------------
 
-ET.Abtew <- function(data, constants, solar, ...) {
+ET.Abtew <- function(data, constants, ts="daily", solar="sunshine hours", ...) {
+  # Check of specific data requirement
+  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+    stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
+  }
+  if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
+    stop("Required data missing for 'Rs.daily'")
+  } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
+    stop("Required data missing for 'n.daily'")
+  } else if (solar == "cloud" & is.null(data$Cd)) { # for alternative calculation of sunshine hours using cloud cover
+    stop("Required data missing for 'Cd.daily'")
+  } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
+    stop("Required data missing for 'Precip.daily'")
+  }
+  
   # Calculating mean temperature 
   Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
   
@@ -1650,15 +2202,44 @@ ET.Abtew <- function(data, constants, solar, ...) {
   message(message1)
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
-  class(results) <- funname
-  
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_Abtew.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_Abtew.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 # Abtew, W. (1996), EVAPOTRANSPIRATION MEASUREMENTS AND MODELING FOR THREE WETLAND SYSTEMS IN SOUTH FLORIDA. JAWRA Journal of the American Water Resources Association, 32: 465-473. doi: 10.1111/j.1752-1688.1996.tb04044.x
   #-------------------------------------------------------------------------------------
 
-ET.HargreavesSamani <- function(data, constants, ...) {
-  class(data) <- funname
+ET.HargreavesSamani <- function(data, constants, ts="daily", ...) {
+  #class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
@@ -1704,18 +2285,47 @@ ET.HargreavesSamani <- function(data, constants, ...) {
   message("Evaporative surface: reference crop")
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
-  class(results) <- funname
-  
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_HargreavesSamani.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_HargreavesSamani.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 
   #-------------------------------------------------------------------------------------
   
-ET.ChapmanAustralian <- function(data, constants, Penpan, solar, alpha, ...) {
-  class(data) <- funname
+ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=TRUE, solar="sunshine hours", alpha=0.23, ...) {
+  #class(data) <- funname
   
   # Check of specific data requirement
-  if (Penpan == TRUE) { # Calculate Class-A pan evaporation using Penpan formula
+  if (PenPan == TRUE) { # Calculate Class-A pan evaporation using PenPan formula
     if (is.null(data$Tmax)|is.null(data$Tmin)) { 
       stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
     }
@@ -1735,11 +2345,11 @@ ET.ChapmanAustralian <- function(data, constants, Penpan, solar, alpha, ...) {
       stop("Required data missing for 'Precip.daily'")
     } 
   }
-  if (Penpan == FALSE & is.null(data$Epan)) { # for using Class-A pan evaporation data
+  if (PenPan == FALSE & is.null(data$Epan)) { # for using Class-A pan evaporation data
     stop("Required data missing for 'Epan.daily'")
   }
   # check user-input albedo
-  if (Penpan == TRUE) {
+  if (PenPan == TRUE) {
     if (is.na(as.numeric(alpha))) {
       stop("Please use a numeric value for the alpha (albedo of evaporative surface)")
     }
@@ -1754,7 +2364,7 @@ ET.ChapmanAustralian <- function(data, constants, Penpan, solar, alpha, ...) {
   A_p <- 0.17 + 0.011 * abs(constants$lat) # constant (S13.2)
   B_p <- 10 ^ (0.66 - 0.211 * abs(constants$lat)) # constants (S13.3)
   
-  if (Penpan == TRUE) {
+  if (PenPan == TRUE) {
     # Calculating mean temperature 
     Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
     
@@ -1766,7 +2376,7 @@ ET.ChapmanAustralian <- function(data, constants, Penpan, solar, alpha, ...) {
     # Vapour pressure
     vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
     
-    # estimating class-A pan evaporation using Penpan model 
+    # estimating class-A pan evaporation using PenPan model 
     P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
     delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
     gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -1802,9 +2412,9 @@ ET.ChapmanAustralian <- function(data, constants, Penpan, solar, alpha, ...) {
     R_npan <-(1 - constants$alphaA) * R_span - R_nl # net radiation at the pan (S6.3)
     f_pan_u <-1.201 + 1.621 * u2 # (S6.2)
     
-    Epan <- delta / (delta + constants$ap * gamma) * R_npan / constants$lambda + constants$ap * gamma / (delta + constants$ap * gamma) * f_pan_u * (vas - vabar) # Penpan estimation of Class-A pan evaporation (S6.1)
+    Epan <- delta / (delta + constants$ap * gamma) * R_npan / constants$lambda + constants$ap * gamma / (delta + constants$ap * gamma) * f_pan_u * (vas - vabar) # PenPan estimation of Class-A pan evaporation (S6.1)
     ET_eqPM.Daily <- A_p * Epan + B_p # daily equivalent Penman-Monteith potential evaporation (mm.day^-1)
-  } else if (Penpan == FALSE & is.null(data$Epan)) {
+  } else if (PenPan == FALSE & is.null(data$Epan)) {
     stop("No data available for Class-A pan evaporation ")
   } else {
     ET_eqPM.Daily <- A_p * data$Epan + B_p # daily equivalent Penman-Monteith potential evaporation (mm.day^-1)
@@ -1835,16 +2445,16 @@ ET.ChapmanAustralian <- function(data, constants, Penpan, solar, alpha, ...) {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   
-  if (Penpan == TRUE) {
-    message5 <- "Penpan formulation has been used to estimate Class-A pan evaporation for the calculation of equivalent Penman-Monteith potential evaporation"
+  if (PenPan == TRUE) {
+    message5 <- "PenPan formulation has been used to estimate Class-A pan evaporation for the calculation of potential evapotranspiration"
   } else {
-    message5 <- "Class-A pan evaporation has been used for the calculation of equivalent Penman-Monteith potential evaporation"
+    message5 <- "Class-A pan evaporation has been used for the calculation of potential evapotranspiration"
   }
   
   # Generate summary message for results
   ET_formulation <- "Chapman"
-  ET_type <- "Equivalent Penmen-Monteith Reference Crop ET"
-  if (Penpan == TRUE) {
+  ET_type <- "Potential ET"
+  if (PenPan == TRUE) {
     Surface <- paste("user-defined, albedo =", alpha)
   } else {
     Surface <- paste("not specified, actual Class-A pan evaporation data is used")
@@ -1856,15 +2466,44 @@ ET.ChapmanAustralian <- function(data, constants, Penpan, solar, alpha, ...) {
   message(message5)
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message5=message5)
-  class(results) <- funname
-  
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_ChapmanAustralian.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_ChapmanAustralian.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 
   #-------------------------------------------------------------------------------------
 
-ET.JensenHaise <- function(data, constants,solar,...) {
-  class(data) <- funname
+ET.JensenHaise <- function(data, constants, ts="daily",solar="sunshine hours",...) {
+  #class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
@@ -1905,8 +2544,7 @@ ET.JensenHaise <- function(data, constants,solar,...) {
   
   # estimating evapotranspiration using Jensen-Haise
 
-  ET_JH.Daily <- (0.014 * (1.8*Ta+32) - 0.37) * R_s / constants$lambda # Jensen-Haise daily evapotranspiration by Jensen and Haise  (1963), *0.0394 for MJ.m^-2.day^-1 to in.day^-1, *33.8 for degree C to degree F 
- 
+  ET_JH.Daily <- 0.025* (Ta + 3) * R_s / constants$lambda # Jensen-Haise daily evapotranspiration by Prudhomme & Williams 2013
   ET.Daily <- ET_JH.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
@@ -1920,23 +2558,61 @@ ET.JensenHaise <- function(data, constants,solar,...) {
     i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
     ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
   }
-  
   # Generate summary message for results
+  if (solar == "data") {
+    message1 <- "Solar radiation data have been used for calculating evapotranspiration"
+  } else if (solar == "sunshine hours") {
+    message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
+  } else if (solar == "cloud") {
+    message1 <- "Cloudiness data have been used for calculating sunshine hour and thus incoming solar radiation"
+  } else {
+    message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
+  }
+
   ET_formulation <- "Jensen-Haise"
   ET_type <- "Potential ET"
   
   message(ET_formulation, " ", ET_type)
-
+  message(message1)
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
-  class(results) <- funname
-  
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_JensenHaise.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_JensenHaise.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
 
 #-------------------------------------------------------------------------------------
 
-ET.McGuinnessBordne <- function(data, constants, ...) {
-  class(data) <- funname
+ET.McGuinnessBordne <- function(data, constants, ts="daily", ...) {
+  #class(data) <- funname
   
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
@@ -1980,15 +2656,47 @@ ET.McGuinnessBordne <- function(data, constants, ...) {
   message(ET_formulation, " ", ET_type)
   
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
-  class(results) <- funname
-  
-  return(results)
+  if (ts=="daily") {
+    res_ts <-  ET.Daily
+  } else if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_McGuinnessBordne.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_McGuinnessBordne.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
   #####################################################
 
   # Calculate radiation variables
-Radiation <- function (data, constants, solar, Tdew, alpha = NULL) {
-  class(data) <- funname
+Radiation <- function (data, constants, ts="monthly", solar="sunshine hours", Tdew=T, alpha = NULL) {
+  #class(data) <- funname
+  if (ts == "daily") {
+    stop("Error: Morton models are not available for daily time step")
+  }
   if (is.null(data$Tmax)) {
     stop("Required data missing for 'Tmax.daily' or 'Temp.subdaily'")
   }
@@ -2104,8 +2812,8 @@ Radiation <- function (data, constants, solar, Tdew, alpha = NULL) {
         alpha_zz[i] <- 0.11
       }
       else {
-        if (alpha_zz[i] > 0.5 * (0.91 - vD_Mo/v_Mo)) {
-          alpha_zz[i] <- 0.91 - vD_Mo/v_Mo
+        if (alpha_zz[i] > 0.5 * (0.91 - vD_Mo[i]/v_Mo[i])) {
+          alpha_zz[i] <- 0.91 - vD_Mo[i]/v_Mo[i]
         }
         else {
         }
@@ -2260,8 +2968,8 @@ Radiation <- function (data, constants, solar, Tdew, alpha = NULL) {
 
   
   #-------------------------------------------------------------------------------------
-ET.MortonCRAE <- function (data, constants, est, solar, Tdew, alpha = NULL, ...){
-  variables <- Radiation(data, constants, solar, Tdew, alpha)
+ET.MortonCRAE <- function (data, constants, ts="monthly", est="potential ET", solar="sunshine hours", Tdew=TRUE, alpha = NULL, ...){
+  variables <- Radiation(data, constants, ts, solar, Tdew, alpha)
   
   R_T <- (1 - variables$alpha_Mo) * variables$G_Mo - variables$B_Mo # Wm^-2, net radiation at soil-plant surface at air temperature (S21.66)
   
@@ -2313,9 +3021,9 @@ ET.MortonCRAE <- function (data, constants, est, solar, Tdew, alpha = NULL, ...)
   E_TP.temp <- 1/(constants$lambdaMo) * E_TP.temp
   E_TW.temp <- 1/(constants$lambdaMo) * E_TW.temp
   E_T_Mo.temp <- 1/(constants$lambdaMo) * E_T_Mo.temp
-  E_TP <- E_TP.temp * data$ndays
-  E_TW <- E_TW.temp * data$ndays
-  E_T_Mo <- E_T_Mo.temp * data$ndays
+  E_TP <- E_TP.temp * data$Ndays
+  E_TW <- E_TW.temp * data$Ndays
+  E_T_Mo <- E_T_Mo.temp * data$Ndays
   if (est == "potential ET") {
     ET_Mo.Monthly <- E_TP
     ET_Mo.Average <- E_TP.temp
@@ -2355,12 +3063,40 @@ ET.MortonCRAE <- function (data, constants, est, solar, Tdew, alpha = NULL, ...)
                   ET.Annual = ET.Annual, ET.MonthlyAve = ET.MonthlyAve, 
                   ET.AnnualAve = ET.AnnualAve, ET_formulation = ET_formulation, 
                   ET_type = ET_type, message1 = variables$message1, message6 = variables$message6)
-  class(results) <- funname
-  return(results)
+  if (ts=="monthly") {
+    res_ts <- ET.Monthly
+  } else if (ts=="annual") {
+    res_ts <- ET.Annual
+  }
+  message("Timestep: ", ts)
+  message("Units: mm")
+  message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+  if (NA %in% res_ts) {
+    message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+    message("Basic stats (NA excluded)")
+    message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+    message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+    message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+  } else {
+    message(length(res_ts), " ET estimates obtained")
+    message("Basic stats")
+    message("Mean: ",round(mean(res_ts),digits=2))
+    message("Max: ",round(max(res_ts),digits=2))
+    message("Min: ",round(min(res_ts),digits=2))
+  }
+  #class(results) <- funname
+  # write to csv file
+  for (i in 1:length(results)) {
+    namer <- names(results[i])
+    write.table(as.character(namer), file="ET_MortonCRAE.csv", dec=".", 
+                quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+    write.table(data.frame(get(namer,results)), file="ET_MortonCRAE.csv", col.names=F, append= T, sep=',' )
+  }
+  invisible(results)
 }
   
   #-----------------------------------------------------------------------------------
-ET.MortonCRWE <- function(data, constants, est, solar, Tdew, alpha = NULL, ...) {
+ET.MortonCRWE <- function(data, constants, ts="monthly", est="potential ET", solar="sunshine hours", Tdew=TRUE, alpha = NULL, ...) {
 
     constants$epsilonMo <- 0.97 # (Morton, 1983)
     constants$fz <- 25.0 # Wm^-2.mbar^-1 for T >= 0 degree Celcius (Morton, 1983)
@@ -2374,7 +3110,7 @@ ET.MortonCRWE <- function(data, constants, est, solar, Tdew, alpha = NULL, ...) 
     
     # Morton's CRAE procedure
     
-    variables <- Radiation(data, constants, solar, Tdew, alpha)
+    variables <- Radiation(data, constants, ts, solar, Tdew, alpha)
     
     R_W <- (1 - variables$alpha_Mo) * variables$G_Mo - variables$B_Mo # Wm^-2, net radiation at soil-plant surface at air temperature (S21.66)
     
@@ -2425,15 +3161,15 @@ ET.MortonCRWE <- function(data, constants, est, solar, Tdew, alpha = NULL, ...) 
     E_T_Mo.temp <- 1/(constants$lambdaMo) * E_T_Mo.temp # mm.day^-1 (S21.90)
     
     # Calculate monthly evaporation in mm.month^-1
-    E_P <- E_P.temp * data$ndays
-    E_W <- E_W.temp * data$ndays
-    E_T_Mo <- E_T_Mo.temp * data$ndays
+    E_P <- E_P.temp * data$Ndays
+    E_W <- E_W.temp * data$Ndays
+    E_T_Mo <- E_T_Mo.temp * data$Ndays
     
-    if (est == "potential") {
+    if (est == "potential ET") {
       ET_Mo.Monthly <- E_P
       ET_Mo.Average <- E_P.temp
       ET_type <- "Potential ET"
-    } else if (est == "shallow lake") {
+    } else if (est == "shallow lake ET") {
       ET_Mo.Monthly <- E_W
       ET_Mo.Average <- E_W.temp
       ET_type <- "Shallow Lake Evaporation"
@@ -2461,9 +3197,36 @@ ET.MortonCRWE <- function(data, constants, est, solar, Tdew, alpha = NULL, ...) 
     message(variables$message6)
 
     results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=variables$message1, message6=variables$message6)
-    class(results) <- funname
-    
-    return(results)
+    if (ts=="monthly") {
+      res_ts <- ET.Monthly
+    } else if (ts=="annual") {
+      res_ts <- ET.Annual
+    }
+    message("Timestep: ", ts)
+    message("Units: mm")
+    message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
+    if (NA %in% res_ts) {
+      message(length(res_ts), " ET estimates obtained; ", length(which(is.na(res_ts))), " NA output entries due to missing data")
+      message("Basic stats (NA excluded)")
+      message("Mean: ",round(mean(res_ts,na.rm=T),digits=2))
+      message("Max: ",round(max(res_ts,na.rm=T),digits=2))
+      message("Min: ",round(min(res_ts,na.rm=T),digits=2))
+    } else {
+      message(length(res_ts), " ET estimates obtained")
+      message("Basic stats")
+      message("Mean: ",round(mean(res_ts),digits=2))
+      message("Max: ",round(max(res_ts),digits=2))
+      message("Min: ",round(min(res_ts),digits=2))
+    }
+    #class(results) <- funname
+    # write to csv file
+    for (i in 1:length(results)) {
+      namer <- names(results[i])
+      write.table(as.character(namer), file="ET_MortonCRWE.csv", dec=".", 
+                  quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
+      write.table(data.frame(get(namer,results)), file="ET_MortonCRWE.csv", col.names=F, append= T, sep=',' )
+    }
+    invisible(results)
   }
   # End of Morton's CRWE procedure
   

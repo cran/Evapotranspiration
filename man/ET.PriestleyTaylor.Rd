@@ -7,31 +7,44 @@
 Implementing the Priestley-Taylor formulation for potential evaporation
 }
 \usage{
-\method{ET}{PriestleyTaylor}(data, constants, solar, alpha, \dots)
+\method{ET}{PriestleyTaylor}(data, constants, ts="daily", solar="sunshine hours", alpha=0.23, \dots)
 }
 
 \arguments{
   \item{data}{
-  A list of data in class "PriestleyTaylor" which contains the following items (climate variables) required by Priestley-Taylor formulation:
-  "Tmax", "Tmin", "RHmax", "RHmin", "RS", "n" or "Cd"
+  A list which contains the following items (climate variables) required by Priestley-Taylor formulation:\cr
+  \emph{Tmax}, \emph{Tmin}, \emph{RHmax}, \emph{RHmin}, \emph{Rs} or \emph{n} or \emph{Cd}
   }
   \item{constants}{
-  A list named "constants" consists of constants required for the calculation of Priestley-Taylor formulation which must contain the following items:
-  "Elev" - ground elevation above mean sea level in m,
-  "lambda" - latent heat of vaporisation = 2.45 MJ.kg^-1,
-  "lat_rad" - latitude in radians,
-  "Gsc" - solar constant = 0.0820 MJ.m^-2.min^-1
-  "as" - fraction of extraterrestrial radiation reaching earth on sunless days,
-  "bs" - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days,
-  "sigma" - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1,
-  "alphaPT" - Priestley-Taylor coefficient,
-  "G" - soil heat flux in MJ.m^-2.day^-1, = 0 when using daily time step.
+    A list named \code{constants} consists of constants required for the calculation of Priestley-Taylor formulation which must contain the following items:\cr
+  \emph{Elev} - ground elevation above mean sea level in m,\cr
+  \emph{lambda} - latent heat of vaporisation = 2.45 MJ.kg^-1,\cr
+  \emph{lat_rad} - latitude in radians,\cr
+  \emph{Gsc} - solar constant = 0.0820 MJ.m^-2.min^-1,\cr
+  \emph{sigma} - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1,\cr
+  \emph{alphaPT} - Priestley-Taylor coefficient = 1.26 for Priestley-Taylor model (Priestley and Taylor, 1972)\cr
+  \emph{G} - soil heat flux in MJ.m^-2.day^-1, = 0 when using daily time step.
+  \cr
+  
+  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr 
+  \emph{as} - fraction of extraterrestrial radiation reaching earth on sunless days,\cr
+  \emph{bs} - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
+  }
+  \item{ts}{
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Default is \code{daily}.
   }
   \item{solar}{
-  Must be either "data", "sunshine hours", "cloud" or "monthly precipitation". "data" indicates that solar radiation data is to be used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  Must be either \code{data}, \code{sunshine hours}, \code{cloud} or \code{monthly precipitation}:\cr
+  \code{data} indicates that solar radiation data is to be used directly for calculating evapotranspiration; \cr
+  \code{sunshine hours} indicates that solar radiation is to be calculated using the real data of sunshine hours;\cr
+  \code{cloud} sunshine hours is to be estimated from cloud data; \cr
+  \code{monthly precipitation} indicates that solar radiation is to be calculated directly from monthly precipitation.\cr
+  Default is \code{sunshine hours}.
   }
   \item{alpha}{
-  Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface (or surrounding surface for Penpan formulation) representing the portion of the incident radiation that is reflected back at the surface. 
+  Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface representing the portion of the incident radiation that is reflected back at the surface. \cr
+  Default is 0.23 for surface covered with short reference crop, which is for the calculation of Priestly-Taylor reference crop evaporation.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -39,33 +52,45 @@ Implementing the Priestley-Taylor formulation for potential evaporation
 }
 
 \details{
-  The alternative calculation options can be selected through argument \code{solar}, please see "Arguments" for details.
-  User-defined evaporative surface is allowed through argument \code{alpha}, please see "Arguments" for details.
+
+  The alternative calculation options can be selected through argument \code{solar}, please see \code{Arguments} for details.\cr
+  User-defined evaporative surface is allowed through argument \code{alpha}, please see \code{Arguments} for details.
 }
 
 \value{
-This function returns a object of class \code{PriestleyTaylor}. Such objects are list with components:
+The function prints a calculation summary to the screen containing the following elements:\cr
+- ET model name and ET quantity estimated\cr
+- Evaporative surface with values of albedo \cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
+\cr
+
+The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_PriestleyTaylor.csv} in the working directory:
 
   \item{ET.Daily}{
-  A \code{zoo} object containing daily aggregated estimations of Priestley-Taylor potential evaporation.
+  Daily aggregated estimations of Priestley-Taylor potential evaporation.
   }
   \item{ET.Monthly}{
-  A \code{zoo} object containing monthly aggregated estimations of Priestley-Taylor potential evaporation.
+  Monthly aggregated estimations of Priestley-Taylor potential evaporation.
   }
   \item{ET.Annual}{
-  A \code{zoo} object containing annually aggregated estimations of Priestley-Taylor potential evaporation.
+  Annually aggregated estimations of Priestley-Taylor potential evaporation.
   }
   \item{ET.MonthlyAve}{
-  A \code{zoo} object containing monthly averaged estimations of daily Priestley-Taylor potential evaporation.
+  Monthly averaged estimations of daily Priestley-Taylor potential evaporation.
   }
   \item{ET.AnnualAve}{
-  A \code{zoo} object containing annually averaged estimations of daily Priestley-Taylor potential evaporation.
+  Annually averaged estimations of daily Priestley-Taylor potential evaporation.
   }
   \item{ET_formulation}{
-  A character string containing the name of the formulation used which equals to "Priestley-Taylor".
+  A character string containing the name of the formulation used which equals to \code{Priestley-Taylor}.
   }
   \item{ET_type}{
-  A character string containing the type of the estimation obtained which is "Potential Evaporation".
+  Type of the estimation obtained which is \code{Potential Evaporation}.
   }
   \item{message1}{
   A message to inform the users about how solar radiation has been calculated by using which data.
@@ -73,24 +98,24 @@ This function returns a object of class \code{PriestleyTaylor}. Such objects are
 }
 \references{
 
-MCMAHON, T., PEEL, M., LOWE, L., SRIKANTHAN, R. & MCVICAR, T. 2012. Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
+McMahon, T., Peel, M., Lowe, L., Srikanthan, R. & McVicar, T. 2012. \emph{Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis}. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
+
+Priestley, C. & Taylor, R. 1972, \emph{On the assessment of surface heat flux and evaporation using large-scale parameters'}. Monthly Weather Review, vol. 100, no. 2, pp. 81-92.
 
 }
 \author{
 Danlu Guo
 }
-
+\seealso{
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
+}
 \examples{
-# Use processed existing data set from kent Town, Adelaide
+# Use processed existing data set and constants from kent Town, Adelaide
 data("processeddata")
 data("constants")
 
-# Set data class to be "PriestleyTaylor" to call function
-funname <- "PriestleyTaylor"
-class(data) <- funname
-
-# Call generic function ET(data, ...) with class "PriestleyTaylor"
-results <- ET(data, constants, solar="sunshine hours", alpha = 0.08)
+# Call ET.PriestleyTaylor under the generic function ET
+results <- ET.PriestleyTaylor(data, constants, ts="daily", solar="sunshine hours", alpha=0.23)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

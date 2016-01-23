@@ -7,40 +7,59 @@
 Implementing the Szilagyi-Jozsa formulation for estimating actual evapotranspiration
 }
 \usage{
-\method{ET}{SzilagyiJozsa}(data, constants, solar, wind, 
-windfunction_ver, alpha, z0, \dots)
+\method{ET}{SzilagyiJozsa}(data, constants, ts="daily", solar="sunshine hours", 
+wind="yes", windfunction_ver=1948, alpha=0.23, z0=0.2, \dots)
 }
 
 \arguments{
   \item{data}{
-  A list of data in class "SzilagyiJozsa" which contains the following items (climate variables) required by Szilagyi-Jozsa formulation:
-  "Tmax", "Tmin", "RHmax", "RHmin", "Rs", "n" or "Cd", "u2" or "uz"
+  A list of data which contains the following items (climate variables) required by Szilagyi-Jozsa formulation:\cr
+  \emph{Tmax}, \emph{Tmin}, \emph{RHmax}, \emph{RHmin}, \emph{Rs} or \emph{n} or \emph{Cd}, \emph{u2} or \emph{uz}
   }
   \item{constants}{
-  A list named "constants" consists of constants required for the calculation of Szilagyi-Jozsa formulation which must contain the following items:
-  "Elev" - ground elevation above mean sea level in m,
-  "lambda" - latent heat of vaporisation = 2.45 MJ.kg^-1,
-  "lat_rad" - latitude in radians,
-  "Gsc" - solar constant = 0.0820 MJ.m^-2.min^-1
-  "as" - fraction of extraterrestrial radiation reaching earth on sunless days,
-  "bs" - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days,
-  "z" - height of wind instrument in m,
-  "sigma" - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.
+  A list named \code{constants} consists of constants required for the calculation of Szilagyi-Jozsa formulation which must contain the following items:\cr
+  \emph{Elev} - ground elevation above mean sea level in m,\cr
+  \emph{lambda} - latent heat of vaporisation = 2.45 MJ.kg^-1,\cr
+  \emph{lat_rad} - latitude in radians,\cr
+  \emph{Gsc} - solar constant = 0.0820 MJ.m^-2.min^-1,\cr
+  \emph{z} - height of wind instrument in m,\cr
+  \emph{sigma} - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.\cr
+  \cr
+  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr 
+  \emph{as} - fraction of extraterrestrial radiation reaching earth on sunless days,\cr
+  \emph{bs} - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
+  }
+  \item{ts}{
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Default is \code{daily}.
   }
   \item{solar}{
-  Must be either "data", "sunshine hours", "cloud" or "monthly precipitation". "data" indicates that solar radiation is to be used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  Must be either \code{data}, \code{sunshine hours}, \code{cloud} or \code{monthly precipitation}:\cr
+  \code{data} indicates that solar radiation data is to be used directly for calculating evapotranspiration; \cr
+  \code{sunshine hours} indicates that solar radiation is to be calculated using the real data of sunshine hours;\cr
+  \code{cloud} sunshine hours is to be estimated from cloud data; \cr
+  \code{monthly precipitation} indicates that solar radiation is to be calculated directly from monthly precipitation.\cr
+  Default is \code{sunshine hours}.
   }
   \item{wind}{
-  Must be either "yes" or "no". "yes" indicates that the calculation will use real data of wind speed for calculating Penman potential evapotranspiration, which is required for this formulation; "no" indicates that the alternative calculation without using wind data will be used in Penman formulation (Valiantzas 2006, Equation33).
+  Must be either \code{yes} or \code{no}.\cr
+  \code{yes} indicates that the calculation will use real data of wind speed; \cr
+  \code{no} indicates that the alternative calculation without using wind data will be used in Penman formulation (Valiantzas 2006, Equation33), which is required in the Szilagyi-Jozsa model.\cr
+  Default is \code{yes}.
   }
   \item{windfunction_ver}{
-  The version of Penman wind function that will be used within the Penman formulation. Must be either "1948" or "1956". "1948" is for applying the Penman's 1948 wind function (Penman, 1948); "1956" is for applying the Penman's 1956 wind function (Penman, 1956)
+  The version of Penman wind function that will be used within the Penman formulation. Must be either \code{1948} or \code{1956}. \cr
+  \code{1948} is for applying the Penman's 1948 wind function (Penman, 1948); \cr
+  \code{1956} is for applying the Penman's 1956 wind function (Penman, 1956)
+  Default is \code{1948}.
   }
   \item{alpha}{
-  Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface (or surrounding surface for Penpan formulation) representing the portion of the incident radiation that is reflected back at the surface. 
+  Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface representing the portion of the incident radiation that is reflected back at the surface. \cr
+  Default is 0.23 for short reference crop.
   }
   \item{z0}{
-  Any value (metres), roughness height of the evaporative surface. 
+  Any value (metres), roughness height of the evaporative surface. \cr
+  Default is 0.23 for short reference crop.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -48,33 +67,45 @@ windfunction_ver, alpha, z0, \dots)
 }
 
 \details{
-  The alternative calculation options can be selected through arguments \code{solar}, \code{wind} and \code{windfunction_ver}, please see "Arguments" for details.
-  User-defined evaporative surface is allowed through arguments \code{alpha} and \code{z0}, please see "Arguments" for details.
+  The alternative calculation options can be selected through arguments \code{solar}, \code{wind} and \code{windfunction_ver}, please see \code{Arguments} for details.\cr
+  User-defined evaporative surface is allowed through arguments \code{alpha} and \code{z0}, please see \code{Arguments} for details.\cr
 }
 
 \value{
-This function returns a object of class \code{SzilagyiJozsa}. Such objects are list with components:
+The function prints a calculation summary to the screen containing the following elements:\cr
+- ET model name and ET quantity estimated\cr
+- Evaporative surface with values of albedo, as well as the roughness height\cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- If actual wind data has been used for calculation (i.e. the value of argument \code{wind}) and which version of Penman wind function has been used (i.e. the value of argument \code{windfunction_ver})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
+\cr
+
+The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_SzilagyiJozsa.csv} in the working directory:
 
   \item{ET.Daily}{
-  A \code{zoo} object containing daily aggregated estimations of Szilagyi-Jozsa actual evapotranspiration.
+  Daily aggregated estimations of Szilagyi-Jozsa actual evapotranspiration.
   }
   \item{ET.Monthly}{
-  A \code{zoo} object containing monthly aggregated estimations of Szilagyi-Jozsa actual evapotranspiration.
+  Monthly aggregated estimations of Szilagyi-Jozsa actual evapotranspiration.
   }
   \item{ET.Annual}{
-  A \code{zoo} object containing annually aggregated estimations of Szilagyi-Jozsa actual evapotranspiration.
+  Annually aggregated estimations of Szilagyi-Jozsa actual evapotranspiration.
   }
   \item{ET.MonthlyAve}{
-  A \code{zoo} object containing monthly averaged estimations of daily Szilagyi-Jozsa actual evapotranspiration.
+  Monthly averaged estimations of daily Szilagyi-Jozsa actual evapotranspiration.
   }
   \item{ET.AnnualAve}{
-  A \code{zoo} object containing annually averaged estimations of daily Szilagyi-Jozsa actual evapotranspiration.
+  Annually averaged estimations of daily Szilagyi-Jozsa actual evapotranspiration.
   }
   \item{ET_formulation}{
-  A character string containing the name of the formulation used which equals to "Szilagyi-Jozsa".
+  Name of the formulation used which equals to \code{Szilagyi-Jozsa}.
   }
   \item{ET_type}{
-  A character string containing the type of the estimation obtained which is "Actual Evapotranspiration".
+  A character string containing the type of the estimation obtained which is \code{Actual Evapotranspiration}.
   }
   \item{message1}{
   A message to inform the users about how solar radiation has been calculated by using which data.
@@ -84,33 +115,31 @@ This function returns a object of class \code{SzilagyiJozsa}. Such objects are l
   }
 }
 \references{
-SZILAGYI, J. 2007. On the inherent asymmetric nature of the complementary relationship of evaporation. Geophysical Research Letters, 34, L02405.
+Szilagyi, J. 2007. \emph{On the inherent asymmetric nature of the complementary relationship of evaporation}. Geophysical Research Letters, 34, L02405.
 
-MCMAHON, T., PEEL, M., LOWE, L., SRIKANTHAN, R. & MCVICAR, T. 2012. Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
+McMahon, T., Peel, M., Lowe, L., Srikanthan, R. & McVicar, T. 2012. \emph{Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis}. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
 
-PENMAN, H. L. 1948. Natural evaporation from open water, bare soil and grass. Proceedings of the Royal Society of London. Series A. Mathematical and Physical Sciences, 193, 120-145.
+Penman, H. L. 1948. \emph{Natural evaporation from open water, bare soil and grass}. Proceedings of the Royal Society of London. Series A. Mathematical and Physical Sciences, 193, 120-145.
 
-VALIANTZAS, J. D. 2006. Simplified versions for the Penman evaporation equation using routine weather data. Journal of Hydrology, 331, 690-702.
+Valiantzas, J. D. 2006. \emph{Simplified versions for the Penman evaporation equation using routine weather data}. Journal of Hydrology, 331, 690-702.
 
-PENMAN, H. L. 1956. Evaporation: An introductory survey. Netherlands Journal of Agricultural Science, 4, 9-29.
+Penman, H. L. 1956. \emph{Evaporation: An introductory survey}. Netherlands Journal of Agricultural Science, 4, 9-29.
 }
 \author{
 Danlu Guo
 }
-
+\seealso{
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.Penman}}
+}
 \examples{
-# Use processed existing data set from kent Town, Adelaide
+# Use processed existing data set and constants from kent Town, Adelaide
 data("processeddata")
 data("constants")
 
-# Set data class to be "SzilagyiJozsa" to call function
-funname <- "SzilagyiJozsa"
-class(data) <- funname
-
-# Call generic function ET(data, ...) with class "SzilagyiJozsa"
-results <- ET(data, constants, solar="sunshine hours", wind =
-"yes", windfunction_ver = "1948", alpha = 0.23, z0 = 0.02)
-
+# Call ET.SzilagyiJozsa under the generic function ET
+results <- ET.SzilagyiJozsa(data, constants, ts="daily", 
+solar="sunshine hours", wind="yes", 
+windfunction_ver=1948, alpha=0.23, z0=0.2)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

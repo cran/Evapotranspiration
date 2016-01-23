@@ -7,20 +7,24 @@
 Implementing the Hargreaves-Samani formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{ET}{HargreavesSamani}(data, constants, \dots)
+\method{ET}{HargreavesSamani}(data, constants, ts="daily", \dots)
 }
 
 \arguments{
   \item{data}{
-  A list of data in class "HargreavesSamani" which contains the following items (climate variables) required by Hargreaves-Samani formulation:
-  "Tmax", "Tmin"
+  A list of data which contains the following items (climate variables) required by Hargreaves-Samani formulation:
+  \emph{Tmax}, \emph{Tmin}
   }
   \item{constants}{
-  A list named "constants" consists of constants required for the calculation of Hargreaves-Samani formulation which must contain the following items:
-  "Elev" - ground elevation above mean sea level in m,
-  "lambda" - latent heat of vaporisation = 2.45 MJ.kg^-1,
-  "lat_rad" - latitude in radians,
-  "Gsc" - solar constant = 0.0820 MJ.m^-2.min^-1.
+    A list named \code{constants} consists of constants required for the calculation of Hargreaves-Samani formulation which must contain the following items:\cr
+  \emph{Elev} - ground elevation above mean sea level in m,\cr
+  \emph{lambda} - latent heat of vaporisation = 2.45 MJ.kg^-1,\cr
+  \emph{lat_rad} - latitude in radians,\cr
+  \emph{Gsc} - solar constant = 0.0820 MJ.m^-2.min^-1.\cr
+  }
+  \item{ts}{
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Default is \code{daily}.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -33,51 +37,56 @@ Implementing the Hargreaves-Samani formulation for estimating reference crop eva
 
 
 \value{
-This function returns a object of class \code{HargreavesSamani}. Such objects are list with components:
+The function prints a calculation summary to the screen containing the following elements:\cr
+- ET model name and ET quantity estimated \cr
+- Evaporative surface with values of albedo \cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
+\cr
 
   \item{ET.Daily}{
-  A \code{zoo} object containing daily aggregated estimations of Hargreaves-Samani reference crop evapotranspiration.
+  Daily aggregated estimations of Hargreaves-Samani reference crop evapotranspiration.
   }
   \item{ET.Monthly}{
-  A \code{zoo} object containing monthly aggregated estimations of Hargreaves-Samani reference crop evapotranspiration.
+  Monthly aggregated estimations of Hargreaves-Samani reference crop evapotranspiration.
   }
   \item{ET.Annual}{
-  A \code{zoo} object containing annually aggregated estimations of Hargreaves-Samani reference crop evapotranspiration.
+  Annually aggregated estimations of Hargreaves-Samani reference crop evapotranspiration.
   }
   \item{ET.MonthlyAve}{
-  A \code{zoo} object containing monthly averaged estimations of daily Hargreaves-Samani reference crop evapotranspiration.
+  Monthly averaged estimations of daily Hargreaves-Samani reference crop evapotranspiration.
   }
   \item{ET.AnnualAve}{
-  A \code{zoo} object containing annually averaged estimations of daily Hargreaves-Samani reference crop evapotranspiration.
+  Annually averaged estimations of daily Hargreaves-Samani reference crop evapotranspiration.
   }
   \item{ET_formulation}{
-  A character string containing the name of the formulation used which equals to "Hargreaves-Samani".
+  Name of the formulation used which equals to \code{Hargreaves-Samani}.
   }
   \item{ET_type}{
-  A character string containing the type of the estimation obtained which is "Reference Crop Evapotranspiration".
+  Type of the estimation obtained which is \code{Reference Crop Evapotranspiration}.
   }
 }
 \references{
-MCMAHON, T., PEEL, M., LOWE, L., SRIKANTHAN, R. & MCVICAR, T. 2012. Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
+McMahon, T., Peel, M., Lowe, L., Srikanthan, R. & McVicar, T. 2012. \emph{Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis}. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
 
-HARGREAVES, G. H. & SAMANI, Z. A. 1985. Reference crop evapotranspiration from ambient air temperature. American Society of Agricultural Engineers.
-
+Hargreaves, G.H.Samani, Z.A. 1985, \emph{Reference crop evapotranspiration from ambient air temperature}. American Society of Agricultural Engineers.
 }
 \author{
 Danlu Guo
 }
-
+\seealso{
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
+}
 \examples{
-# Use processed existing data set from kent Town, Adelaide
+# Use processed existing data set and constants from kent Town, Adelaide
 data("processeddata")
 data("constants")
 
-# Set data class to be "HargreavesSamani" to call function
-funname <- "HargreavesSamani" 
-class(data) <- funname 
-
-# Call generic function ET(data, ...) with class "HargreavesSamani"
-results <- ET(data, constants)
+# Call ET.HargreavesSamani under the generic function ET
+results <- ET.HargreavesSamani(data, constants, ts="daily")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

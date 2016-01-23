@@ -13,50 +13,49 @@ ETForcings(data, results, forcing)
 
 \arguments{
   \item{data}{
-  A list of data named "data" which must contain a component with the name of a climate variable that the estimated evapotranspiration should be plotted against, see \code{forcing}.
+  A list of data named \code{data} which must contain a component with the name of a climate variable that the estimated evapotranspiration should be plotted against, see \code{forcing}.
   }
   \item{results}{
-  A list named "results" which has been derived from function \code{ET..()}.
+  A list named \code{results} which has been derived from function \code{ET}.
   }
   \item{forcing}{
-  A character string as the name of a climate variable that the estimated evapotranspiration should be plotted against, can be any of:
-  "Tmax" - maximum temperature,
-  "Tmin" - minimum temperature,
-  "u2" - average wind speed at 2m,
-  "uz" - average wind speed,
-  "Rs" - solar radiation,
-  "n" - daily sunshine hours,
-  "Precip" - precipitation,
-  "Epan" - Class-A pan evaporation,
-  "RHmax" - maximum relative humidity,
-  "RHmin" - minimum relative humidity,
-  "Tdew" - average dew point temeprature.
+  A character string as the name of a climate variable that the estimated evapotranspiration should be plotted against, can be any of:\cr
+  \emph{Tmax} - maximum temperature,\cr
+  \emph{Tmin} - minimum temperature,\cr
+  \emph{u2} - average wind speed at 2m,\cr
+  \emph{uz} - average wind speed,\cr
+  \emph{Rs} - solar radiation,\cr
+  \emph{n} - daily sunshine hours,\cr
+  \emph{Precip} - precipitation,\cr
+  \emph{Epan} - Class-A pan evaporation,\cr
+  \emph{RHmax} - maximum relative humidity,\cr
+  \emph{RHmin} - minimum relative humidity,\cr
+  \emph{Tdew} - average dew point temeprature.
   }
   }
 
 \value{
-Three plots are generated for the response of calculated evapotranspiration to each climate variable, including:
-1) daily evapotranspiration estimate vs. daily average temperature; 
-2) monthly mean daily evaporationion estimate vs. monthly average temperature; 
+Three plots are generated for the response of calculated evapotranspiration to each climate variable, including:\cr
+1) daily evapotranspiration estimate vs. daily average temperature; \cr
+2) monthly mean daily evaporationion estimate vs. monthly average temperature; \cr
 3) annual mean daily evaporationion estimate vs. annual average temperature.
   }
 
 \author{
 Danlu Guo
 }
-
+\seealso{
+\code{\link{ETPlot}}
+}
 \examples{
-# Use processed existing data set from kent Town, Adelaide
+# Use processed existing data set and constants from kent Town, Adelaide
 data("processeddata")
 data("constants")
 
-# Set data class to be "Penman" to call function
-funname <- "Penman" 
-class(data) <- funname 
+# Call ET.Penman under the generic function ET
+results <- ET.Penman(data, constants, ts="daily", solar="sunshine hours", 
+wind="yes", windfunction_ver = "1948", alpha = 0.08, z0 = 0.001) 
 
-# Call generic function ET(data, constants, ...) with class "Penman"
-results <- ET(data, constants, solar="sunshine hours", wind=
-"yes", windfunction_ver = "1948", alpha = 0.08, z0 = 0.001) 
 # Plot the estimated Penman open-water evaporation against average temperature
 ETForcings(data, results, forcing = "Tmax")
 }

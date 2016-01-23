@@ -12,14 +12,18 @@ This function returns a object named \code{variables} which contains variable va
 
 }
 \references{
-MCMAHON, T., PEEL, M., LOWE, L., SRIKANTHAN, R. & MCVICAR, T. 2012. Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
+McMahon, T., Peel, M., Lowe, L., Srikanthan, R. & McVicar, T. 2012. \emph{Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis}. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
 
-MORTON, F. I. 1983. Operational estimates of areal evapotranspiration and their significance to the science and practice of hydrology. Journal of Hydrology, 66, 1-76.
+Morton, F.I. 1983, \emph{Operational estimates of areal evapotranspiration and their significance to the science and practice of hydrology}. Journal of Hydrology, vol. 66, no. 1-4, pp. 1-76.
+
+Morton, F.I. 1983, \emph{Operational estimates of lake evaporation}. Journal of Hydrology, vol. 66, no. 1-4, pp. 77-100.
 }
 \author{
 Danlu Guo
 }
-
+\seealso{
+\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.MortonCRAE}},\code{\link{ET.MortonCRWE}}
+}
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
 \keyword{radiation}

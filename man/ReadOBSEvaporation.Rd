@@ -1,7 +1,7 @@
 \name{ReadOBSEvaporations}
 \alias{ReadOBSEvaporation}
 
-\title{Read Raw Data of Observed Evaporation from File
+\title{Read Raw Data of Observed Evaporation from file
 }
 \description{
 Load raw date and evaporation data and then compile data list of daily time step.
@@ -13,20 +13,20 @@ ReadOBSEvaporation(E_OBS, data)
 
 \arguments{
   \item{E_OBS}{
-  A list of evaporation data named "E_OBS" which must contain the following columns:
-  "Year", "Month", "Day" as the date and,
-  "EVAP.Obs" as the observed evaporation in mm.
+  A list of evaporation data named \code{E_OBS} which must contain the following columns:\cr
+  \code{Year}, \code{Month}, \code{Day} as the date and,\cr
+  \code{EVAP.Obs} as the observed evaporation in mm.\cr
   The observations can be of daily and monthly time steps and must match with the corresponding dates recorded.
   }
   \item{data}{
-  A list of data named "data" which contains data of climate variables over the same period as the evaporation data
+  A list of data named \code{data} which contains data of climate variables over the same period as the evaporation data
   }
   }
   
 \value{
 This function returns a list with all components of class \code{zoo} which have been processed from the raw data, including:
   \item{Date.OBS}{
-  A \code{zoo} object containing the date data with time step consistent with the raw evaporation data in "E_OBS".
+  A \code{zoo} object containing the date data with time step consistent with the raw evaporation data in \code{E_OBS}.
   }
   \item{E_obs.Daily}{
   A \code{zoo} object containing the daily evaporation data.
@@ -43,15 +43,13 @@ This function returns a list with all components of class \code{zoo} which have 
   \item{E_obs.AnnualAve}{
   A \code{zoo} object containing the annually average daily evaporation from observation in mm/day.
   }
-  Note that the components might have value of \code{NULL} when the corresponding raw data cannot be found in "E_OBS".
+  Note that the components might have value of \code{NULL} when the corresponding raw data cannot be found in \code{E_OBS}.
   }
 
 \author{
 Danlu Guo
 }
-\seealso{
-\code{evapotranspiration}
-}
+
 \examples{
 # Get the time period from "data"
 # Use processed existing data set from kent Town, Adelaide

@@ -7,26 +7,35 @@
 Implementing the Blaney-Criddle formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{ET}{BlaneyCriddle}(data, constants, solar, height, \dots) 
+\method{ET}{BlaneyCriddle}(data, constants, ts="daily", solar="sunshine hours", height=FALSE, \dots) 
 }
 
 \arguments{
   \item{data}{
-  A list of data in class "BlaneyCriddle" which contains the following items (climate variables) required by Blaney-Criddle formulation:
-  "Tmax", "Tmin", "RHmin", "n", "u2" or "uz"
+  A list of data which contains the following items (climate variables) required by Blaney-Criddle formulation:\cr
+  \emph{Tmax}, \emph{Tmin}, \emph{RHmin}, \emph{n} or \emph{Cd}, \emph{u2} or \emph{uz}
   }
   \item{constants}{
-  A list named "constants" consists of constants required for the calculation of Blaney-Criddle formulation which must contain the following items:
-  "Elev" - ground elevation above mean sea level in m,
-  "lat_rad" - latitude in radians,
-  "z" - height of wind instrument in m,
-  "e0", "e1", "e2", "e3", "e4" - recommended values of 0.81917, -0.0040922, 1.0705, 0.065649, -0.0059684, -0.0005967 respectively (Table 1 in Frevert et al., 1983).
+    A list named \code{constants} consists of constants required for the calculation of PenPan formulation which must contain the following items:\cr
+  \emph{Elev} - ground elevation above mean sea level in m,\cr
+  \emph{lambda} - latent heat of vaporisation = 2.45 MJ.kg^-1,\cr
+  \emph{lat_rad} - latitude in radians,\cr
+  \emph{z} - height of wind instrument in m,\cr
+  \emph{e0},\emph{e1},\emph{e2},\emph{e3},\emph{e4} - recommended values of 0.81917, -0.0040922, 1.0705, 0.065649, -0.0059684, -0.0005967 respectively (Table 1 in Frevert et al., 1983).
+  }
+  \item{ts}{
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Default is \code{daily}.
   }
   \item{solar}{
-  Must be either "sunshine hours" or "cloud". "sunshine hours" indicates that solar radiation is to be calculated using the data of sunshine hours; for "cloud" sunshine hours is to be estimated from cloud data.
+  Must be either \\code{sunshine hours} or \code{cloud}:\cr
+  \code{sunshine hours} indicates that solar radiation is to be calculated using the real data of sunshine hours;\cr
+  \code{cloud} sunshine hours is to be estimated from cloud data. \cr
+  Default is \code{sunshine hours}.
   }
   \item{height}{
-  Must be TRUE or FALSE, indicating if adjustment for site elevation for arid and semi-arid regions is applied in Blaney-Criddle formulation (Allen and Brockway, 1983).
+  Must be \code{T} or \code{F}, indicating if adjustment for site elevation for arid and semi-arid regions is applied in Blaney-Criddle formulation (Allen and Brockway, 1983).\cr
+  Default is \code{F} for no adjustment.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -34,33 +43,46 @@ Implementing the Blaney-Criddle formulation for estimating reference crop evapot
 }
 
 \details{
-  The alternative calculation options can be selected through argument \code{solar}, please see "Arguments" for details.
-  Height adjustment for the estimations is available through argument \code{height}, please see "Arguments" for details.
+  The alternative calculation options can be selected through argument \code{solar}, please see \code{Arguments} for details.\cr
+  Height adjustment for the estimations is available through argument \code{height}, please see \code{Arguments} for details.\cr
 }
 
 \value{
-This function returns a object of class \code{BlaneyCriddle}. Such objects are list with components:
+The function prints a calculation summary to the screen containing the following elements:\cr
+- ET model name and ET quantity estimated\cr
+- Evaporative surface \cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- If height adjustment has been applied on results (i.e. the value of argument \code{height})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
+\cr
+
+The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_BlaneyCriddle.csv} in the working directory:
+
 
   \item{ET.Daily}{
-  A \code{zoo} object containing daily aggregated estimations of Blaney-Criddle reference crop evapotranspiration.
+  Daily aggregated estimations of Blaney-Criddle reference crop evapotranspiration.
   }
   \item{ET.Monthly}{
-  A \code{zoo} object containing monthly aggregated estimations of Blaney-Criddle reference crop evapotranspiration.
+  Monthly aggregated estimations of Blaney-Criddle reference crop evapotranspiration.
   }
   \item{ET.Annual}{
-  A \code{zoo} object containing annually aggregated estimations of Blaney-Criddle reference crop evapotranspiration.
+  Annually ggregated estimations of Blaney-Criddle reference crop evapotranspiration.
   }
   \item{ET.MonthlyAve}{
-  A \code{zoo} object containing monthly averaged estimations of daily Blaney-Criddle reference crop evapotranspiration.
+  Monthly averaged estimations of daily Blaney-Criddle reference crop evapotranspiration.
   }
   \item{ET.AnnualAve}{
-  A \code{zoo} object containing annually averaged estimations of daily Blaney-Criddle reference crop evapotranspiration.
+  Annually averaged estimations of daily Blaney-Criddle reference crop evapotranspiration.
   }
   \item{ET_formulation}{
-  A character string containing the name of the formulation used which equals to "Blaney-Criddle".
+  Name of the formulation used which equals to \code{Blaney-Criddle}.
   }
   \item{ET_type}{
-  A character string containing the type of the estimation obtained which is "Reference Crop Evapotranspiration".
+  Type of the estimation obtained which is \code{Reference Crop Evapotranspiration}.
   }
   \item{message1}{
   A message to inform the users about how solar radiation has been calculated by using which data.
@@ -70,25 +92,30 @@ This function returns a object of class \code{BlaneyCriddle}. Such objects are l
   }
 }
 \references{
-MCMAHON, T., PEEL, M., LOWE, L., SRIKANTHAN, R. & MCVICAR, T. 2012. Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
+McMahon, T., Peel, M., Lowe, L., Srikanthan, R. & McVicar, T. 2012. \emph{Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis}. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
 
-ALLEN, R. & PRUITT, W. 1986. Rational Use of The FAO Blaney-Criddle Formula. Journal of Irrigation and Drainage Engineering, 112, 139-155.
+Allen, R.G.Brockway, C.E. 1983, \emph{Estimating consumptive use on a statewide basis}. Advances in Irrigation and Drainage@ sSurviving External Pressures, ASCE, pp. 79-89.
+
+Allen, R. & Pruitt, W. 1986. \emph{Rational Use of The FAO Blaney-Criddle Formula}. Journal of Irrigation and Drainage Engineering, 112, 139-155.
+
+Frevert, D.K., Hill, R.W.Braaten, B.C. 1983, \emph{Estimation of FAO evapotranspiration coefficients}, Journal of Irrigation and Drainage Engineering, vol. 109, no. 2, pp. 265-270.
+
 }
 \author{
 Danlu Guo
 }
-
+\seealso{
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
+}
 \examples{
-# Use processed existing data set from kent Town, Adelaide
+# Use processed existing data set and constants from 
+# kent Town, Adelaide
 data("processeddata")
 data("constants")
 
-# Set data class to be "BlaneyCriddle" to call function
-funname <- "BlaneyCriddle" 
-class(data) <- funname 
-
-# Call generic function ET(data, ...) with class "BlaneyCriddle"
-results <- ET(data, constants, solar="sunshine.hours", height = TRUE)
+# Call ET.BlaneyCriddle under the generic function ET
+results <- ET.BlaneyCriddle(data, constants, ts="daily", 
+solar="sunshine hours", height=FALSE)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

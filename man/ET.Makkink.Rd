@@ -4,28 +4,39 @@
 \title{Makkink Formulation
 }
 \description{
-Implementing the Makkink formulation for estimating potential evaporation.
+Implementing the Makkink formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{ET}{Makkink}(data, constants, solar, \dots)
+\method{ET}{Makkink}(data, constants, ts="daily", solar="sunshine hours", \dots)
 }
 
 \arguments{
   \item{data}{
-  A list of data in class "Makkink" which contains the following items (climate variables) required by Makkink formulation:
-  "Tmax", "Tmin", "Rs", "n" or "Cd"
+  A list of data which contains the following items (climate variables) required by Makkink formulation:\cr
+  \emph{Tmax}, \emph{Tmin}, \emph{Rs} or \emph{n} or \emph{Cd}
   }
   \item{constants}{
-  A list named "constants" consists of constants required for the calculation of Makkink formulation which must contain the following items:
-  "Elev" - ground elevation above mean sea level in m,
-  "lambda" - latent heat of vaporisation = 2.45 MJ.kg^-1,
-  "lat_rad" - latitude in radians,
-  "Gsc" - solar constant = 0.0820 MJ.m^-2.min^-1
-  "as" - fraction of extraterrestrial radiation reaching earth on sunless days,
-  "bs" - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
+  A list named \code{constants} consists of constants required for the calculation of Makkink formulation which must contain the following items:\cr
+  \emph{Elev} - ground elevation above mean sea level in m,\cr
+  \emph{lambda} - latent heat of vaporisation = 2.45 MJ.kg^-1,\cr
+  \emph{lat_rad} - latitude in radians,\cr
+  \emph{Gsc} - solar constant = 0.0820 MJ.m^-2.min^-1.\cr
+  \cr
+  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr 
+  \emph{as} - fraction of extraterrestrial radiation reaching earth on sunless days,\cr
+  \emph{bs} - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
+  }
+  \item{ts}{
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Default is \code{daily}.
   }
   \item{solar}{
-  Must be either "sunshine hours", "data", "cloud" or "monthly precipitation". "sunshine hours" indicates that solar radiation data will be used directly for calculating evapotranspiration; "data" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  Must be either \code{data}, \code{sunshine hours}, \code{cloud} or \code{monthly precipitation}:\cr
+  \code{data} indicates that solar radiation data is to be used directly for calculating evapotranspiration; \cr
+  \code{sunshine hours} indicates that solar radiation is to be calculated using the real data of sunshine hours;\cr
+  \code{cloud} sunshine hours is to be estimated from cloud data; \cr
+  \code{monthly precipitation} indicates that solar radiation is to be calculated directly from monthly precipitation.\cr
+  Default is \code{sunshine hours}.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -33,61 +44,73 @@ Implementing the Makkink formulation for estimating potential evaporation.
 }
 
 \details{
-  The alternative calculation options can be selected through argument \code{solar}, please see "Arguments" for details.
+  The alternative calculation options can be selected through argument \code{solar}, please see \code{Arguments} for details.\cr
 }
 
 \value{
-This function returns a object of class \code{Makkink}. Such objects are list with components:
+The function prints a calculation summary to the screen containing the following elements:\cr
+- ET model name and ET quantity estimated\cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
+\cr
+
+The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_Makkink.csv} in the working directory:
 
   \item{ET.Daily}{
-  A \code{zoo} object containing daily aggregated estimations of Makkink potential evaporation.
+  Daily aggregated estimations of Makkink reference crop evapotranspiration.
   }
   \item{ET.Monthly}{
-  A \code{zoo} object containing monthly aggregated estimations of Makkink potential evaporation.
+  Monthly aggregated estimations of Makkink reference crop evapotranspiration.
   }
   \item{ET.Annual}{
-  A \code{zoo} object containing annually aggregated estimations of Makkink potential evaporation.
+  Annually aggregated estimations of Makkink reference crop evapotranspiration.
   }
   \item{ET.MonthlyAve}{
-  A \code{zoo} object containing monthly averaged estimations of daily Makkink potential evaporation.
+  Monthly averaged estimations of daily Makkink reference crop evapotranspiration.
   }
   \item{ET.AnnualAve}{
-  A \code{zoo} object containing annually averaged estimations of daily Makkink potential evaporation.
+  Annually averaged estimations of daily Makkink reference crop evapotranspiration.
   }
   \item{ET_formulation}{
-  A character string containing the name of the formulation used which equals to "Makkink".
+  Name of the formulation used which equals to \code{Makkink}.
   }
   \item{ET_type}{
-  A character string containing the type of the estimation obtained which is "Potential Evaporation".
+  Type of the estimation obtained which is \code{Reference crop evapotranspiration}.
   }
   \item{message1}{
   A message to inform the users about how solar radiation has been calculated by using which data.
   }
 }
 \references{
-MCMAHON, T., PEEL, M., LOWE, L., SRIKANTHAN, R. & MCVICAR, T. 2012. Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
+McMahon, T., Peel, M., Lowe, L., Srikanthan, R. & McVicar, T. 2012. \emph{Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis}. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
+
+De Bruin, H. 1981, \emph{The determination of (reference crop) evapotranspiration from routine weather data}. Evaporation in relation to hydrology, pp. 25-37.
 
 }
 \author{
 Danlu Guo
 }
 
+\seealso{
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
+}
 \examples{
-# Use processed existing data set from kent Town, Adelaide
+# Use processed existing data set and constants from kent Town, Adelaide
 data("processeddata")
 data("constants")
 
-# Set data class to be "Makkink" to call function
-funname <- "Makkink" 
-class(data) <- funname 
+# Call ET.Makkink under the generic function ET
+results <- ET.Makkink(data, constants, ts="daily", solar="sunshine hours")
 
-# Call generic function ET(data, ...) with class "Makkink"
-results <- ET(data, constants, solar="sunshine hours")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
 \keyword{Makkink}
-\keyword{potential evaporation}
+\keyword{reference crop evapotranspiration}
 % __ONLY ONE__ keyword per line
 

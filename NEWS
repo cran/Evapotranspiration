@@ -2,20 +2,41 @@
 
 NEW FEATURES
 
-    o  Four new models added to ET...() - ET.Hamon (PET), ET.Linacre (AET), ET.Romanenko (PET) and ET.Abtew (AET)
-
-    o  for ET.MortonCRAE(), ET.MortonCRWE() - Allow the use of actual solar radiation data, with arguments 'solar' = "data" and user specified alpha value (see manual for details)
-
-    o  for ET.Penpan() - Allow flexible choice of estimation for either the Class-A pan evaporation, with argument 'est' == "pan"; or potential evapotranspiration, with argument 'est' == "potential ET" and to 'pan_coeff' to specify the pan coefficient (see manual for details)
-
-    o  ReadInputs - Allow user-defined timestep of raw data, with argument 'timestep' of either "daily" or "subdaily"
+    o  ReadInputs() - Optional 4 gap-filling methods for missing values, with default of assigning missing values NA(see the next section)
+    o  ReadInputs() - Optional 4 gap-filling methods for abnormal values, with default of leaving abnormal values untouched (see the next section)
+    o  ET...() - if the specific ET method is not specified by user a default ET model is selected based on data availability, please see the manual for details
+    o  ET...() - a user-friendly summary is printed to screen while full results are saved to a csv file in the working directory
+    o  ReadInputs() - user can now define the maximum percentage of missing days (within the date data, as a fraction of the total number of days) that the user can tolerate, with argument 'stopmissing' - this argument now asks for an additional value (i.e. 3rd value) to the two values in the previous versions
 
 SIGNIFICANT USER-VISIBLE CHANGES
-NA
+
+    o  All manuals are re-formatted for better visualisation.
+    o  ReadInputs() - new arguments are introduced, including:
+      1) interp_missing_days - (T/F) if missing days (within the date data) should be interpolated, with a default of F  which assigns NA to data at the missing days
+      2) interp_missing_entries - (T/F) if missing data entries within individual climate variables should be interpolated, with a default of F which assigns NA to the missing entries
+      3) interp_abnormal - (T/F) if abnormal values within individual climate variables should be interpolated, with a default of F which leaves the abnormal values unchanged (please see the manual for the definition of abnormal values)
+      4) missing_method - name of the interpolated methods chosen for filling in missing days and missing data entries, see the manual for four alternative methods available. Default is NULL.
+      5) abnormal_method - name of the interpolated methods chosen for replacing data entries with abnormal values, see the manual for four alternative methods available. Default is NULL.
+    o  ReadInputs() - units requirement for wind data is changed to m/s
+
+    o  ET...() - call method to call specific ET methods under ET...() is updated, please see the manual for details
+    o  ET...() - default values added for the following arguments:
+      1) solar = 'sunshine hours' - for all models that require argument 'solar'
+      2) wind = 'yes' - for all models that require argument 'wind'
+      3) ts = 'daily' for all models except for ET.MortonCRAE() and ET.MortonCRWE(), in which ts = 'monthly'
+      4) windfunction_ver = 1948 - for all models that require argument 'windfunction_ver'
+      5) alpha = 0.23 (i.e. for short crop) for all models that require argument 'alpha', except for Penman where alpha = 0.08 (for open water)
+    o  ET...() - name change: 'ET.Penpan' replaced with 'ET.PenPan'
+    o  ET.Chapman() - argument 'Penpan' replaced with 'PenPan' 
+
+    o  climatedata.rda is updated so that wind speed ('uz.subdaily') converted to m/s to match the new units requirement for raw input data
+    o  processeddata.RData is updated to fix errors in Tmax/Tmin
+    o  constants.RData is replaced with defaultconstants.RData which only includes the universal constants, the other constants are expecting user input 
 
 BUG FIXES
-
-    o  ReadInputs - Fix bugs in ReadInputs due to inconsistency in time steps in data
+    o  ReadInputs() - errors when reading raw data with missing dates/leap year dates
+    o  ET.Penman.Rd - fix error: "default z0 for water is 0.08" - should be 0.001
 
 DEPRECATED & DEFUNCT
-NA
+    o  Constants.RData
+    o  ET.Penpan()

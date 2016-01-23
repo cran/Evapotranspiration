@@ -1,11 +1,11 @@
 # For global variable 'funname'
-if(getRversion() >= "2.15.1")  utils::globalVariables(c("funname"))
-
 
 # A Function for reading, checking and doing basic calculation from data for Evapotranspiration functions #
-# Timestep - daily
+# Timestep - daily or subdaily
 
-ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
+ReadInputs <- function (climatedata, constants, stopmissing, timestep, 
+                        interp_missing_days = FALSE, interp_missing_entries = FALSE, 
+                        interp_abnormal = FALSE, missing_method = NULL, abnormal_method = NULL) {
   if ("Year" %in% (colnames(climatedata)) == FALSE) {
     stop("missing data of 'Year'")
   }
@@ -16,258 +16,386 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
     stop("missing data of 'Day'")
   }
   if (timestep == "subdaily") {
+    # getting date index according to first/last dates
     Date.subdaily <- strptime(paste(climatedata$Day, "/", 
                                     climatedata$Month, "/", climatedata$Year, " ", climatedata$Hour, 
                                     sep = ""), "%d/%m/%Y %H")
     Date.daily <- unique(as.Date(Date.subdaily, "%d/%m/%y"))
     Date.monthly <- unique(as.yearmon(Date.subdaily, "%d/%m/%y"))
-    J.temp <- zoo(Date.subdaily$yday + 1, as.Date(Date.subdaily))
-    J <- aggregate(J.temp, as.Date(Date.subdaily, "%d/%m/%y"), 
-                   mean)
-    i.temp <- unique(as.yearmon(Date.daily, "%m/%y"))
+    
+    J <- zoo(as.POSIXlt(Date.daily)$yday,as.Date(Date.daily))
+    i.temp <- unique(Date.monthly)
     i <- (i.temp - trunc(i.temp)) * 12 + 1
-    ndays.temp <- zoo(climatedata$Day, as.Date(Date.subdaily))
-    ndays.temp <- aggregate(ndays.temp, as.Date(Date.subdaily, 
+    Ndays.temp <- zoo(climatedata$Day, Date.subdaily)
+    Ndays.temp <- aggregate(Ndays.temp, as.Date(Date.subdaily, 
                                                 "%d/%m/%y"), mean)
     
-    dateagg <- as.Date(Date.subdaily)    
-  }
-  else if (timestep == "daily") {
+    dateagg <- Date.subdaily
+    
+    # find missing dates
+    StdDate.daily <- as.Date(seq.Date(Date.daily[1],Date.daily[length(Date.daily)],by="day"))
+    Missing_DateIndex.daily <- as.Date(setdiff(StdDate.daily,Date.daily))
+    #StdDate.monthly <- unique(as.yearmon(seq.Date(Date.daily[1],Date.daily[length(Date.daily)],by="day")))
+    #Missing_DateIndex.monthly <- as.yearmon(setdiff(StdDate.monthly,Date.monthly))
+      
+  } else if (timestep == "daily") {
     Date.daily <- strptime(paste(climatedata$Day, "/", climatedata$Month, 
                                  "/", climatedata$Year, sep = ""), "%d/%m/%Y")
     Date.monthly <- unique(as.yearmon(Date.daily, "%d/%m/%y"))
+    
     J.temp <- zoo(Date.daily$yday + 1, as.Date(Date.daily))
     J <- aggregate(J.temp, as.Date(Date.daily, "%d/%m/%y"), 
                    mean)
-    i.temp <- unique(as.yearmon(Date.daily, "%m/%y"))
+    i.temp <- unique(Date.monthly)
     i <- (i.temp - trunc(i.temp)) * 12 + 1
-    ndays.temp <- zoo(climatedata$Day, as.Date(Date.daily))
-    ndays.temp <- aggregate(ndays.temp, as.Date(Date.daily, 
+    Ndays.temp <- zoo(climatedata$Day, Date.daily)
+    Ndays.temp <- aggregate(Ndays.temp, as.Date(Date.daily, 
                                                 "%d/%m/%y"), mean)
     
     dateagg <- as.Date(Date.daily)
+    
+    # find missing dates
+    StdDate.daily <- as.Date(seq.Date(Date.daily[1],Date.daily[length(Date.daily)],by="day"))
+    Missing_DateIndex.daily <- as.Date(setdiff(StdDate.daily,Date.daily))
+    
+    #StdDate.monthly <- unique(as.yearmon(seq.Date(Date.daily[1],Date.daily[length(Date.daily)],by="day")))
+    #Missing_DateIndex.monthly <- as.yearmon(setdiff(StdDate.monthly,Date.monthly))
   }
-  ndays <- aggregate(ndays.temp, as.yearmon(Date.daily, "%m/%y"), 
+  
+  if (length(Missing_DateIndex.daily) > 0) {
+    message(paste("Warning: Number of missing date indices: ",length(Missing_DateIndex.daily)," days",sep=""))
+    message(paste("% missing date indices: ", signif(length(Missing_DateIndex.daily)/length(StdDate.daily),digits=-3), "%",sep=""))
+    if (sum(is.na(climatedata$Tmin.daily)) >= stopmissing[1]/100 * 
+          nrow(climatedata)) {
+      stop("missing date indices exceeds ", 
+           stopmissing[1], "%, please use high quality data for calculation")
+    }
+    if (interp_missing_days == T) {
+      message(paste("All climate variables for missing dates will be interpolated with ",missing_method, sep=""))
+    } else {
+      message("NA will be filled in for all climate variables for missing dates")
+    }
+  }
+  Stdzoo <- zoo(StdDate.daily,StdDate.daily)
+  Ndays <- aggregate(Ndays.temp, as.yearmon(Date.daily, "%m/%y"), 
                      FUN = max)
-  if (is.na(as.numeric(stopmissing[1])) | is.na(as.numeric(stopmissing[1]))) {
-    stop("Please use two numeric values for the maximum allowable percentage of missing data and continuous missing data")
-  }
-  else {
-    if (length(stopmissing) != 2) {
-      stop("Please input a vector of length 2 for argument 'stopmissing'")
+  if (is.na(as.numeric(stopmissing[1])) | is.na(as.numeric(stopmissing[2])) | is.na(as.numeric(stopmissing[3])) ) {
+    message("Please use three numeric values for the maximum allowable percentages of: ")
+    message("1. missing date indices to the total number of days")
+    message("2. missing data entries to the total number of data entries for each climate variable")
+    stop("3. continuous missing data entries to the total number of data entries for each climate variable")
+    
+    
+  } else {
+    if (length(stopmissing) != 3) {
+      stop("Please input a vector of length 3 for argument 'stopmissing'")
     }
     else {
       for (counter in 1:2) {
         if (as.numeric(stopmissing[counter]) < 1 | as.numeric(stopmissing[counter]) > 
               99) {
-          stop("Please use values between 1 and 99 for the maximum allowable percentage of missing data")
+          stop("Please use values between 1 and 99 for the maximum allowable percentage of date indices/missing data entries")
         }
       }
     }
   }
-  message(paste("The maximum acceptable percentage of missing data is", 
+  message(paste("The maximum acceptable percentage of date indices is", 
                 stopmissing[1], "%"))
-  message(paste("The maximum acceptable percentage of continuous missing data is", 
+  message(paste("The maximum acceptable percentage of missing data is", 
                 stopmissing[2], "%"))
+  message(paste("The maximum acceptable percentage of continuous missing data is", 
+                stopmissing[3], "%"))
   
-  if ("Tmax.daily" %in% (colnames(climatedata))) {
-    if ("TRUE" %in% (is.na(climatedata$Tmax.daily))) {
-      message("Warning: missing values in 'Tmax.daily' (daily maximum temperature)")
-      message(paste("Number of missing values in Tmax.daily: ", 
-                    sum(is.na(climatedata$Tmax.daily))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$Tmax.daily))/nrow(climatedata) * 
-                                                 100, digits = -3), "%"))
-      x <- df <- NULL
-      x <- as.numeric(!is.na(climatedata$Tmax.daily))
-      df <- data.frame(x, zcount = NA)
-      df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for (counter in 2:nrow(df)) {
-        df$zcount[counter] <- ifelse(df$x[counter] == 
-                                       0, df$zcount[counter - 1] + 1, 0)
-      }
-      message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                    signif(max(df)/nrow(climatedata) * 100, digits = -3), 
-                    "%"))
-      if (sum(is.na(climatedata$Tmax.daily)) >= stopmissing[1]/100 * 
-            nrow(climatedata)) {
-        stop("missing data of Tmax.daily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
-          stop("Maximum duration of missing data in Tmax.daily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+  if (timestep == "daily") {
+    if ("Tmax.daily" %in% (colnames(climatedata))) {
+      Tmax.temp <- zoo(as.vector(climatedata$Tmax.daily), 
+                       dateagg)
+      if ("TRUE" %in% (is.na(climatedata$Tmax.daily))) {
+        message("Warning: missing values in 'Tmax.daily' (daily maximum temperature)")
+        message(paste("Number of missing values in Tmax.daily: ", 
+                      sum(is.na(climatedata$Tmax.daily))))
+        message(paste("% missing data: ", signif(sum(is.na(climatedata$Tmax.daily))/nrow(climatedata) * 
+                                                   100, digits = -3), "%"))
+        x <- df <- NULL
+        x <- as.numeric(!is.na(climatedata$Tmax.daily))
+        df <- data.frame(x, zcount = NA)
+        df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
+        for (counter in 2:nrow(df)) {
+          df$zcount[counter] <- ifelse(df$x[counter] == 
+                                         0, df$zcount[counter - 1] + 1, 0)
         }
-        message("Monthly averages have been calculated to fill missing data entries")
-      }
-    }
-    Tmax.temp <- zoo(as.vector(climatedata$Tmax.daily), 
-                     as.Date(dateagg))
-    Tmax <- aggregate(Tmax.temp, as.Date(dateagg, 
-                                         "%d/%m/%y"), mean)
-    message(paste("Number of days increments when Tmax has errors: ", 
-                  sum(Tmax > 100)))
-    message("Monthly averages have been calculated to adjust data with error")
-    for (m in 0:11) {
-      Tmax[as.POSIXlt(time(Tmax))$mon == m & as.numeric(Tmax) > 
-             100] = mean(Tmax[as.POSIXlt(time(Tmax))$mon == 
-                                m & as.numeric(Tmax) < 100])
-      Tmax[as.POSIXlt(time(Tmax))$mon == m & is.na(Tmax)] = mean(Tmax[as.POSIXlt(time(Tmax))$mon == 
-                                                                        m & !is.na(Tmax)])
-    }
-  } 
-  else if ("Temp.subdaily" %in% (colnames(climatedata))) {
-    message("Warning: missing data of 'Temp.daily'(daily maximum temperature), calculated from subdaily 'Temp.subdaily'")
-    if ("TRUE" %in% (is.na(climatedata$Temp.subdaily))) {
-      message("Warning: missing values in 'Temp.subdaily'")
-      message(paste("Number of missing values in Temp.subdaily: ", 
-                    sum(is.na(climatedata$Temp.subdaily))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$Temp.subdaily))/nrow(climatedata) * 
-                                                 100, digits = -3), "%"))
-      x <- df <- NULL
-      x <- as.numeric(!is.na(climatedata$Temp.subdaily))
-      df <- data.frame(x, zcount = NA)
-      df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for (counter in 2:nrow(df)) {
-        df$zcount[counter] <- ifelse(df$x[counter] == 
-                                       0, df$zcount[counter - 1] + 1, 0)
-      }
-      message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                    signif(max(df)/nrow(climatedata) * 100, digits = -3), 
-                    "%"))
-      if (sum(is.na(climatedata$Temp.subdaily)) >= stopmissing[1]/100 * 
-            nrow(climatedata)) {
-        stop("missing data of Temp.subdaily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
-          stop("Maximum duration of missing data in Temp.daily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+        message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                      signif(max(df)/nrow(climatedata) * 100, digits = -3), 
+                      "%"))
+        if (sum(is.na(climatedata$Tmax.daily)) >= stopmissing[2]/100 * 
+              nrow(climatedata)) {
+          stop("missing data of Tmax.daily exceeds ", 
+               stopmissing[2], "%, please use high quality data for calculation")
+        } else {
+          if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
+            stop("Maximum duration of missing data in Tmax.daily exceeds ", 
+                 stopmissing[3], "% of total data duration, please use high quality data for calculation")
+          }
+          #message("Monthly averages have been calculated to fill missing data entries")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        
+        # missing Tmax, infill if chosen
+        if (interp_missing_entries == T) {
+          Tmax.temp <- ReadInput_InterpMissing("Tmax.temp",Tmax.temp,timestep,missing_method) 
+          if (is.null(Tmax.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
       }
+      if (length(which(as.vector(Tmax.temp) > 100)) > 0) {
+        message(paste("Number of day increments when Tmax has errors (Tmax > 100 deg): ", 
+                      length(which(as.vector(Tmax.temp) > 100))))
+        # wrong Tmax, correct if chosen
+        if (interp_abnormal == T) {
+          Tmax.temp <- ReadInput_InterpAbnormal("Tmax.temp",Tmax.temp,timestep,abnormal_method) 
+          if (is.null(Tmax.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
+      }
+      #Tmax.temp <- zoo(as.vector(climatedata$Tmax.daily), 
+      #                 as.Date(dateagg))
+      Tmax.temp <- aggregate(Tmax.temp, as.Date(dateagg, 
+                                           "%d/%m/%y"), mean)
+      if (length(Missing_DateIndex.daily) > 0) {
+        Tmax.temp <- merge(Tmax.temp, Stdzoo, all=TRUE, fill=NA)$Tmax.temp
+        if (interp_missing_days == T) {
+          Tmax <- ReadInput_InterpMissing("Tmax.temp",Tmax.temp,"daily",missing_method) 
+          if (is.null(Tmax)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }  else {
+          Tmax <- Tmax.temp
+        }
+      } else {
+        Tmax <- Tmax.temp
+      }
+    } else {
+      stop ("Missing data of Tmax.daily.")
+    }
+  } else if (timestep == "subdaily") {
+    if ("Temp.subdaily" %in% (colnames(climatedata))) {
       temp.temp <- zoo(as.vector(climatedata$Temp.subdaily), 
-                       as.Date(Date.subdaily))
-      for (m in 0:11) {
-        temp.temp[as.POSIXlt(time(temp.temp))$mon == 
-                    m & is.na(temp.temp)] = mean(temp.temp[as.POSIXlt(time(temp.temp))$mon == 
-                                                             m & !is.na(temp.temp)])
+                       dateagg)
+      message("Warning: missing data of 'Tmax.daily'(daily maximum temperature), calculated from subdaily 'Temp.subdaily'")
+      if ("TRUE" %in% (is.na(climatedata$Temp.subdaily))) {
+        message("Warning: missing values in 'Temp.subdaily'")
+        message(paste("Number of missing values in Temp.subdaily: ", 
+                      sum(is.na(climatedata$Temp.subdaily))))
+        message(paste("% missing data: ", signif(sum(is.na(climatedata$Temp.subdaily))/nrow(climatedata) * 
+                                                   100, digits = -3), "%"))
+        x <- df <- NULL
+        x <- as.numeric(!is.na(climatedata$Temp.subdaily))
+        df <- data.frame(x, zcount = NA)
+        df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
+        for (counter in 2:nrow(df)) {
+          df$zcount[counter] <- ifelse(df$x[counter] == 
+                                         0, df$zcount[counter - 1] + 1, 0)
+        }
+        message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                      signif(max(df)/nrow(climatedata) * 100, digits = -3), 
+                      "%"))
+        if (sum(is.na(climatedata$Temp.subdaily)) >= stopmissing[2]/100 * 
+              nrow(climatedata)) {
+          stop("missing data of Temp.subdaily exceeds ", 
+               stopmissing[2], "%, please use high quality data for calculation")
+        } else {
+          if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
+            stop("Maximum duration of missing data in Temp.subdaily exceeds ", 
+                 stopmissing[3], "% of total data duration, please use high quality data for calculation")
+          }
+          #message("Monthly averages have been calculated to fill missing data entries")
+        }
+        
+        # missing temp, infill if chosen
+        if (interp_missing_entries == T) {
+          temp.temp <- ReadInput_InterpMissing("temp.temp",temp.temp,timestep,missing_method) 
+          if (is.null(temp.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
       }
-      Tmax <- aggregate(temp.temp, as.Date(Date.subdaily, 
+      if (length(which(as.vector(temp.temp) > 100)) > 0) {
+        message(paste("Number of data entries where Temp.subdaily has errors (Temp.subdaily > 100 deg): ", 
+                      length(which(as.vector(temp.temp) > 100))))
+        # wrong temp, correct if chosen
+        if (interp_abnormal == T) {
+          temp.temp <- ReadInput_InterpAbnormal("temp.temp",temp.temp,timestep,abnormal_method) 
+          if (is.null(temp.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
+      }
+      
+      Tmax.temp <- aggregate(temp.temp, as.Date(dateagg, 
                                            "%d/%m/%y"), FUN = max)
-      message(paste("Number of days increments when Tmax has errors: ", 
-                    sum(Tmax > 100)))
-      message("Monthly averages have been calculated to adjust data with error")
-      for (m in 0:11) {
-        Tmax[as.POSIXlt(time(Tmax))$mon == m & as.numeric(Tmax) > 
-               100] = mean(Tmax[as.POSIXlt(time(Tmax))$mon == 
-                                  m & as.numeric(Tmax) < 100])
-        Tmax[as.POSIXlt(time(Tmax))$mon == m & is.na(Tmax)] = mean(Tmax[as.POSIXlt(time(Tmax))$mon == 
-                                                                          m & !is.na(Tmax)])
+      
+      if (length(Missing_DateIndex.daily) > 0) {
+        Tmax.temp <- merge(Tmax.temp, Stdzoo, all=TRUE, fill=NA)$Tmax.temp
+        if (interp_missing_days == T) {
+          Tmax <- ReadInput_InterpMissing("Tmax.temp",Tmax.temp,"daily",missing_method) 
+          if (is.null(Tmax)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        } else {
+          Tmax <- Tmax.temp
+        }
+      } else {
+        Tmax <- Tmax.temp
       }
+    } else {
+      stop("Missing data of Temp.subdaily")
     }
   } else {
     Tmax <- NULL
   }
   
-  if ("Tmin.daily" %in% (colnames(climatedata))) {
-    if ("TRUE" %in% (is.na(climatedata$Tmin.daily))) {
-      message("Warning: missing values in 'Tmin.daily' (daily minimum temperature)")
-      message(paste("Number of missing values in Tmin.daily: ", 
-                    sum(is.na(climatedata$Tmin.daily))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$Tmin.daily))/nrow(climatedata) * 
-                                                 100, digits = -3), "%"))
-      x <- df <- NULL
-      x <- as.numeric(!is.na(climatedata$Tmin.daily))
-      df <- data.frame(x, zcount = NA)
-      df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for (counter in 2:nrow(df)) {
-        df$zcount[counter] <- ifelse(df$x[counter] == 
-                                       0, df$zcount[counter - 1] + 1, 0)
-      }
-      message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                    signif(max(df)/nrow(climatedata) * 100, digits = -3), 
-                    "%"))
-      if (sum(is.na(climatedata$Tmin.daily)) >= stopmissing[1]/100 * 
-            nrow(climatedata)) {
-        stop("missing data of Tmin.daily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
-          stop("Maximum duration of missing data in Tmin.daily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+  if (timestep == "daily") {
+    if ("Tmin.daily" %in% (colnames(climatedata))) {
+      Tmin.temp <- zoo(as.vector(climatedata$Tmin.daily), 
+                       dateagg)
+      if ("TRUE" %in% (is.na(climatedata$Tmin.daily))) {
+        message("Warning: missing values in 'Tmin.daily' (daily minimum temperature)")
+        message(paste("Number of missing values in Tmin.daily: ", 
+                      sum(is.na(climatedata$Tmin.daily))))
+        message(paste("% missing data: ", signif(sum(is.na(climatedata$Tmin.daily))/nrow(climatedata) * 
+                                                   100, digits = -3), "%"))
+        x <- df <- NULL
+        x <- as.numeric(!is.na(climatedata$Tmin.daily))
+        df <- data.frame(x, zcount = NA)
+        df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
+        for (counter in 2:nrow(df)) {
+          df$zcount[counter] <- ifelse(df$x[counter] == 
+                                         0, df$zcount[counter - 1] + 1, 0)
         }
-        message("Monthly averages have been calculated to fill missing data entries")
-      }
-    }
-    Tmin.temp <- zoo(as.vector(climatedata$Tmin.daily), 
-                     as.Date(dateagg))
-    Tmin <- aggregate(Tmin.temp, as.Date(dateagg, 
-                                         "%d/%m/%y"), mean)
-    
-    message(paste("Number of days increments when Tmin has errors: ", 
-                  sum(Tmin > 100)))
-    message("Monthly averages have been calculated to adjust data with error")
-    for (m in 0:11) {
-      Tmin[as.POSIXlt(time(Tmin))$mon == m & as.numeric(Tmin) > 
-             100] = mean(Tmin[as.POSIXlt(time(Tmin))$mon == 
-                                m & as.numeric(Tmin) < 100])
-      Tmin[as.POSIXlt(time(Tmin))$mon == m & is.na(Tmin)] = mean(Tmin[as.POSIXlt(time(Tmin))$mon == 
-                                                                        m & !is.na(Tmin)])
-    }
-  } 
-  else if ("Temp.subdaily" %in% (colnames(climatedata))) {
-    message("Warning: missing data of 'Tmin.daily'(daily minimum temperature), calculated from subdaily 'Temp.subdaily'")
-    if ("TRUE" %in% (is.na(climatedata$Temp.subdaily))) {
-      message("Warning: missing values in 'Temp.subdaily'")
-      message(paste("Number of missing values in Temp.subdaily: ", 
-                    sum(is.na(climatedata$Temp.subdaily))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$Temp.subdaily))/nrow(climatedata) * 
-                                                 100, digits = -3), "%"))
-      x <- df <- NULL
-      x <- as.numeric(!is.na(climatedata$Temp.subdaily))
-      df <- data.frame(x, zcount = NA)
-      df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for (counter in 2:nrow(df)) {
-        df$zcount[counter] <- ifelse(df$x[counter] == 
-                                       0, df$zcount[counter - 1] + 1, 0)
-      }
-      message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                    signif(max(df)/nrow(climatedata) * 100, digits = -3), 
-                    "%"))
-      if (sum(is.na(climatedata$Temp.subdaily)) >= stopmissing[1]/100 * 
-            nrow(climatedata)) {
-        stop("missing data of Temp.subdaily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
-          stop("Maximum duration of missing data in Temp.subdaily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+        message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                      signif(max(df)/nrow(climatedata) * 100, digits = -3), 
+                      "%"))
+        if (sum(is.na(climatedata$Tmin.daily)) >= stopmissing[2]/100 * 
+              nrow(climatedata)) {
+          stop("missing data of Tmin.daily exceeds ", 
+               stopmissing[2], "%, please use high quality data for calculation")
+        } else {
+          if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
+            stop("Maximum duration of missing data in Tmin.daily exceeds ", 
+                 stopmissing[3], "% of total data duration, please use high quality data for calculation")
+          }
+          #message("Monthly averages have been calculated to fill missing data entries")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        # missing Tmin, infill if chosen
+        if (interp_missing_entries == T) {
+          Tmin.temp <- ReadInput_InterpMissing("Tmin.temp",Tmin.temp,timestep,missing_method) 
+          if (is.null(Tmin.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
       }
+      if (length(which(as.vector(Tmin.temp) > as.vector(Tmax))) > 0) {
+        message(paste("Number of day increments when Tmin has errors (Tmin > Tmax): ", 
+                      length(which(as.vector(Tmin.temp) > as.vector(Tmax)))))
+        # wrong Tmin, correct if chosen
+        if (interp_abnormal == T) {
+          Tmin.temp <- ReadInput_InterpAbnormal("Tmin.temp",Tmin.temp,timestep,abnormal_method) 
+          if (is.null(Tmin.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
+      }
+      #Tmin.temp <- zoo(as.vector(climatedata$Tmin.daily), 
+      #                 as.Date(dateagg))
+      Tmin.temp <- aggregate(Tmin.temp, as.Date(dateagg, 
+                                           "%d/%m/%y"), mean)
+      if (length(Missing_DateIndex.daily) > 0) {
+        Tmin.temp <- merge(Tmin.temp, Stdzoo, all=TRUE, fill=NA)$Tmin.temp
+        if (interp_missing_days == T) {
+          Tmin <- ReadInput_InterpMissing("Tmin.temp",Tmin.temp,"daily",missing_method) 
+          if (is.null(Tmin)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }  else {
+          Tmin <- Tmin.temp
+        }
+      }  else {
+        Tmin <- Tmin.temp
+      }
+    } else {
+      stop("Missing data of Tmin.daily")
+    }
+  } else if (timestep == "subdaily") {
+    if ("Temp.subdaily" %in% (colnames(climatedata))) {
       temp.temp <- zoo(as.vector(climatedata$Temp.subdaily), 
-                       as.Date(Date.subdaily))
-      for (m in 0:11) {
-        temp.temp[as.POSIXlt(time(temp.temp))$mon == 
-                    m & is.na(temp.temp)] = mean(temp.temp[as.POSIXlt(time(temp.temp))$mon == 
-                                                             m & !is.na(temp.temp)])
+                       dateagg)
+      message("Warning: missing data of 'Tmin.daily'(daily minimum temperature), calculated from subdaily 'Temp.subdaily'")
+      if ("TRUE" %in% (is.na(climatedata$Temp.subdaily))) {
+        message("Warning: missing values in 'Temp.subdaily'")
+        message(paste("Number of missing values in Temp.subdaily: ", 
+                      sum(is.na(climatedata$Temp.subdaily))))
+        message(paste("% missing data: ", signif(sum(is.na(climatedata$Temp.subdaily))/nrow(climatedata) * 
+                                                   100, digits = -3), "%"))
+        x <- df <- NULL
+        x <- as.numeric(!is.na(climatedata$Temp.subdaily))
+        df <- data.frame(x, zcount = NA)
+        df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
+        for (counter in 2:nrow(df)) {
+          df$zcount[counter] <- ifelse(df$x[counter] == 
+                                         0, df$zcount[counter - 1] + 1, 0)
+        }
+        message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                      signif(max(df)/nrow(climatedata) * 100, digits = -3), 
+                      "%"))
+        if (sum(is.na(climatedata$Temp.subdaily)) >= stopmissing[2]/100 * 
+              nrow(climatedata)) {
+          stop("missing data of Temp.subdaily exceeds ", 
+               stopmissing[2], "%, please use high quality data for calculation")
+        } else {
+          if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
+            stop("Maximum duration of missing data in Temp.subdaily exceeds ", 
+                 stopmissing[3], "% of total data duration, please use high quality data for calculation")
+          }
+          #message("Monthly averages have been calculated to fill missing data entries")
+        }
+        # missing temp, infill if chosen
+        if (interp_missing_entries == T) {
+          temp.temp <- ReadInput_InterpMissing("temp.temp",temp.temp,timestep,missing_method) 
+          if (is.null(temp.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
       }
-      Tmin <- aggregate(temp.temp, as.Date(Date.subdaily, 
+      if (length(which(as.vector(temp.temp) > 100)) > 0) {
+        message(paste("Number of data entries where Temp.subdaily has errors (Temp.subdaily > 100 deg): ", 
+                      length(which(as.vector(temp.temp) > 100))))
+        # wrong temp, correct if chosen
+        if (interp_abnormal == T) {
+          temp.temp <- ReadInput_InterpAbnormal("temp.temp",temp.temp,timestep,abnormal_method) 
+          if (is.null(temp.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
+      }
+      
+      Tmin.temp <- aggregate(temp.temp, as.Date(dateagg, 
                                            "%d/%m/%y"), FUN = min)
-      message(paste("Number of days increments when Tmin has errors: ", 
-                    sum(Tmin > 100)))
-      message("Monthly averages have been calculated to adjust data with error")
-      for (m in 0:11) {
-        Tmin[as.POSIXlt(time(Tmin))$mon == m & as.numeric(Tmin) > 
-               100] = mean(Tmin[as.POSIXlt(time(Tmin))$mon == 
-                                  m & as.numeric(Tmin) < 100])
-        Tmin[as.POSIXlt(time(Tmin))$mon == m & is.na(Tmin)] = mean(Tmin[as.POSIXlt(time(Tmin))$mon == 
-                                                                          m & !is.na(Tmin)])
+      if (length(Missing_DateIndex.daily) > 0) {
+        Tmin.temp <- merge(Tmin.temp, Stdzoo, all=TRUE, fill=NA)$Tmin.temp
+        if (interp_missing_days == T) {
+          Tmin <- ReadInput_InterpMissing("Tmin.temp",Tmin.temp,"daily",missing_method) 
+          if (is.null(Tmin)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }  else {
+          Tmin <- Tmin.temp
+        }
+      }  else {
+        Tmin <- Tmin.temp
       }
+    } else {
+      stop("Missing data of Temp.subdaily.")
     }
   } else {
     Tmin <- NULL
@@ -277,6 +405,8 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
   
   if (timestep == "daily") {
     if ("u2.daily" %in% (colnames(climatedata))) {
+      u2.temp <- zoo(as.vector(abs(climatedata$u2.daily)), 
+                     dateagg)
       if ("TRUE" %in% (is.na(climatedata$u2.daily))) {
         message("Warning: missing values in 'u2.daily'")
         message(paste("Number of missing values in u2.daily: ", 
@@ -294,34 +424,56 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
         message(paste("Maximum duration of missing data as percentage of total duration: ", 
                       signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                       "%"))
-        if (sum(is.na(climatedata$u2.daily)) >= stopmissing[1]/100 * 
+        if (sum(is.na(climatedata$u2.daily)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
           stop("missing data of u2.daily exceeds ", 
-               stopmissing[1], "%, please use high quality data for calculation")
-        }
-        else {
-          if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+               stopmissing[2], "%, please use high quality data for calculation")
+        } else {
+          if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
             stop("Maximum duration of missing data in u2.daily exceeds ", 
-                 stopmissing[2], "% of total data duration, please use high quality data for calculation")
+                 stopmissing[3], "% of total data duration, please use high quality data for calculation")
           }
-          message("Monthly averages have been calculated to fill missing data entries")
+          #message("Monthly averages have been calculated to fill missing data entries")
+        }
+        # missing u2, infill if chosen
+        if (interp_missing_entries == T) {
+          u2.temp <- ReadInput_InterpMissing("u2.temp",u2.temp,timestep,missing_method) 
+          if (is.null(u2.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
         }
       }
-      u2.temp <- zoo(as.vector(abs(climatedata$u2.daily) * 1000/3600), 
-                     as.Date(Date.daily))
-      for (m in 0:11) {
-        u2.temp[as.POSIXlt(time(u2.temp))$mon == m & as.numeric(u2.temp) < 
-                  0] = mean(u2.temp[as.POSIXlt(time(u2.temp))$mon == 
-                                      m & as.numeric(u2.temp) > 0])
-        u2.temp[as.POSIXlt(time(u2.temp))$mon == m & as.numeric(is.na(u2.temp))] = mean(u2.temp[as.POSIXlt(time(u2.temp))$mon == 
-                                                                                                  m & as.numeric(!is.na(u2.temp))])
-      }
-      u2 <- aggregate(u2.temp, as.Date(Date.daily, "%d/%m/%y"), 
-                      mean)
       
+      if (length(which(as.vector(u2.temp) < 0)) > 0) {
+        message(paste("Number of day increments when u2 has errors (u2 < 0): ", 
+                      length(which(as.vector(u2.temp) < 0))))
+        # wrong Tmin, correct if chosen
+        if (interp_abnormal == T) {
+          u2.temp <- ReadInput_InterpAbnormal("u2.temp",u2.temp,timestep,abnormal_method) 
+          if (is.null(u2.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
+      }
+      u2.temp <- aggregate(u2.temp, as.Date(dateagg, "%d/%m/%y"), 
+                      mean)
+      if (length(Missing_DateIndex.daily) > 0) {
+        u2.temp <- merge(u2.temp, Stdzoo, all=TRUE, fill=NA)$u2.temp
+        if (interp_missing_days == T) {
+          u2 <- ReadInput_InterpMissing("u2.temp",u2.temp,"daily",missing_method) 
+          if (is.null(u2)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }  else {
+          u2 <- u2.temp
+        } 
+      } else {
+        u2 <- u2.temp
+      }
       uz <- NULL
-    } 
-    else if ("uz.daily" %in% (colnames(climatedata))) {
+    } else if ("uz.daily" %in% (colnames(climatedata))) {
+      uz.temp <- zoo(as.vector(abs(climatedata$uz.daily)), 
+                     dateagg)
       if ("TRUE" %in% (is.na(climatedata$uz.daily))) {
         message("Warning: missing values in 'uz.daily'")
         message(paste("Number of missing values in uz.daily: ", 
@@ -339,130 +491,203 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
         message(paste("Maximum duration of missing data as percentage of total duration: ", 
                       signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                       "%"))
-        if (sum(is.na(climatedata$uz.daily)) >= stopmissing[1]/100 * 
+        if (sum(is.na(climatedata$uz.daily)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
           stop("missing data of uz.daily exceeds ", 
-               stopmissing[1], "%, please use high quality data for calculation")
-        }
-        else {
-          if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+               stopmissing[2], "%, please use high quality data for calculation")
+        } else {
+          if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
             stop("Maximum duration of missing data in uz.daily exceeds ", 
-                 stopmissing[2], "% of total data duration, please use high quality data for calculation")
+                 stopmissing[3], "% of total data duration, please use high quality data for calculation")
           }
-          message("Monthly averages have been calculated to fill missing data entries")
+          
+        }
+        # missing uz, infill if chosen
+        if (interp_missing_entries == T) {
+          uz.temp <- ReadInput_InterpMissing("uz.temp",uz.temp,timestep,missing_method) 
+          if (is.null(uz.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
         }
       }
-      uz.temp <- zoo(as.vector(abs(climatedata$uz.daily) * 1000/3600), 
-                     as.Date(Date.daily))
-      for (m in 0:11) {
-        uz.temp[as.POSIXlt(time(uz.temp))$mon == m & as.numeric(uz.temp) < 
-                  0] = mean(uz.temp[as.POSIXlt(time(uz.temp))$mon == 
-                                      m & as.numeric(uz.temp) > 0])
-        uz.temp[as.POSIXlt(time(uz.temp))$mon == m & as.numeric(is.na(uz.temp))] = mean(uz.temp[as.POSIXlt(time(uz.temp))$mon == 
-                                                                                                  m & as.numeric(!is.na(uz.temp))])
-      }
-      uz <- aggregate(uz.temp, as.Date(Date.daily, "%d/%m/%y"), 
-                      mean)
       
+      if (length(which(as.vector(uz.temp) < 0)) > 0) {
+        message(paste("Number of day increments when uz has errors (uz < 0): ", 
+                      length(which(as.vector(uz.temp) < 0))))
+        # wrong Tmin, correct if chosen
+        if (interp_abnormal == T) {
+          uz.temp <- ReadInput_InterpAbnormal("uz.temp",uz.temp,timestep,abnormal_method) 
+          if (is.null(uz.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
+      }
+      
+      uz.temp <- aggregate(uz.temp, as.Date(dateagg, "%d/%m/%y"), 
+                      mean)
+      if (length(Missing_DateIndex.daily) > 0) {
+        uz.temp <- merge(uz.temp, Stdzoo, all=TRUE, fill=NA)$uz.temp
+        if (interp_missing_days == T) {
+          uz <- ReadInput_InterpMissing("uz.temp",uz.temp,"daily",missing_method) 
+          if (is.null(uz)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }  else {
+          uz <- uz.temp
+        }
+      }  else {
+        uz <- uz.temp
+      }
+      u2 <- NULL
+    } else {
+      uz <- NULL
       u2 <- NULL
     }
-  } 
-  else if ("u2.subdaily" %in% (colnames(climatedata))) {
-    if ("TRUE" %in% (is.na(climatedata$u2.subdaily))) {
-      message("Warning: missing values in 'u2.subdaily'")
-      message(paste("Number of missing values in u2.subdaily: ", 
-                    sum(is.na(climatedata$u2.subdaily))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$u2.subdaily))/nrow(climatedata) * 
-                                                 100, digits = -3), "%"))
-      x <- df <- NULL
-      x <- as.numeric(!is.na(climatedata$u2.subdaily))
-      df <- data.frame(x, zcount = NA)
-      df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for (counter in 2:nrow(df)) {
-        df$zcount[counter] <- ifelse(df$x[counter] == 
-                                       0, df$zcount[counter - 1] + 1, 0)
-      }
-      message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                    signif(max(df)/nrow(climatedata) * 100, digits = -3), 
-                    "%"))
-      if (sum(is.na(climatedata$u2.subdaily)) >= stopmissing[1]/100 * 
-            nrow(climatedata)) {
-        stop("missing data of u2.subdaily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
-          stop("Maximum duration of missing data in u2.subdaily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+  } else if (timestep == "subdaily") {
+    if ("u2.subdaily" %in% (colnames(climatedata))) {
+      u2.temp <- zoo(as.vector(abs(climatedata$u2.subdaily)), 
+                     dateagg)
+      if ("TRUE" %in% (is.na(climatedata$u2.subdaily))) {
+        message("Warning: missing values in 'u2.subdaily'")
+        message(paste("Number of missing values in u2.subdaily: ", 
+                      sum(is.na(climatedata$u2.subdaily))))
+        message(paste("% missing data: ", signif(sum(is.na(climatedata$u2.subdaily))/nrow(climatedata) * 
+                                                   100, digits = -3), "%"))
+        x <- df <- NULL
+        x <- as.numeric(!is.na(climatedata$u2.subdaily))
+        df <- data.frame(x, zcount = NA)
+        df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
+        for (counter in 2:nrow(df)) {
+          df$zcount[counter] <- ifelse(df$x[counter] == 
+                                         0, df$zcount[counter - 1] + 1, 0)
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                      signif(max(df)/nrow(climatedata) * 100, digits = -3), 
+                      "%"))
+        if (sum(is.na(climatedata$u2.subdaily)) >= stopmissing[2]/100 * 
+              nrow(climatedata)) {
+          stop("missing data of u2.subdaily exceeds ", 
+               stopmissing[2], "%, please use high quality data for calculation")
+        } else {
+          if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
+            stop("Maximum duration of missing data in u2.subdaily exceeds ", 
+                 stopmissing[3], "% of total data duration, please use high quality data for calculation")
+          }
+          #message("Monthly averages have been calculated to fill missing data entries")
+        }
+        # missing u2, infill if chosen
+        if (interp_missing_entries == T) {
+          u2.temp <- ReadInput_InterpMissing("u2.temp",u2.temp,timestep,missing_method) 
+          if (is.null(u2.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
       }
-    }
-    u2.temp <- zoo(as.vector(abs(climatedata$u2.subdaily) * 1000/3600), 
-                   as.Date(Date.subdaily))
-    for (m in 0:11) {
-      u2.temp[as.POSIXlt(time(u2.temp))$mon == m & as.numeric(u2.temp) < 
-                0] = mean(u2.temp[as.POSIXlt(time(u2.temp))$mon == 
-                                    m & as.numeric(u2.temp) > 0])
-      u2.temp[as.POSIXlt(time(u2.temp))$mon == m & as.numeric(is.na(u2.temp))] = mean(u2.temp[as.POSIXlt(time(u2.temp))$mon == 
-                                                                                                m & as.numeric(!is.na(u2.temp))])
-    }
-    u2 <- aggregate(u2.temp, as.Date(Date.subdaily, "%d/%m/%y"), 
-                    mean)
-    uz <- NULL
-  } 
-  else if ("uz.subdaily" %in% (colnames(climatedata))) {
-    if ("TRUE" %in% (is.na(climatedata$uz.subdaily))) {
-      message("Warning: missing data of 'u2.subdaily', calculated from 'uz.subdaily")
+      
+      if (length(which(as.vector(u2.temp) < 0)) > 0) {
+        message(paste("Number of data entries where u2.subdaily has errors (u2 < 0): ", 
+                      length(which(as.vector(u2.temp) < 0))))
+        # wrong Tmin, correct if chosen
+        if (interp_abnormal == T) {
+          u2.temp <- ReadInput_InterpAbnormal("u2.temp",u2.temp,timestep,abnormal_method) 
+          if (is.null(u2.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
+      }
+      u2.temp <- aggregate(u2.temp, as.Date(dateagg, "%d/%m/%y"), 
+                      mean)
+      if (length(Missing_DateIndex.daily) > 0) {
+        u2.temp <- merge(u2.temp, Stdzoo, all=TRUE, fill=NA)$u2.temp
+        if (interp_missing_days == T) {
+          u2 <- ReadInput_InterpMissing("u2.temp",u2.temp,"daily",missing_method) 
+          if (is.null(u2)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }  else {
+          u2 <- u2.temp
+        }
+      }   else {
+        u2 <- u2.temp
+      }
+      uz <- NULL
+    } else if ("uz.subdaily" %in% (colnames(climatedata))) {
+      uz.temp <- zoo(as.vector(abs(climatedata$uz.subdaily)), 
+                     dateagg)
+      if ("TRUE" %in% (is.na(climatedata$uz.subdaily))) {
+        message("Warning: missing data of 'u2.subdaily', calculated from 'uz.subdaily")
+        u2 <- NULL
+        message(paste("Number of missing values in uz.subdaily: ", 
+                      sum(is.na(climatedata$uz.subdaily))))
+        message(paste("% missing data: ", signif(sum(is.na(climatedata$uz.subdaily))/nrow(climatedata) * 
+                                                   100, digits = -3), "%"))
+        x <- df <- NULL
+        x <- as.numeric(!is.na(climatedata$uz.subdaily))
+        df <- data.frame(x, zcount = NA)
+        df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
+        for (counter in 2:nrow(df)) {
+          df$zcount[counter] <- ifelse(df$x[counter] == 
+                                         0, df$zcount[counter - 1] + 1, 0)
+        }
+        message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                      signif(max(df)/nrow(climatedata) * 100, digits = -3), 
+                      "%"))
+        if (sum(is.na(climatedata$uz.subdaily)) >= stopmissing[2]/100 * 
+              nrow(climatedata)) {
+          stop("missing data of uz.subdaily exceeds ", 
+               stopmissing[2], "%, please use high quality data for calculation")
+        } else {
+          if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
+            stop("Maximum duration of missing data in uz.subdaily exceeds ", 
+                 stopmissing[3], "% of total data duration, please use high quality data for calculation")
+          }
+          #message("Monthly averages have been calculated to fill missing data entries")
+        }
+        # missing uz, infill if chosen
+        if (interp_missing_entries == T) {
+          uz.temp <- ReadInput_InterpMissing("uz.temp",uz.temp,timestep,missing_method) 
+          if (is.null(uz.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
+      }
+      
+      if (length(which(as.vector(uz.temp) < 0)) > 0) {
+        message(paste("Number of data entries where uz.subdaily has errors (uz < 0): ", 
+                      length(which(as.vector(uz.temp) < 0))))
+        # wrong Tmin, correct if chosen
+        if (interp_abnormal == T) {
+          uz.temp <- ReadInput_InterpAbnormal("uz.temp",uz.temp,timestep,abnormal_method) 
+          if (is.null(uz.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
+      }
+      uz.temp <- aggregate(uz.temp, as.Date(dateagg, "%d/%m/%y"), 
+                      mean)
+      if (length(Missing_DateIndex.daily) > 0) {
+        uz.temp <- merge(uz.temp, Stdzoo, all=TRUE, fill=NA)$uz.temp
+        if (interp_missing_days == T) {
+          uz <- ReadInput_InterpMissing("uz.temp",uz.temp,"daily",missing_method) 
+          if (is.null(uz)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }  else {
+          uz <- uz.temp
+        }
+      }   else {
+        uz <- uz.temp
+      }
       u2 <- NULL
-      message(paste("Number of missing values in uz.subdaily: ", 
-                    sum(is.na(climatedata$uz.subdaily))))
-      message(paste("% missing data: ", signif(sum(is.na(climatedata$uz.subdaily))/nrow(climatedata) * 
-                                                 100, digits = -3), "%"))
-      x <- df <- NULL
-      x <- as.numeric(!is.na(climatedata$uz.subdaily))
-      df <- data.frame(x, zcount = NA)
-      df$zcount[1] <- ifelse(df$x[1] == 0, 1, 0)
-      for (counter in 2:nrow(df)) {
-        df$zcount[counter] <- ifelse(df$x[counter] == 
-                                       0, df$zcount[counter - 1] + 1, 0)
-      }
-      message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                    signif(max(df)/nrow(climatedata) * 100, digits = -3), 
-                    "%"))
-      if (sum(is.na(climatedata$uz.subdaily)) >= stopmissing[1]/100 * 
-            nrow(climatedata)) {
-        stop("missing data of uz.subdaily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
-          stop("Maximum duration of missing data in uz.subdaily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
-        }
-        message("Monthly averages have been calculated to fill missing data entries")
-      }
-    }
-    uz.temp <- zoo(as.vector(abs(climatedata$uz.subdaily) * 1000/3600), 
-                   as.Date(Date.subdaily))
-    for (m in 0:11) {
-      uz.temp[as.POSIXlt(time(uz.temp))$mon == m & as.numeric(uz.temp) < 
-                0] = mean(uz.temp[as.POSIXlt(time(uz.temp))$mon == 
-                                    m & as.numeric(uz.temp) > 0])
-      uz.temp[as.POSIXlt(time(uz.temp))$mon == m & as.numeric(is.na(uz.temp))] = mean(uz.temp[as.POSIXlt(time(uz.temp))$mon == 
-                                                                                                m & as.numeric(!is.na(uz.temp))])
-    }
-    uz <- aggregate(uz.temp, as.Date(Date.subdaily, "%d/%m/%y"), 
-                    mean)
-    u2 <- NULL
-  } 
-  else {
+    }  else {
     u2 <- NULL
     uz <- NULL
+    }
   }
   
   if (timestep == "daily") {
     if ("Rs.daily" %in% (colnames(climatedata))) {
+      Rs.temp <- zoo(as.vector(climatedata$Rs.daily), dateagg)
       if ("TRUE" %in% (is.na(climatedata$Rs.daily))) {
         message("Warning: missing values in 'Rs.daily'")
         message(paste("Number of missing values in Rs.daily: ", 
@@ -480,33 +705,58 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
         message(paste("Maximum duration of missing data as percentage of total duration: ", 
                       signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                       "%"))
-        if (sum(is.na(climatedata$Rs.daily)) >= stopmissing[1]/100 * 
+        if (sum(is.na(climatedata$Rs.daily)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
-          stop("missing data of Rs.daily exceeds ", stopmissing[1], 
+          stop("missing data of Rs.daily exceeds ", stopmissing[2], 
                "%, please use high quality data for calculation")
-        }
-        else {
-          if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+        } else {
+          if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
             stop("Maximum duration of missing data in Rs.daily exceeds ", 
-                 stopmissing[2], "% of total data duration, please use high quality data for calculation")
+                 stopmissing[3], "% of total data duration, please use high quality data for calculation")
           }
-          message("Monthly averages have been calculated to fill missing data entries")
+          #message("Monthly averages have been calculated to fill missing data entries")
         }
-      }
-      Rs.temp <- zoo(as.vector(climatedata$Rs.daily), as.Date(Date.daily))
-      Rs <- aggregate(Rs.temp, as.Date(Date.daily, "%d/%m/%y"), 
-                      mean)
-      message("Monthly averages have been calculated to adjust data with error")
-      for (m in 0:11) {
-        Rs[as.POSIXlt(time(Rs))$mon == m & as.numeric(Rs) < 
-             0] = mean(Rs[as.POSIXlt(time(Rs))$mon == m & 
-                            as.numeric(Rs) > 0])
-        Rs[as.POSIXlt(time(Rs))$mon == m & is.na(Rs)] = mean(Rs[as.POSIXlt(time(Rs))$mon == 
-                                                                  m & !is.na(Rs)])
+      
+
+      # missing Tmin, infill if chosen
+      if (interp_missing_entries == T) {
+        Rs.temp <- ReadInput_InterpMissing("Rs.temp",Rs.temp,timestep,missing_method) 
+        if (is.null(Rs.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
       }
     }
-  } 
-  else if ("Rs.subdaily" %in% (colnames(climatedata))) {
+    if (length(which(as.vector(Rs.temp) < 0)) > 0) {
+      message(paste("Number of day increments when Rs has errors (Rs < 0): ", 
+                    length(which(as.vector(Rs.temp) < 0))))
+      # wrong Rs, correct if chosen
+      if (interp_abnormal == T) {
+        Rs.temp <- ReadInput_InterpAbnormal("Rs.temp",Rs.temp,timestep,abnormal_method) 
+        if (is.null(Rs.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }
+    }
+    #Rs.temp <- zoo(as.vector(climatedata$Rs.daily), 
+    #                 as.Date(dateagg))
+    Rs.temp <- aggregate(Rs.temp, as.Date(dateagg, 
+                                         "%d/%m/%y"), mean)
+    if (length(Missing_DateIndex.daily) > 0) {
+      Rs.temp <- merge(Rs.temp, Stdzoo, all=TRUE, fill=NA)$Rs.temp
+      if (interp_missing_days == T) {
+        Rs <- ReadInput_InterpMissing("Rs.temp",Rs.temp,"daily",missing_method) 
+        if (is.null(Rs)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }  else {
+        Rs <- Rs.temp
+      }
+    }   else {
+      Rs <- Rs.temp
+    }
+    }
+  } else if ("Rs.subdaily" %in% (colnames(climatedata))) {
+    Rs.temp <- zoo(as.vector(climatedata$Rs.subdaily), dateagg)
     if ("TRUE" %in% (is.na(climatedata$Rs.subdaily))) {
       message("Warning: missing values in 'Rs.subdaily'")
       message(paste("Number of missing values in Rs.subdaily: ", 
@@ -524,35 +774,57 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
       message(paste("Maximum duration of missing data as percentage of total duration: ", 
                     signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                     "%"))
-      if (sum(is.na(climatedata$Rs.subdaily)) >= stopmissing[1]/100 * 
+      if (sum(is.na(climatedata$Rs.subdaily)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
-        stop("missing data of Rs.subdaily exceeds ", stopmissing[1], 
+        stop("missing data of Rs.subdaily exceeds ", stopmissing[2], 
              "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+      } else {
+        if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
           stop("Maximum duration of missing data in Rs.subdaily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+               stopmissing[3], "% of total data duration, please use high quality data for calculation")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        #message("Monthly averages have been calculated to fill missing data entries")
+        # missing Tmin, infill if chosen
+        if (interp_missing_entries == T) {
+          Rs.temp <- ReadInput_InterpMissing("Rs.temp",Rs.temp,timestep,missing_method) 
+          if (is.null(Rs.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
       }
-      Rs.temp <- zoo(as.vector(climatedata$Rs.subdaily), as.Date(Date.subdaily))
-      Rs <- aggregate(Rs.temp, as.Date(Date.subdaily, "%d/%m/%y"), 
+    }
+    if (length(which(as.vector(Rs.temp) < 0)) > 0) {
+        message(paste("Number of data entries when Rs.subdaily has errors (Rs.subdaily < 0): ", 
+                      length(which(as.vector(Rs.temp) < 0))))
+        # wrong Rs, correct if chosen
+        if (interp_abnormal == T) {
+          Rs.temp <- ReadInput_InterpAbnormal("Rs.temp",Rs.temp,timestep,abnormal_method) 
+          if (is.null(Rs.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
+      }
+      Rs.temp <- aggregate(Rs.temp, as.Date(dateagg, "%d/%m/%y"), 
                       mean)
-      message("Monthly averages have been calculated to adjust data with error")
-      for (m in 0:11) {
-        Rs[as.POSIXlt(time(Rs))$mon == m & as.numeric(Rs) < 
-             0] = mean(Rs[as.POSIXlt(time(Rs))$mon == m & 
-                            as.numeric(Rs) > 0])
-        Rs[as.POSIXlt(time(Rs))$mon == m & is.na(Rs)] = mean(Rs[as.POSIXlt(time(Rs))$mon == 
-                                                                  m & !is.na(Rs)])
+    if (length(Missing_DateIndex.daily) > 0) {
+      Rs.temp <- merge(Rs.temp, Stdzoo, all=TRUE, fill=NA)$Rs.temp
+      if (interp_missing_days == T) {
+        Rs <- ReadInput_InterpMissing("Rs.temp",Rs.temp,"daily",missing_method) 
+        if (is.null(Rs)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }  else {
+        Rs <- Rs.temp
       }
-    } 
-  } else {
+    }   else {
+      Rs <- Rs.temp
+    }
+    } else {
     Rs <- NULL
-  }
+    }
   
   if ("n.daily" %in% (colnames(climatedata))) {
+    n.temp <- zoo(as.vector(climatedata$n.daily), dateagg)
     if ("TRUE" %in% (is.na(climatedata$n.daily))) {
       message("Warning: missing values in 'n' (daily sunshine hours)")
       message(paste("Number of missing values in n: ", 
@@ -570,41 +842,56 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
       message(paste("Maximum duration of missing data as percentage of total duration: ", 
                     signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                     "%"))
-      if (sum(is.na(climatedata$n.daily)) >= stopmissing[1]/100 * 
+      if (sum(is.na(climatedata$n.daily)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
-        stop("missing data of n.daily exceeds ", stopmissing[1], 
+        stop("missing data of n.daily exceeds ", stopmissing[2], 
              "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+      } else {
+        if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
           stop("Maximum duration of missing data in n.daily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+               stopmissing[3], "% of total data duration, please use high quality data for calculation")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        #message("Monthly averages have been calculated to fill missing data entries")
+      }
+      if (interp_missing_entries == T) {
+        n.temp <- ReadInput_InterpMissing("n.temp",n.temp,timestep,missing_method) 
+        if (is.null(n.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
       }
     }
-    
-    
-    n.temp <- zoo(as.vector(climatedata$n.daily), as.Date(dateagg))
-    
-    for (m in 0:11) {
-      n.temp[as.POSIXlt(time(n.temp))$mon == m & as.numeric(n.temp) < 
-               0] = mean(n.temp[as.POSIXlt(time(n.temp))$mon == 
-                                  m & as.numeric(n.temp) > 0])
-      n.temp[as.POSIXlt(time(n.temp))$mon == m & as.numeric(n.temp) > 
-               24] = mean(n.temp[as.POSIXlt(time(n.temp))$mon == 
-                                   m & as.numeric(n.temp) < 24])
-      n.temp[as.POSIXlt(time(n.temp))$mon == m & as.numeric(is.na(n.temp))] = mean(n.temp[as.POSIXlt(time(n.temp))$mon == 
-                                                                                            m & as.numeric(!is.na(n.temp))])
+    if (length(which(as.vector(n.temp) < 0)) > 0) {
+      message(paste("Number of day increments when n has errors (n < 0): ", 
+                    length(which(as.vector(n.temp) < 0))))
+      # wrong Rs, correct if chosen
+      if (interp_abnormal == T) {
+        n.temp <- ReadInput_InterpAbnormal("n.temp",n.temp,"daily",abnormal_method) 
+        if (is.null(n.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }
     }
-    n <- aggregate(n.temp, as.Date(dateagg, "%d/%m/%y"), 
-                   mean)
-  }
-  else {
+    n.temp <- aggregate(n.temp, as.Date(dateagg, "%d/%m/%y"), 
+                    mean)
+    if (length(Missing_DateIndex.daily) > 0) {
+      n.temp <- merge(n.temp, Stdzoo, all=TRUE, fill=NA)$n.temp
+      if (interp_missing_days == T) {
+        n <- ReadInput_InterpMissing("n.temp",n.temp,"daily",missing_method) 
+        if (is.null(n)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }  else {
+        n <- n.temp
+      }
+    }   else {
+      n <- n.temp
+    }
+  } else {
     n <- NULL
   }
   
   if ("Cd.daily" %in% (colnames(climatedata))) {
+    C0.temp <- zoo(as.vector(climatedata$Cd.daily), dateagg)
     if ("TRUE" %in% (is.na(climatedata$Cd.daily))) {
       message("Warning: missing values in 'Cd.daily' (daily cloud cover)")
       message(paste("Number of missing values in Cd.daily: ", 
@@ -622,34 +909,54 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
       message(paste("Maximum duration of missing data as percentage of total duration: ", 
                     signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                     "%"))
-      if (sum(is.na(climatedata$Cd.daily)) >= stopmissing[1]/100 * 
+      if (sum(is.na(climatedata$Cd.daily)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
-        stop("missing data of Cd.daily exceeds ", stopmissing[1], 
+        stop("missing data of Cd.daily exceeds ", stopmissing[2], 
              "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+      } else {
+        if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
           stop("Maximum duration of missing data in Cd.daily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+               stopmissing[3], "% of total data duration, please use high quality data for calculation")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        #message("Monthly averages have been calculated to fill missing data entries")
+      }
+      if (interp_missing_entries == T) {
+        C0.temp <- ReadInput_InterpMissing("C0.temp",C0.temp,timestep,missing_method) 
+        if (is.null(C0.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
       }
     }
-    
-    C0.temp <- zoo(as.vector(climatedata$Cd.daily), as.Date(dateagg))
-    
-    for (m in 0:11) {
-      C0.temp[as.POSIXlt(time(C0.temp))$mon == m & as.numeric(is.na(C0.temp))] = mean(C0.temp[as.POSIXlt(time(C0.temp))$mon == 
-                                                                                                m & as.numeric(!is.na(C0.temp))])
+    if (length(which(as.vector(C0.temp) < 0)) > 0) {
+      message(paste("Number of day increments when Cd has errors (Cd < 0): ", 
+                    length(which(as.vector(C0.temp) < 0))))
+      # wrong Rs, correct if chosen
+      if (interp_abnormal == T) {
+        C0.temp <- ReadInput_InterpAbnormal("C0.temp",C0.temp,timestep,abnormal_method) 
+        if (is.null(C0.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }
     }
-    C0 <- aggregate(C0.temp, as.Date(dateagg, "%d/%m/%y"), 
+    C0.temp <- aggregate(C0.temp, as.Date(dateagg, "%d/%m/%y"), 
                     mean)
+    if (length(Missing_DateIndex.daily) > 0) {
+      C0.temp <- merge(C0.temp, Stdzoo, all=TRUE, fill=NA)$C0.temp
+      if (interp_missing_days == T) {
+        C0 <- ReadInput_InterpMissing("C0.temp",C0.temp,"daily",missing_method) 
+        if (is.null(C0)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }  else {
+        C0 <- C0.temp
+      }
+    }   else {
+      C0 <- C0.temp
+    }
     n <- constants$a_0 + constants$b_0 * C0 + constants$c_0 * 
       C0^2 + constants$d_0 * C0^3
-  }
-  
-  
-  if ("Precip.daily" %in% (colnames(climatedata))) {
+  } else if ("Precip.daily" %in% (colnames(climatedata))) {
+    P.temp <- zoo(as.vector(climatedata$Precip.daily), dateagg)
     if ("TRUE" %in% (is.na(climatedata$Precip.daily))) {
       message("Warning: missing values in 'Precip.daily' (daily precipitation)")
       message(paste("Number of missing values in Precip.daily: ", 
@@ -667,29 +974,51 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
       message(paste("Maximum duration of missing data as percentage of total duration: ", 
                     signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                     "%"))
-      if (sum(is.na(climatedata$Precip.daily)) >= stopmissing[1]/100 * 
+      if (sum(is.na(climatedata$Precip.daily)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
         stop("missing data of Precip.daily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+             stopmissing[2], "%, please use high quality data for calculation")
+      } else {
+        if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
           stop("Maximum duration of missing data in Precip.daily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+               stopmissing[3], "% of total data duration, please use high quality data for calculation")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        #message("Monthly averages have been calculated to fill missing data entries")
+      }
+      if (interp_missing_entries == T) {
+        P.temp <- ReadInput_InterpMissing("P.temp",P.temp,"daily",missing_method) 
+        if (is.null(P.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
       }
     }
-    P.temp <- zoo(as.vector(climatedata$Precip.daily), as.Date(dateagg))
-    for (m in 0:11) {
-      P.temp[as.POSIXlt(time(P.temp))$mon == m & as.numeric(P.temp) < 
-               0] = mean(P.temp[as.POSIXlt(time(P.temp))$mon == 
-                                  m & as.numeric(P.temp) > 0])
-      P.temp[as.POSIXlt(time(P.temp))$mon == m & as.numeric(is.na(P.temp))] = mean(P.temp[as.POSIXlt(time(P.temp))$mon == 
-                                                                                            m & as.numeric(!is.na(P.temp))])
+    if (length(which(as.vector(P.temp) < 0)) > 0) {
+      message(paste("Number of day increments when P has errors (P < 0): ", 
+                    length(which(as.vector(P.temp) < 0))))
+      # wrong Rs, correct if chosen
+      if (interp_abnormal == T) {
+        P.temp <- ReadInput_InterpAbnormal("P.temp",P.temp,"daily",abnormal_method) 
+        if (is.null(P.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }
     }
-    Precip <- aggregate(P.temp, as.Date(dateagg, "%d/%m/%y"), 
+   
+    P.temp <- aggregate(P.temp, as.Date(dateagg, "%d/%m/%y"), 
                         mean)
+    if (length(Missing_DateIndex.daily) > 0) {
+      P.temp <- merge(P.temp, Stdzoo, all=TRUE, fill=NA)$P.temp
+      if (interp_missing_days == T) {
+        Precip <- ReadInput_InterpMissing("P.temp",P.temp,"daily",missing_method) 
+        if (is.null(Precip)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }  else {
+        Precip <- P.temp
+      }
+    }   else {
+      Precip <- P.temp
+    }
     P.monthly <- aggregate(Precip, as.yearmon(Date.daily, 
                                               "%m/%y"), sum)
     Cd.temp <- numeric(length(P.monthly))
@@ -697,8 +1026,7 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
       if (P.monthly[m] >= 1) {
         Cd.temp[m] <- 1 + 0.5 * log10(P.monthly[m]) + 
           (log10(P.monthly[m]))^2
-      }
-      else {
+      } else {
         Cd.temp[m] <- 1
       }
     }
@@ -707,12 +1035,12 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
     for (m in 1:length(Cd)) {
       Cd[as.yearmon(time(Cd)) == as.yearmon(time(Cd.temp))[m]] <- Cd.temp[m]
     }
-  }
-  else {
+  } else {
     Cd <- NULL
   }
   
   if ("Precip.daily" %in% (colnames(climatedata))) {
+    P.temp <- zoo(as.vector(climatedata$Precip.daily), dateagg)
     if ("TRUE" %in% (is.na(climatedata$Precip.daily))) {
       message("Warning: missing values in 'Precip.daily' (daily precipitation)")
       message(paste("Number of missing values in Precip.daily: ", 
@@ -730,35 +1058,57 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
       message(paste("Maximum duration of missing data as percentage of total duration: ", 
                     signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                     "%"))
-      if (sum(is.na(climatedata$Precip.daily)) >= stopmissing[1]/100 * 
+      if (sum(is.na(climatedata$Precip.daily)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
         stop("missing data of Precip.daily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+             stopmissing[2], "%, please use high quality data for calculation")
+      } else {
+        if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
           stop("Maximum duration of missing data in Precip.daily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+               stopmissing[3], "% of total data duration, please use high quality data for calculation")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        #message("Monthly averages have been calculated to fill missing data entries")
+      }
+      if (interp_missing_entries == T) {
+        P.temp <- ReadInput_InterpMissing("P.temp",P.temp,timestep,missing_method) 
+        if (is.null(P.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
       }
     }
-    P.temp <- zoo(as.vector(climatedata$Precip.daily), as.Date(dateagg))
-    for (m in 0:11) {
-      P.temp[as.POSIXlt(time(P.temp))$mon == m & as.numeric(P.temp) < 
-               0] = mean(P.temp[as.POSIXlt(time(P.temp))$mon == 
-                                  m & as.numeric(P.temp) > 0])
-      P.temp[as.POSIXlt(time(P.temp))$mon == m & as.numeric(is.na(P.temp))] = mean(P.temp[as.POSIXlt(time(P.temp))$mon == 
-                                                                                            m & as.numeric(!is.na(P.temp))])
+    if (length(which(as.vector(P.temp) < 0)) > 0) {
+      message(paste("Number of day increments when P has errors (P < 0): ", 
+                    length(which(as.vector(P.temp) < 0))))
+      # wrong Rs, correct if chosen
+      if (interp_abnormal == T) {
+        P.temp <- ReadInput_InterpAbnormal("P.temp",P.temp,timestep,abnormal_method) 
+        if (is.null(P.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }
     }
-    Precip <- aggregate(P.temp, as.Date(dateagg, "%d/%m/%y"), 
+    P.temp <- aggregate(P.temp, as.Date(dateagg, "%d/%m/%y"), 
                         mean)
-  }
-  else {
+    if (length(Missing_DateIndex.daily) > 0) {
+      P.temp <- merge(P.temp, Stdzoo, all=TRUE, fill=NA)$P.temp
+      if (interp_missing_days == T) {
+        Precip <- ReadInput_InterpMissing("P.temp",P.temp,"daily",missing_method) 
+        if (is.null(Precip)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }  else {
+        Precip <- P.temp
+      } 
+    }   else {
+      Precip <- P.temp
+    }
+  } else {
     Precip <- NULL
   }
   
   if ("Epan.daily" %in% (colnames(climatedata))) {
+    Epan.temp <- zoo(as.vector(climatedata$Epan.daily), 
+                     dateagg)
     if ("TRUE" %in% (is.na(climatedata$Epan.daily))) {
       message("Warning: missing values in 'Epan.daily'")
       message(paste("Number of missing values in Epan.daily: ", 
@@ -776,40 +1126,61 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
       message(paste("Maximum duration of missing data as percentage of total duration: ", 
                     signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                     "%"))
-      if (sum(is.na(climatedata$Epan.daily)) >= stopmissing[1]/100 * 
+      if (sum(is.na(climatedata$Epan.daily)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
         stop("missing data of Epan.daily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+             stopmissing[2], "%, please use high quality data for calculation")
+      } else {
+        if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
           stop("Maximum duration of missing data in Epan.daily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+               stopmissing[3], "% of total data duration, please use high quality data for calculation")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        #message("Monthly averages have been calculated to fill missing data entries")
+      }
+      if (interp_missing_entries == T) {
+        Epan.temp <- ReadInput_InterpMissing("Epan.temp",Epan.temp,timestep,missing_method) 
+        if (is.null(Epan.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
       }
     }
-    Epan.temp <- zoo(as.vector(climatedata$Epan.daily), 
-                     as.Date(dateagg))
-    for (m in 0:11) {
-      Epan.temp[as.POSIXlt(time(Epan.temp))$mon == m & 
-                  as.numeric(Epan.temp) < 0] = mean(Epan.temp[as.POSIXlt(time(Epan.temp))$mon == 
-                                                                m & as.numeric(Epan.temp) > 0])
-      Epan.temp[as.POSIXlt(time(Epan.temp))$mon == m & 
-                  as.numeric(is.na(Epan.temp))] = mean(Epan.temp[as.POSIXlt(time(Epan.temp))$mon == 
-                                                                   m & as.numeric(!is.na(Epan.temp))])
+    if (length(which(as.vector(P.temp) < 0)) > 0) {
+      message(paste("Number of day increments when Epan has errors (Epan < 0): ", 
+                    length(which(as.vector(P.temp) < 0))))
+      # wrong Rs, correct if chosen
+      if (interp_abnormal == T) {
+        Epan.temp <- ReadInput_InterpAbnormal("Epan.temp",Epan.temp,timestep,abnormal_method) 
+        if (is.null(Epan.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }
     }
-    Epan <- aggregate(P.temp, as.Date(dateagg, "%d/%m/%y"), 
+    
+    Epan.temp <- aggregate(Epan.temp, as.Date(dateagg, "%d/%m/%y"), 
                       mean)
-  }
-  else {
+    if (length(Missing_DateIndex.daily) > 0) {
+      Epan.temp <- merge(Epan.temp , Stdzoo, all=TRUE, fill=NA)$Epan.temp 
+      if (interp_missing_days == T) {
+        Epan <- ReadInput_InterpMissing("Epan.temp",Epan.temp,"daily",missing_method) 
+        if (is.null(Epan)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }  else {
+        Epan <- Epan.temp
+      }
+    }    else {
+      Epan <- Epan.temp
+    }
+  } else {
     Epan <- NULL
   }
   
-  
+if ( timestep == "daily" ) {
   if ("RHmax.daily" %in% (colnames(climatedata))) {
+    RHmax.temp <- zoo(as.vector(climatedata$RHmax.daily), 
+                      dateagg)
     if ("TRUE" %in% (is.na(climatedata$RHmax.daily))) {
-      message("Warning: missing values in 'RHmax.daily' (daily maximum temperature)")
+      message("Warning: missing values in 'RHmax.daily' (daily maximum relative humidity)")
       message(paste("Number of missing values in RHmax.daily: ", 
                     sum(is.na(climatedata$RHmax.daily))))
       message(paste("% missing data: ", signif(sum(is.na(climatedata$RHmax.daily))/nrow(climatedata) * 
@@ -825,38 +1196,62 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
       message(paste("Maximum duration of missing data as percentage of total duration: ", 
                     signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                     "%"))
-      if (sum(is.na(climatedata$RHmax.daily)) >= stopmissing[1]/100 * 
+      if (sum(is.na(climatedata$RHmax.daily)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
         stop("missing data of RHmax.daily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+             stopmissing[2], "%, please use high quality data for calculation")
+      } else {
+        if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
           stop("Maximum duration of missing data in RHmax.daily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+               stopmissing[3], "% of total data duration, please use high quality data for calculation")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        #message("Monthly averages have been calculated to fill missing data entries")
+      }
+      
+      # missing RHmax, infill if chosen
+      if (interp_missing_entries == T) {
+        RHmax.temp <- ReadInput_InterpMissing("RHmax.temp",RHmax.temp,timestep,missing_method) 
+        if (is.null(RHmax.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
       }
     }
-    
-    RHmax.temp <- zoo(as.vector(climatedata$RHmax.daily), 
-                      as.Date(dateagg))
-    RHmax <- aggregate(RHmax.temp, as.Date(dateagg, 
-                                           "%d/%m/%y"), FUN = mean)
-    
-    for (m in 0:11) {
-      RHmax[as.POSIXlt(time(RHmax))$mon == m & as.numeric(RHmax) < 
-              0] = mean(RHmax[as.POSIXlt(time(RHmax))$mon == 
-                                m & as.numeric(RHmax) > 0])
-      RHmax[as.POSIXlt(time(RHmax))$mon == m & is.na(RHmax)] = mean(RHmax[as.POSIXlt(time(RHmax))$mon == 
-                                                                            m & !is.na(RHmax)])
+    if (length(which(as.vector(RHmax.temp) > 100)) > 0) {
+      message(paste("Number of day increments when RHmax has errors (RHmax > 100%): ", 
+                    length(which(as.vector(RHmax.temp) > 100))))
+      # wrong RHmax, correct if chosen
+      if (interp_abnormal == T) {
+        RHmax.temp <- ReadInput_InterpAbnormal("RHmax.temp",RHmax.temp,timestep,abnormal_method) 
+        if (is.null(RHmax.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }
     }
-    message(paste("Number of days increments when RHmax has errors: ", 
-                  sum(RHmax > 100)))
-    message("'RHmax.daily' with values > 100% has been adjusted to 100%")
-    RHmax[RHmax > 100] = 100
+    #RHmax.temp <- zoo(as.vector(climatedata$RHmax.daily), 
+    #                 as.Date(dateagg))
+    RHmax.temp <- aggregate(RHmax.temp, as.Date(dateagg, 
+                                           "%d/%m/%y"), mean)
+    if (length(Missing_DateIndex.daily) > 0) {
+      RHmax.temp <- merge(RHmax.temp , Stdzoo, all=TRUE, fill=NA)$RHmax.temp
+      if (interp_missing_days == T) {
+        RHmax <- ReadInput_InterpMissing("RHmax.temp",RHmax.temp,"daily",missing_method) 
+        if (is.null(RHmax)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }  else {
+        RHmax <- RHmax.temp
+      }
+    }    else {
+      RHmax <- RHmax.temp
+    }
+    
+  }  else {
+    stop("Missing data of RHmax.daily")
   }
-  else if ("RH.subdaily" %in% (colnames(climatedata))) {
+} else if (timestep == "subdaily") {
+  if ("RH.subdaily" %in% (colnames(climatedata))) {
+    RH.temp <- zoo(as.vector(climatedata$RH.subdaily), 
+                   dateagg)
     message("Warning: missing data of 'RHmax.daily'(daily maximum relative humidity), calculated from subdaily 'RH.subdaily'")
     if ("TRUE" %in% (is.na(climatedata$RH.subdaily))) {
       message("Warning: missing values in 'RH.subdaily'")
@@ -875,40 +1270,66 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
       message(paste("Maximum duration of missing data as percentage of total duration: ", 
                     signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                     "%"))
-      if (sum(is.na(climatedata$RH.subdaily)) >= stopmissing[1]/100 * 
+      if (sum(is.na(climatedata$RH.subdaily)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
         stop("missing data of RH.subdaily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+             stopmissing[2], "%, please use high quality data for calculation")
+      } else {
+        if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
           stop("Maximum duration of missing data in RH.subdaily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+               stopmissing[3], "% of total data duration, please use high quality data for calculation")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        #message("Monthly averages have been calculated to fill missing data entries")
+      }
+      
+      # missing temp, infill if chosen
+      if (interp_missing_entries == T) {
+        RH.temp <- ReadInput_InterpMissing("RH.temp",RH.temp,timestep,missing_method) 
+        if (is.null(RH.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
       }
     }
-    RH.temp <- zoo(as.vector(climatedata$RH.subdaily), as.Date(Date.subdaily))
-    RHmax <- aggregate(RH.temp, as.Date(Date.subdaily, "%d/%m/%y"), 
-                       FUN = max)
-    for (m in 0:11) {
-      RHmax[as.POSIXlt(time(RHmax))$mon == m & as.numeric(RHmax) < 
-              0] = mean(RHmax[as.POSIXlt(time(RHmax))$mon == 
-                                m & as.numeric(RHmax) > 0])
-      RHmax[as.POSIXlt(time(RHmax))$mon == m & is.na(RHmax)] = mean(RHmax[as.POSIXlt(time(RHmax))$mon == 
-                                                                            m & !is.na(RHmax)])
+    if (length(which(as.vector(RH.temp) > 100)) > 0) {
+      message(paste("Number of data entries where RH.subdaily has errors (RH.subdaily > 100%): ", 
+                    length(which(as.vector(RH.temp) > 100))))
+      # wrong temp, correct if chosen
+      if (interp_abnormal == T) {
+        RH.temp <- ReadInput_InterpAbnormal("RH.temp",RH.temp,timestep,abnormal_method) 
+        if (is.null(RH.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }
     }
-    message(paste("Number of days increments when RHmax has errors: ", 
-                  sum(RHmax > 100)))
-    message("'RHmax.daily' with values > 100% has been adjusted to 100%")
-    RHmax[RHmax > 100] = 100
+    
+    RHmax.temp <- aggregate(RH.temp, as.Date(dateagg, 
+                                        "%d/%m/%y"), FUN = max)
+    if (length(Missing_DateIndex.daily) > 0) {
+      RHmax.temp <- merge(RHmax.temp , Stdzoo, all=TRUE, fill=NA)$RHmax.temp
+      if (interp_missing_days == T) {
+        RHmax <- ReadInput_InterpMissing("RHmax.temp",RHmax.temp,"daily",missing_method) 
+        if (is.null(RHmax)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }   else {
+        RHmax <- RHmax.temp
+      }
+    }    else {
+      RHmax <- RHmax.temp
+    }
+  } else {
+    stop("Missing data of RH.subdaily")
   }
-  else {
-    RHmax <- NULL
-  }
+} else {
+  RHmax <- NULL
+}
+
+if (timestep == "daily") {
   if ("RHmin.daily" %in% (colnames(climatedata))) {
+    RHmin.temp <- zoo(as.vector(climatedata$RHmin.daily), 
+                      dateagg)
     if ("TRUE" %in% (is.na(climatedata$RHmin.daily))) {
-      message("Warning: missing values in 'RHmin.daily' (daily minimum temperature)")
+      message("Warning: missing values in 'RHmin.daily' (daily minimum relative humidity)")
       message(paste("Number of missing values in RHmin.daily: ", 
                     sum(is.na(climatedata$RHmin.daily))))
       message(paste("% missing data: ", signif(sum(is.na(climatedata$RHmin.daily))/nrow(climatedata) * 
@@ -924,38 +1345,60 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
       message(paste("Maximum duration of missing data as percentage of total duration: ", 
                     signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                     "%"))
-      if (sum(is.na(climatedata$RHmin.daily)) >= stopmissing[1]/100 * 
+      if (sum(is.na(climatedata$RHmin.daily)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
         stop("missing data of RHmin.daily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+             stopmissing[2], "%, please use high quality data for calculation")
+      } else {
+        if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
           stop("Maximum duration of missing data in RHmin.daily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+               stopmissing[3], "% of total data duration, please use high quality data for calculation")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        #message("Monthly averages have been calculated to fill missing data entries")
+      }
+      # missing RHmin, infill if chosen
+      if (interp_missing_entries == T) {
+        RHmin.temp <- ReadInput_InterpMissing("RHmin.temp",RHmin.temp,timestep,missing_method) 
+        if (is.null(RHmin.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
       }
     }
-    
-    RHmin.temp <- zoo(as.vector(climatedata$RHmin.daily), 
-                      as.Date(dateagg))
-    RHmin <- aggregate(RHmin.temp, as.Date(dateagg, 
-                                           "%d/%m/%y"), FUN = mean)
-    
-    for (m in 0:11) {
-      RHmin[as.POSIXlt(time(RHmin))$mon == m & as.numeric(RHmin) < 
-              0] = mean(RHmin[as.POSIXlt(time(RHmin))$mon == 
-                                m & as.numeric(RHmin) > 0])
-      RHmin[as.POSIXlt(time(RHmin))$mon == m & is.na(RHmin)] = mean(RHmin[as.POSIXlt(time(RHmin))$mon == 
-                                                                            m & !is.na(RHmin)])
+    if (length(which(as.vector(RHmin.temp) > as.vector(RHmax))) > 0) {
+      message(paste("Number of day increments when RHmin has errors (RHmin > RHmax): ", 
+                    length(which(as.vector(RHmin.temp) > as.vector(RHmax)))))
+      # wrong RHmin, correct if chosen
+      if (interp_abnormal == T) {
+        RHmin.temp <- ReadInput_InterpAbnormal("RHmin.temp",RHmin.temp,timestep,abnormal_method) 
+        if (is.null(RHmin.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }
     }
-    message(paste("Number of days increments when RHmin has errors: ", 
-                  sum(RHmin > RHmax)))
-    message("'RHmin.daily' with values > 'RHmax.daily' has been adjusted to '0.9*RHmax'")
-    RHmin[RHmin >= RHmax] = 0.9 * RHmax[RHmin >= RHmax]
-  }
-  else if ("RH.subdaily" %in% (colnames(climatedata))) {
+    #RHmin.temp <- zoo(as.vector(climatedata$RHmin.daily), 
+    #                 as.Date(dateagg))
+    RHmin.temp <- aggregate(RHmin.temp, as.Date(dateagg, 
+                                           "%d/%m/%y"), mean)
+    if (length(Missing_DateIndex.daily) > 0) {
+      RHmin.temp <- merge(RHmin.temp , Stdzoo, all=TRUE, fill=NA)$RHmin.temp
+      if (interp_missing_days == T) {
+        RHmin <- ReadInput_InterpMissing("RHmin.temp",RHmin.temp,"daily",missing_method) 
+        if (is.null(RHmin)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }   else {
+        RHmin <- RHmin.temp
+      }
+    }    else {
+      RHmin <- RHmin.temp
+    }
+  } else {
+    stop("Missing data of RHmin.daily.")
+  } 
+} else if (timestep == "subdaily") {
+  if ("RH.subdaily" %in% (colnames(climatedata))) {
+    RH.temp <- zoo(as.vector(climatedata$RH.subdaily), 
+                   dateagg)
     message("Warning: missing data of 'RHmin.daily'(daily minimum relative humidity), calculated from subdaily 'RH.subdaily'")
     if ("TRUE" %in% (is.na(climatedata$RH.subdaily))) {
       message("Warning: missing values in 'RH.subdaily'")
@@ -974,40 +1417,64 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
       message(paste("Maximum duration of missing data as percentage of total duration: ", 
                     signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                     "%"))
-      if (sum(is.na(climatedata$RH.subdaily)) >= stopmissing[1]/100 * 
+      if (sum(is.na(climatedata$RH.subdaily)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
         stop("missing data of RH.subdaily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
-      }
-      else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+             stopmissing[2], "%, please use high quality data for calculation")
+      } else {
+        if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
           stop("Maximum duration of missing data in RH.subdaily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+               stopmissing[3], "% of total data duration, please use high quality data for calculation")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        #message("Monthly averages have been calculated to fill missing data entries")
+      }
+      # missing temp, infill if chosen
+      if (interp_missing_entries == T) {
+        RH.temp <- ReadInput_InterpMissing("RH.temp",RH.temp,timestep,missing_method) 
+        if (is.null(RH.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
       }
     }
-    RH.temp <- zoo(as.vector(climatedata$RH.subdaily), as.Date(Date.subdaily))
-    RHmin <- aggregate(RH.temp, as.Date(Date.subdaily, "%d/%m/%y"), 
-                       FUN = min)
-    for (m in 0:11) {
-      RHmin[as.POSIXlt(time(RHmin))$mon == m & as.numeric(RHmin) < 
-              0] = mean(RHmin[as.POSIXlt(time(RHmin))$mon == 
-                                m & as.numeric(RHmin) > 0])
-      RHmin[as.POSIXlt(time(RHmin))$mon == m & is.na(RHmin)] = mean(RHmin[as.POSIXlt(time(RHmin))$mon == 
-                                                                            m & !is.na(RHmin)])
+    if (length(which(as.vector(RH.temp) > 100)) > 0) {
+      message(paste("Number of data entries where RH.subdaily has errors (RH.subdaily > 100%): ", 
+                    length(which(as.vector(RH.temp) > 100))))
+      # wrong temp, correct if chosen
+      if (interp_abnormal == T) {
+        RH.temp <- ReadInput_InterpAbnormal("RH.temp",RH.temp,timestep,abnormal_method) 
+        if (is.null(RH.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }
     }
-    message(paste("Number of days increments when RHmin has errors: ", 
-                  sum(RHmin > RHmax)))
-    message("'RHmax' with values > 'RHmax' has been adjusted to '0.9*RHmax'")
-    RHmin[RHmin >= RHmax] = 0.9 * RHmax[RHmin >= RHmax]
+    
+    RHmin.temp <- aggregate(RH.temp, as.Date(dateagg, 
+                                        "%d/%m/%y"), FUN = min)
+    if (length(Missing_DateIndex.daily) > 0) {
+      RHmin.temp <- merge(RHmin.temp , Stdzoo, all=TRUE, fill=NA)$RHmin.temp
+      if (interp_missing_days == T) {
+        RHmin <- ReadInput_InterpMissing("RHmin.temp",RHmin.temp,"daily",missing_method) 
+        if (is.null(RHmin)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }   else {
+        RHmin <- RHmin.temp
+      }
+    } else {
+      RHmin <- RHmin.temp
+    }
+  } else {
+    stop("Missing data of RH.subdaily")
   }
-  else {
-    RHmin <- NULL
-  }
+} else {
+  RHmin <- NULL
+}
+
   
   if (timestep == "subdaily") {
     if ("Tdew.subdaily" %in% (colnames(climatedata))) {
+      Tdew.temp <- zoo(as.vector(climatedata$Tdew.subdaily), 
+                       dateagg)
       if ("TRUE" %in% (is.na(climatedata$Tdew.subdaily))) {
         message("Warning: missing values in 'Tdew.subdaily'")
         message(paste("Number of missing values in Tdew.subdaily: ", 
@@ -1025,43 +1492,62 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
         message(paste("Maximum duration of missing data as percentage of total duration: ", 
                       signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                       "%"))
-        if (sum(is.na(climatedata$Tdew.subdaily)) >= stopmissing[1]/100 * 
+        if (sum(is.na(climatedata$Tdew.subdaily)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
           stop("missing data of Tdew.subdaily exceeds ", 
-               stopmissing[1], "%, please use high quality data for calculation")
+               stopmissing[2], "%, please use high quality data for calculation")
         }
         else {
-          if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+          if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
             stop("Maximum duration of missing data in Tdew.subdaily exceeds ", 
-                 stopmissing[2], "% of total data duration, please use high quality data for calculation")
+                 stopmissing[3], "% of total data duration, please use high quality data for calculation")
           }
-          message("Monthly averages have been calculated to fill missing data entries")
+          #message("Monthly averages have been calculated to fill missing data entries")
+        }
+        if (interp_missing_entries == T) {
+          Tdew.temp <- ReadInput_InterpMissing("Tdew.temp",Tdew.temp,timestep,missing_method) 
+          if (is.null(Tdew.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
         }
       }
-      Tdew.temp <- zoo(as.vector(climatedata$Tdew.subdaily), 
-                       as.Date(Date.subdaily))
-      Tdew <- aggregate(Tdew.temp, as.Date(Date.subdaily, 
-                                           "%d/%m/%y"), mean)
-      message(paste("Number of days increments when Tdew has errors: ", 
-                    sum(Tdew > 100)))
-      message("Monthly averages have been calculated to adjust data with error")
-      for (m in 0:11) {
-        Tdew[as.POSIXlt(time(Tdew))$mon == m & is.na(Tdew)] = mean(Tdew[as.POSIXlt(time(Tdew))$mon == 
-                                                                          m & !is.na(Tdew)])
-        Tdew[as.POSIXlt(time(Tdew))$mon == m & as.numeric(Tdew) > 
-               100] = mean(Tdew[as.POSIXlt(time(Tdew))$mon == 
-                                  m & as.numeric(Tdew) < 100])
+      if (length(which(as.vector(Tdew.temp) > 100)) > 0) {
+        message(paste("Number of data entries where Tdew.subdaily has errors (Tdew.subdaily > 100): ", 
+                      length(which(as.vector(Tdew.temp) > 100))))
+        # wrong temp, correct if chosen
+        if (interp_abnormal == T) {
+          Tdew.temp <- ReadInput_InterpAbnormal("Tdew.temp",Tdew.temp,timestep,abnormal_method)
+          if (is.null(Tdew.temp)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }
       }
-    }
-    else if ("Vp.subdaily" %in% (colnames(climatedata))) {
+      
+      Tdew.temp <- aggregate(Tdew.temp, as.Date(dateagg, 
+                                           "%d/%m/%y"), mean)
+      if (length(Missing_DateIndex.daily) > 0) {
+        Tdew.temp <- merge(Tdew.temp , Stdzoo, all=TRUE, fill=NA)$Tdew.temp
+        if (interp_missing_days == T) {
+          Tdew <- ReadInput_InterpMissing("Tdew.temp",Tdew.temp,"daily",missing_method) 
+          if (is.null(Tdew)) {
+            stop("More than one entry missing, please choose another interpolation method")
+          }
+        }   else {
+          Tdew <- Tdew.temp
+        }
+      }    else {
+        Tdew <- Tdew.temp
+      }
+    } else if ("Vp.subdaily" %in% (colnames(climatedata))) {
       message("Warning: missing data of 'Tdew.subdaily', calculated from 'Vp.subdaily'")
       Tdew <- NULL
       if ("TRUE" %in% (is.na(climatedata$Vp.subdaily))) {
         message("Warning: missing values in 'Vp.subdaily'")
       }
     }
-  } 
-  else if ("Tdew.daily" %in% (colnames(climatedata))) {
+  }  else if ("Tdew.daily" %in% (colnames(climatedata))) {
+    Tdew.temp <- zoo(as.vector(climatedata$Tdew.daily), 
+                     dateagg)
     if ("TRUE" %in% (is.na(climatedata$Tdew.daily))) {
       message("Warning: missing values in 'Tdew.daily'")
       message(paste("Number of missing values in Tdew.daily: ", 
@@ -1079,35 +1565,53 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
       message(paste("Maximum duration of missing data as percentage of total duration: ", 
                     signif(max(df)/nrow(climatedata) * 100, digits = -3), 
                     "%"))
-      if (sum(is.na(climatedata$Tdew.daily)) >= stopmissing[1]/100 * 
+      if (sum(is.na(climatedata$Tdew.daily)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
         stop("missing data of Tdew.daily exceeds ", 
-             stopmissing[1], "%, please use high quality data for calculation")
+             stopmissing[2], "%, please use high quality data for calculation")
       }
       else {
-        if (max(df)/nrow(climatedata) >= stopmissing[2]/100) {
+        if (max(df)/nrow(climatedata) >= stopmissing[3]/100) {
           stop("Maximum duration of missing data in Tdew.daily exceeds ", 
-               stopmissing[2], "% of total data duration, please use high quality data for calculation")
+               stopmissing[3], "% of total data duration, please use high quality data for calculation")
         }
-        message("Monthly averages have been calculated to fill missing data entries")
+        #message("Monthly averages have been calculated to fill missing data entries")
+      }
+      if (interp_missing_entries == T) {
+        Tdew.temp <- ReadInput_InterpMissing("Tdew.temp",Tdew.temp,timestep,missing_method) 
+        if (is.null(Tdew.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
       }
     }
-    Tdew.temp <- zoo(as.vector(climatedata$Tdew.daily), 
-                     as.Date(Date.daily))
-    Tdew <- aggregate(Tdew.temp, as.Date(Date.daily, 
-                                         "%d/%m/%y"), mean)
-    message(paste("Number of days increments when Tdew has errors: ", 
-                  sum(Tdew > 100)))
-    message("Monthly averages have been calculated to adjust data with error")
-    for (m in 0:11) {
-      Tdew[as.POSIXlt(time(Tdew))$mon == m & is.na(Tdew)] = mean(Tdew[as.POSIXlt(time(Tdew))$mon == 
-                                                                        m & !is.na(Tdew)])
-      Tdew[as.POSIXlt(time(Tdew))$mon == m & as.numeric(Tdew) > 
-             100] = mean(Tdew[as.POSIXlt(time(Tdew))$mon == 
-                                m & as.numeric(Tdew) < 100])
+    
+    if (length(which(as.vector(Tdew.temp) >100)) > 0) {
+      message(paste("Number of day increments when Tdew has errors (Tdew > 100): ", 
+                    length(which(as.vector(Tdew.temp) >100))))
+      # wrong temp, correct if chosen
+      if (interp_abnormal == T) {
+        Tdew.temp <- ReadInput_InterpAbnormal("Tdew.temp",Tdew.temp,timestep,abnormal_method) 
+        if (is.null(Tdew.temp)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }
     }
-  } 
-  else if ("Vp.daily" %in% (colnames(climatedata))) {
+    Tdew.temp <- aggregate(Tdew.temp, as.Date(dateagg, 
+                                         "%d/%m/%y"), mean)
+    if (length(Missing_DateIndex.daily) > 0) {
+      Tdew.temp <- merge(Tdew.temp , Stdzoo, all=TRUE, fill=NA)$Tdew.temp
+      if (interp_missing_days == T) {
+        Tdew <- ReadInput_InterpMissing("Tdew.temp",Tdew.temp,"daily",missing_method) 
+        if (is.null(Tdew)) {
+          stop("More than one entry missing, please choose another interpolation method")
+        }
+      }   else {
+        Tdew <- Tdew.temp
+      }
+    } else {
+      Tdew <- Tdew.temp
+    }
+  } else if ("Vp.daily" %in% (colnames(climatedata))) {
     message("Warning: missing data of 'Tdew.daily', calculated from 'Vp.daily'")
     Tdew <- NULL
     if ("TRUE" %in% (is.na(climatedata$Vp.daily))) {
@@ -1115,13 +1619,13 @@ ReadInputs <- function (climatedata, constants, stopmissing, timestep) {
     }
   } else {
     Tdew <- NULL
-  }
-  
+  }  
+
   data <- list(Date.daily = Date.daily, Date.monthly = Date.monthly, 
-               J = J, i = i, ndays = ndays, Tmax = Tmax, Tmin = Tmin, 
+               J = J, i = i, Ndays = Ndays, Tmax = Tmax, Tmin = Tmin, 
                u2 = u2, uz = uz, Rs = Rs, n = n, Cd = Cd, Precip = Precip, 
                Epan = Epan, RHmax = RHmax, RHmin = RHmin, Tdew = Tdew)
-  return(data)
+  invisible(data)
 }
 
 
@@ -1142,7 +1646,7 @@ ReadOBSEvaporation <- function(E_OBS, data) {
     
     # Average
     E_obs.MonthlyAve <- E_obs.AnnualAve <- NULL
-    E_obs.MonthlyAve.temp <- E_obs.Monthly/data$ndays
+    E_obs.MonthlyAve.temp <- E_obs.Monthly/data$Ndays
     for (mon in min(as.POSIXlt(Date.OBS)$mon):max(as.POSIXlt(Date.OBS)$mon)){
       i = mon - min(as.POSIXlt(Date.OBS)$mon) + 1
       E_obs.MonthlyAve[i] <- mean(E_obs.MonthlyAve.temp[as.POSIXlt(Date.OBS)$mon== mon])
@@ -1178,3 +1682,187 @@ ReadOBSEvaporation <- function(E_OBS, data) {
 }
 
 #-------------------------------------------------------------------------------------
+
+ReadInput_InterpMissing <- function(varname,var,timestep,missing_method) {
+  assign(varname,var)
+  tempdata <- get(varname)
+  if (is.null(missing_method) | missing_method == "monthly average") {
+    missing_method = "monthly average"
+    for (m in 0:11) {
+      tempdata[as.POSIXlt(time(tempdata))$mon == m & is.na(tempdata)] = mean(tempdata[as.POSIXlt(time(tempdata))$mon == m & !is.na(tempdata)])
+    } 
+  } else if (missing_method == "seasonal average") {
+    smonth <- rbind(c(11,0,1),c(2:4),c(5:7),c(8:10))
+    for (s in 1:4) {
+      m = c(smonth[s,])
+      tempdata[any(as.POSIXlt(time(tempdata))$mon == m) & is.na(tempdata)] = mean(tempdata[as.POSIXlt(time(tempdata))$mon == m & !is.na(tempdata)])
+      
+    }
+  } else if (missing_method == "DoY average") {
+    for (j in 1:366) {
+      tempdata[as.numeric(strftime(time(tempdata), format = "%j")) == j & is.na(tempdata)] = mean(tempdata[as.numeric(strftime(time(tempdata), format = "%j")) == j & !is.na(tempdata)])
+    }
+  } else if (missing_method == "neighbour average") {
+    #if (timestep == "daily") {
+      misi <- which(is.na(tempdata[1:length(tempdata)]))
+      if (1%in%misi) {
+        tempdata[1] = tempdata[2]
+      } 
+      if (length(tempdata)%in%misi) {
+        tempdata[length(tempdata)] = tempdata[length(tempdata)-1]
+      } 
+      for (i in misi[misi!=1&misi!=length(tempdata)]) {
+        if (!(i-1)%in%misi) { # means i is the start of missing value
+          if (!(i+1)%in%misi) { # means i is the finish of missing value i.e. only one missing
+            tempdata[i] = mean(c(tempdata[i+1],tempdata[i-1]))
+            misi <- setdiff(misi,i)
+          } else { # means i is not the finish of missing value i.e. more than one missing
+            #stop("More than one entry missing, please choose another interpolation method")
+            tempdata = NULL
+            misi  = 0
+            break
+            #fi <- c(misi[misi>i & !(misi+1)%in%misi])[1]
+            #nmi <- fi-i+1
+            #tempdata[i:fi] <- as.vector(tempdata[i-1])+(as.vector(tempdata[fi+1])-as.vector(tempdata[i-1]))/(nmi+1)*(1:nmi)
+            #misi <- setdiff(misi,i:fi)
+          }
+        } 
+        if (length(misi) == 0) break
+      }
+    #} else if (timestep == "subdaily") {
+     # misi <- which(is.na(tempdata[1:length(Date.subdaily)]))
+    #  if (1%in%misi) {
+      #  tempdata[1] = tempdata[2]
+      #} 
+      #if (length(Date.subdaily)%in%misi) {
+      #  tempdata[length(Date.subdaily)] = tempdata[length(Date.subdaily)-1]
+      #} 
+      #for (i in misi[misi!=1&misi!=length(Date.subdaily)]) {
+      #  if (!(i-1)%in%misi) { # means i is the start of missing value
+      #    if (!(i+1)%in%misi) { # means i is the finish of missing value i.e. only one missing
+      #      tempdata[i] = mean(c(tempdata[i+1],tempdata[i-1]))
+      #      misi <- setdiff(misi,i)
+      #    } else { # means i is not the finish of missing value i.e. more than one missing
+      #      fi <- c(misi[misi>i & !(misi+1)%in%misi])[1]
+      #      nmi <- fi-i+1
+      #      tempdata[i:fi] <- as.vector(tempdata[i-1])+(as.vector(tempdata[fi+1])-as.vector(tempdata[i-1]))/(nmi+1)*(1:nmi)
+      #      misi <- setdiff(misi,i:fi)
+      #    }
+      #  } 
+      #  if (length(misi) == 0) break
+      }
+    
+    
+  return(tempdata)
+  message("Interpolation used to fill missing data entries
+          . Method: ", missing_method)
+}
+
+##############
+ReadInput_InterpAbnormal <- function(varname,var,timestep,abnormal_method) {
+  assign(varname,var)
+  tempdata <- get(varname)
+  # get checks for abnormal values
+  if (varname=="Tmax" | varname=="Tdew"| varname=="temp.temp" | 
+        varname=="RHmax" | varname=="RH.temp") {
+    limfun <- function(varname) {
+      var <- get(varname)
+      test <- as.vector(var)>100
+      return(test)
+    }
+  } else if (grepl("u",varname) | grepl("C",varname) | grepl("Rs",varname) |
+               grepl("n.daily",varname) | grepl("P",varname) | grepl("Epan",varname)) {
+    limfun <- function(varname) {
+      var <- get(varname)
+      test <- as.vector(var)<0
+      return(test)
+    }
+  } else if (grepl("Tmin",varname)) { # not exceeding max
+    uppervar <- "Tmax"
+    limfun <- function(varname) {
+      var <- get(varname)
+      comvar <- get(uppervar)
+      test <- as.vector(var) > as.vector(comvar)
+      return(test)
+    }
+  } else if (grepl("RHmin",varname)) { # not exceeding max
+    uppervar <- "RHmax"
+    limfun <- function(varname) {
+      var <- get(varname)
+      comvar <- get(uppervar)
+      test <- as.vector(var) > as.vector(comvar)
+      return(test)
+    }
+  } 
+  
+  tempdata <- get(varname)
+  
+  if (is.null(abnormal_method) | abnormal_method == "monthly average") {
+    abnormal_method = "monthly average"
+    for (m in 0:11) {
+      tempdata[as.POSIXlt(time(tempdata))$mon == m & as.vector(limfun(varname)) == T] = mean(tempdata[as.POSIXlt(time(tempdata))$mon == m & as.vector(limfun(varname)) == F])
+    } 
+  } else if (abnormal_method == "seasonal average") {
+    smonth <- rbind(c(11,0,1),c(2:4),c(5:7),c(8:10))
+    for (s in 1:4) {
+      m = c(smonth[s,])
+      tempdata[any(as.POSIXlt(time(tempdata))$mon == m) & as.vector(limfun(varname)) == T] = mean(tempdata[as.POSIXlt(time(tempdata))$mon == m & as.vector(limfun(varname)) == F])
+      
+    }
+  } else if (abnormal_method == "DoY average") {
+    for (j in 1:366) {
+      tempdata[as.numeric(strftime(time(tempdata), format = "%j")) == j & as.vector(limfun(varname)) == T] = mean(tempdata[as.numeric(strftime(time(tempdata), format = "%j")) == j & as.vector(limfun(varname)) == F])
+    }
+  } else if (abnormal_method == "neighbour average") {
+    #if (timestep == "daily") {
+      misi <- which(is.na(tempdata[1:length(tempdata)]))
+      if (1%in%misi) {
+        tempdata[1] = tempdata[2]
+      } 
+      if (length(tempdata)%in%misi) {
+        tempdata[length(tempdata)] = tempdata[length(tempdata)-1]
+      } 
+      for (i in misi[misi!=1&misi!=length(tempdata)]) {
+        if (!(i-1)%in%misi) { # means i is the start of abnormal value
+          if (!(i+1)%in%misi) { # means i is the finish of abnormal value i.e. only one abnormal
+            tempdata[i] = mean(c(tempdata[i+1],tempdata[i-1]))
+            misi <- setdiff(misi,i)
+          } else { # means i is not the finish of abnormal value i.e. more than one abnormal
+            tempdata = NULL
+            misi = 0
+            break
+            #fi <- c(misi[misi>i & !(misi+1)%in%misi])[1]
+            #nmi <- fi-i+1
+            #tempdata[i:fi] <- as.vector(tempdata[i-1])+(as.vector(tempdata[fi+1])-as.vector(tempdata[i-1]))/(nmi+1)*(1:nmi)
+            #misi <- setdiff(misi,i:fi)
+          }
+        } 
+        if (length(misi) == 0) break
+      }
+    #} else if (timestep == "subdaily") {
+     # misi <- which(is.na(tempdata[1:length(Date.subdaily)]))
+    #  if (1%in%misi) {
+    #    tempdata[1] = tempdata[2]
+    #  } 
+    #  if (length(Date.subdaily)%in%misi) {
+    #    tempdata[length(Date.subdaily)] = tempdata[length(Date.subdaily)-1]
+    #  } 
+    #  for (i in misi[misi!=1&misi!=length(Date.subdaily)]) {
+    #    if (!(i-1)%in%misi) { # means i is the start of abnormal value
+    #      if (!(i+1)%in%misi) { # means i is the finish of abnormal value i.e. only one abnormal
+    #        tempdata[i] = mean(c(tempdata[i+1],tempdata[i-1]))
+    #        misi <- setdiff(misi,i)
+    #      } else { # means i is not the finish of abnormal value i.e. more than one abnormal
+    #        fi <- c(misi[misi>i & !(misi+1)%in%misi])[1]
+    #        nmi <- fi-i+1
+    #        tempdata[i:fi] <- as.vector(tempdata[i-1])+(as.vector(tempdata[fi+1])-as.vector(tempdata[i-1]))/(nmi+1)*(1:nmi)
+    #        misi <- setdiff(misi,i:fi)
+    #      }
+    #    } 
+    #    if (length(misi) == 0) break
+    #  }
+    }
+     
+  return(tempdata)
+  message("Interpolation used to fill abnormal data entries. Method: ", abnormal_method)
+}

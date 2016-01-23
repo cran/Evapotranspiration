@@ -7,30 +7,44 @@
 Implementing the Brutsaert-Strickler formulation for actual areal evapotranspiration
 }
 \usage{
-\method{ET}{BrutsaertStrickler}(data, constants, solar, alpha, \dots)
+\method{ET}{BrutsaertStrickler}(data, constants, ts="daily", solar="sunshine hours", alpha=0.23, \dots)
 }
 
 \arguments{
   \item{data}{
-  A list of data in class "BrutsaertStrickler" which contains the following items (climate variables) required by Brutsaert-Strickler formulation:
-  "Tmax", "Tmin", "RHmax", "RHmin", "RS", "n" or "Cd", "u2" or "uz"
+  A list of data which contains the following items (climate variables) required by Brutsaert-Strickler formulation:\cr
+  \emph{Tmax}, \emph{Tmin}, \emph{RHmax}, \emph{RHmin}, \emph{Rs} or \emph{n} or \emph{Cd}, \emph{u2} or \emph{uz}
   }
   \item{constants}{
-  A list named "constants" consists of constants required for the calculation of Brutsaert-Strickler formulation which must contain the following items:
-  "Elev" - ground elevation above mean sea level in m,
-  "lambda" - latent heat of vaporisation = 2.45 MJ.kg^-1,
-  "lat_rad" - latitude in radians,
-  "Gsc" - solar constant = 0.0820 MJ.m^-2.min^-1
-  "as" - fraction of extraterrestrial radiation reaching earth on sunless days,
-  "bs" - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days,
-  "z" - height of wind instrument in m,
-  "sigma" - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.
+  A list named \code{constants} consists of constants required for the calculation of Brutsaert-Strickler formulation which must contain the following items:\cr
+  \emph{Elev} - ground elevation above mean sea level in m,\cr
+  \emph{lambda} - latent heat of vaporisation = 2.45 MJ.kg^-1,\cr
+  \emph{lat_rad} - latitude in radians,\cr
+  \emph{Gsc} - solar constant = 0.0820 MJ.m^-2.min^-1,\cr
+  \emph{z} - height of wind instrument in m,\cr
+  \emph{sigma} - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.\cr
+  \cr
+  
+  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr 
+  \emph{as} - fraction of extraterrestrial radiation reaching earth on sunless days,\cr
+  \emph{bs} - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
+
+  }
+  \item{ts}{
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Default is \code{daily}.
   }
   \item{solar}{
-  Must be either "data", "sunshine hours", cloud" or "monthly precipitation". "data" indicates that solar radiation data is used directly for calculating evapotranspiration; "sunshine hours" indicates that solar radiation is to be calculated using the real data of sunshine hours; "cloud" sunshine hours is to be estimated from cloud data; "monthly precipitation" indicates that solar radiation is to be calculated directly from monthly precipitation. 
+  Must be either \code{data}, \code{sunshine hours}, \code{cloud} or \code{monthly precipitation}:\cr
+  \code{data} indicates that solar radiation data is to be used directly for calculating evapotranspiration; \cr
+  \code{sunshine hours} indicates that solar radiation is to be calculated using the real data of sunshine hours;\cr
+  \code{cloud} sunshine hours is to be estimated from cloud data; \cr
+  \code{monthly precipitation} indicates that solar radiation is to be calculated directly from monthly precipitation.\cr
+  Default is \code{sunshine hours}.
   }
   \item{alpha}{
-  Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface (or surrounding surface for Penpan formulation) representing the portion of the incident radiation that is reflected back at the surface. 
+  Any numeric value between 0 and 1 (dimensionless), albedo of the evaporative surface representing the portion of the incident radiation that is reflected back at the surface. \cr
+  Default is 0.23 for surface covered with short reference crop.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -38,33 +52,44 @@ Implementing the Brutsaert-Strickler formulation for actual areal evapotranspira
 }
 
 \details{
-  The alternative calculation options can be selected through argument \code{solar}, please see "Arguments" for details.
-  User-defined evaporative surface is allowed through argument \code{alpha}, please see "Arguments" for details.
+  The alternative calculation options can be selected through argument \code{solar}, please see \code{Arguments} for details.\cr
+  User-defined evaporative surface is allowed through argument \code{alpha}, please see \code{Arguments} for details.
 }
 
 \value{
-This function returns a object of class \code{BrutsaertStrickler}. Such objects are list with components:
+The function prints a calculation summary to the screen containing the following elements:\cr
+- ET model name and ET quantity estimated\cr
+- Evaporative surface with values of albedo, surface resistance, crop height and roughness height\cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
+\cr
+
+The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_BrutsaertStrickler.csv} in the working directory:
 
   \item{ET.Daily}{
-  A \code{zoo} object containing daily aggregated estimations of Brutsaert-Strickler actual areal evapotranspiration.
+  Daily aggregated estimations of Brutsaert-Strickler actual areal evapotranspiration.
   }
   \item{ET.Monthly}{
-  A \code{zoo} object containing monthly aggregated estimations of Brutsaert-Strickler actual areal evapotranspiration.
+  Monthly aggregated estimations of Brutsaert-Strickler actual areal evapotranspiration.
   }
   \item{ET.Annual}{
-  A \code{zoo} object containing annually aggregated estimations of Brutsaert-Strickler actual areal evapotranspiration.
+  Annually aggregated estimations of Brutsaert-Strickler actual areal evapotranspiration.
   }
   \item{ET.MonthlyAve}{
-  A \code{zoo} object containing monthly averaged estimations of daily Brutsaert-Strickler actual areal evapotranspiration.
+  Monthly averaged estimations of daily Brutsaert-Strickler actual areal evapotranspiration.
   }
   \item{ET.AnnualAve}{
-  A \code{zoo} object containing annually averaged estimations of daily Brutsaert-Strickler actual areal evapotranspiration.
+  Annually averaged estimations of daily Brutsaert-Strickler actual areal evapotranspiration.
   }
   \item{ET_formulation}{
-  A character string containing the name of the formulation used which equals to "Brutsaert-Strickler".
+  Name of the formulation used which equals to \code{Brutsaert-Strickler}.
   }
   \item{ET_type}{
-  A character string containing the type of the estimation obtained which is "Actual Areal Evapotranspiration".
+  Type of the estimation obtained which is \code{Actual Areal Evapotranspiration}.
   }
   \item{message1}{
   A message to inform the users about how solar radiation has been calculated by using which data.
@@ -72,24 +97,21 @@ This function returns a object of class \code{BrutsaertStrickler}. Such objects 
 }
 \references{
 
-MCMAHON, T., PEEL, M., LOWE, L., SRIKANTHAN, R. & MCVICAR, T. 2012. Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
-
+McMahon, T., Peel, M., Lowe, L., Srikanthan, R. & McVicar, T. 2012. \emph{Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis}. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
 }
 \author{
 Danlu Guo
 }
-
+\seealso{
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
+}
 \examples{
-# Use processed existing data set from kent Town, Adelaide
+# Use processed existing data set and constants from kent Town, Adelaide
 data("processeddata")
 data("constants")
 
-# Set data class to be "BrutsaertStrickler" to call function
-funname <- "BrutsaertStrickler"
-class(data) <- funname
-
-# Call generic function ET(data, ...) with class "BrutsaertStrickler"
-results <- ET(data, constants, solar="sunshine.hours", alpha = 0.08)
+# Call ET.BrutsaertStrickler under the generic function ET
+results <- ET.BrutsaertStrickler(data, constants, ts="daily", solar="sunshine hours", alpha=0.23)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

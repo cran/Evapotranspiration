@@ -90,6 +90,7 @@ ETPlot <- function(results, type = "Aggregation", OBS, OBSplot = FALSE,  Sdate =
 
 #-------------------------------------------------------------------------------------
 
+
 ETComparison <- function(results1, results2, results3 = NULL, results4 = NULL, results5 = NULL, results6 = NULL, results7 = NULL, 
                          labs, Sdate=NULL, Edate=NULL, type = "Monthly", ylim=rep(NA,2)) { # plot up to 7 estimations
   # check number of sets of results to compare and compile list of legend text
