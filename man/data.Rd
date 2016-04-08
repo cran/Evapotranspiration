@@ -12,7 +12,7 @@
 \emph{Date.monthly} - date in monthly time step,\cr
 \emph{J} - julian days,\cr
 \emph{i} - month,\cr
-\emph{Ndays} - days in month,\cr
+\emph{ndays} - days in month,\cr
 \emph{Tmax} - daily maximum temperature in degree Celcius,\cr
 \emph{Tmin} - daily minimum temperature in degree Celcius,\cr
 \emph{uz} - daily wind speed in meters per second,\cr

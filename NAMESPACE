@@ -1,9 +1,6 @@
 exportPattern("^[^\\.]")
 import(zoo)
-importFrom("graphics", "boxplot", "legend", "lines", "par", "plot",
-              "plot.new", "text")
-importFrom("stats", "aggregate", "ave", "na.omit", "time")
-importFrom("utils", "write.table","data")
+S3method(ET,default)
 S3method(ET,BlaneyCriddle)
 S3method(ET,BrutsaertStrickler)
 S3method(ET,ChapmanAustralian)
@@ -25,4 +22,6 @@ S3method(ET,Hamon)
 S3method(ET,Abtew)
 S3method(ET,Romanenko)
 S3method(ET,Linacre)
-
+importFrom("graphics", "boxplot", "legend", "lines", "par", "plot","plot.new", "text")
+importFrom("stats", "aggregate", "ave", "na.omit", "time")
+importFrom("utils", "write.table")

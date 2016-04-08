@@ -7,7 +7,7 @@
 Implementing the Granger-Gray formulation for estimating actual areal evapotranspiration.
 }
 \usage{
-\method{ET}{GrangerGray}(data, constants, ts="daily", solar="sunshine hours",
+\method{ET}{GrangerGray}(data, constants, ts="daily", solar="sunshine hours", 
 windfunction_ver=1948, alpha=0.23, \dots)
 }
 
@@ -116,7 +116,7 @@ Penman, H. L. 1956. \emph{Evaporation: An introductory survey}. Netherlands Jour
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.Penman}}
+\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.Penman}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide

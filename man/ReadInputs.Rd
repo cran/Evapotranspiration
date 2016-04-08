@@ -8,9 +8,9 @@ Load raw date and climate data, perform pre-processing, check for missing and er
 }
 \usage{
 ReadInputs(climatedata, constants, stopmissing, timestep,
-                        interp_missing_days = FALSE, 
-                        interp_missing_entries = FALSE, 
-                        interp_abnormal = FALSE, 
+                        interp_missing_days = F, 
+                        interp_missing_entries = F, 
+                        interp_abnormal = F, 
                         missing_method = NULL, 
                         abnormal_method = NULL)
 }
@@ -119,7 +119,7 @@ This function returns a list with all components of class \code{zoo} which have 
   \item{i}{
   A \code{zoo} object containing the month number for every day during the period that the data spans.
   }
-  \item{Ndays}{
+  \item{ndays}{
   A \code{zoo} object containing the number of days for every month during the period that the data spans.
   }
   \item{Tmax}{
@@ -172,13 +172,13 @@ Narapusetty, B., DelSole, T.Tippett, M.K. 2009, \emph{Optimal Estimation of the 
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{climatedata}},\code{\link{processeddata}}
+\code{\link{ET}},\code{\link{climatedata}},\code{\link{data}}
 }
 \examples{
 # ReadInputs climate data
 data("climatedata")
 data("constants")
-data <- ReadInputs(climatedata[1:1000,], constants,
+data <- ReadInputs(climatedata, constants, 
 stopmissing=c(10,10,3),
 timestep="subdaily", 
 interp_missing_days = TRUE, 

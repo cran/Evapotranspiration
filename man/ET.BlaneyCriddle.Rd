@@ -7,7 +7,7 @@
 Implementing the Blaney-Criddle formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{ET}{BlaneyCriddle}(data, constants, ts="daily", solar="sunshine hours", height=FALSE, \dots) 
+\method{ET}{BlaneyCriddle}(data, constants, ts="daily", solar="sunshine hours", height = F , \dots) 
 }
 
 \arguments{
@@ -105,17 +105,15 @@ Frevert, D.K., Hill, R.W.Braaten, B.C. 1983, \emph{Estimation of FAO evapotransp
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
-# Use processed existing data set and constants from 
-# kent Town, Adelaide
+# Use processed existing data set and constants from kent Town, Adelaide
 data("processeddata")
 data("constants")
 
 # Call ET.BlaneyCriddle under the generic function ET
-results <- ET.BlaneyCriddle(data, constants, ts="daily", 
-solar="sunshine hours", height=FALSE)
+results <- ET.BlaneyCriddle(data, constants, ts="daily", solar="sunshine hours", height= FALSE)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

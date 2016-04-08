@@ -94,7 +94,7 @@ Abtew, W. 1996. \emph{Evapotranspiration measurements and modeling for three wet
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide

@@ -8,7 +8,8 @@ Implementing the Penman formulation for estimating open-water evaporation or pot
 }
 \usage{
 \method{ET}{Penman}(data, constants, ts="daily", solar="sunshine hours", 
-wind="yes", windfunction_ver=1948, alpha = 0.08, z0 = 0.001, \dots)
+wind="yes", windfunction_ver=1948, alpha = 0.08, z0 = 0.001, 
+\dots)
 }
 
 \arguments{
@@ -129,17 +130,18 @@ Penman, H. L. 1956. \emph{Evaporation: An introductory survey}. Netherlands Jour
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
-# Use processed existing data set and constants from kent Town, Adelaide
+# Use processed existing data set and constants from 
+# kent Town, Adelaide
 data("processeddata")
 data("constants")
 
 # Call ET.Penman under the generic function ET
 results <- ET.Penman(data, constants, ts="daily", 
-solar="sunshine hours", wind="yes", windfunction_ver = "1948", 
-alpha = 0.08, z0 = 0.001) 
+solar="sunshine hours", wind="yes", 
+windfunction_ver = "1948", alpha = 0.08, z0 = 0.001) 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

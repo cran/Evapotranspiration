@@ -116,7 +116,7 @@ Allen, R. G. 2005. \emph{The ASCE standardized reference evapotranspiration equa
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide

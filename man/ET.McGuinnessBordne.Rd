@@ -78,7 +78,7 @@ Xu, C.Y.Singh, V.P. 2000, \emph{Evaluation and generalization of radiation-based
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide

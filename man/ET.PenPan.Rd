@@ -8,7 +8,7 @@ Implementing the PenPan formulation for Class-A pan evaporation.
 }
 \usage{
 \method{ET}{PenPan}(data, constants, ts="daily", solar="sunshine hours", 
-alpha=0.23, est="potential ET", pan_coeff=0.71, overest=FALSE, 
+alpha=0.23, est="potential ET", pan_coeff=0.71, overest= F, 
 \dots)
 }
 
@@ -121,17 +121,18 @@ Rotstayn, L. D., Roderick, M. L. & Farquhar, G. D. 2006. \emph{A simple pan-evap
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
-# Use processed existing data set and constants from kent Town, Adelaide
+# Use processed existing data set and constants from 
+# kent Town, Adelaide
 data("processeddata")
 data("constants")
 
 # Call ET.PenPan under the generic function ET
 results <- ET.PenPan(data, constants, ts="daily", 
-solar="sunshine hours", alpha=0.23, est="potential ET", 
-pan_coeff=0.71, overest=FALSE)
+solar="sunshine hours", alpha=0.23,
+est="potential ET", pan_coeff=0.71, overest= FALSE)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

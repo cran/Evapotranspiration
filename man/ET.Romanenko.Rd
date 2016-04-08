@@ -7,13 +7,16 @@
 Implementing the Romanenko formulation for estimating potential evapotranspiration.
 }
 \usage{
-\method{ET}{Romanenko}(data, ts="daily", \dots) 
+\method{ET}{Romanenko}(data, constants = NULL, ts="daily", \dots) 
 }
 
 \arguments{
   \item{data}{
   A list of data which contains the following items (climate variables) required by Romanenko formulation:\cr
   \emph{Tmax}, \emph{Tmin}, \emph{RHmax}, \emph{RHmin}
+  }
+  \item{constants}{
+  Dummy argument with a \code{NULL} value.
   }
   \item{ts}{
   Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
@@ -69,7 +72,7 @@ Oudin, L., Hervieu, F., Michel, C., Perrin, C., Andreassian, V., Anctil, F.Louma
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{processeddata}}
+\code{\link{ET}},\code{\link{data}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide

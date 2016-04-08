@@ -1,22 +1,9 @@
 
-ET <- function(data, constants, ts="daily", crop=NULL, alpha=NULL, ...) {
-  if ( all(any(is.null(data$RHmax),is.null(data$RHmin)),
-           is.null(data$Rs),is.null(data$n),is.null(data$Cd),is.null(data$Precip),
-           is.null(data$uz),
-           any(is.null(data$Tmax),is.null(data$Tmin))) ) { # no data available
-    stop("No ET model is suitable according to the data availability")
-    
-  } else if ( all(is.null(data$RHmax),is.null(data$RHmin),
-                  is.null(data$Rs),is.null(data$n),is.null(data$Cd),is.null(data$Precip),
-                  is.null(data$uz),!is.null(data$Tmax),!is.null(data$Tmin) )) { # Only Tmax/Tmin available
-    message("No ET model specified, choose the Hargreaves-Samani model according to the data availability")
-    class(data) <- "HargreavesSamani"
-    results<-ET.HargreavesSamani(data, constants, ts)
-  } else if ( all(any(is.null(data$RHmax),is.null(data$RHmin)),is.null(data$uz)) &
-                any(!is.null(data$Rs),!is.null(data$n),!is.null(data$Cd),!is.null(data$Precip)) &
-                all(!is.null(data$Tmax),!is.null(data$Tmin)) ) { # Tmax/Tmin & any Rs data available
-    message("No ET model specified, choose the Makkink model according to the data availability")
-    
+ET <- function(data, constants, ...) UseMethod("ET") 
+
+ET.default <- function(data, constants, crop=NULL, alpha=NULL, solar=NULL, wind=NULL, ...) { 
+  
+  if (is.null(solar)) {
     if (!is.null(data$Rs)) {
       solar = "data"
     } else if (!is.null(data$n)) {
@@ -26,67 +13,71 @@ ET <- function(data, constants, ts="daily", crop=NULL, alpha=NULL, ...) {
     } else if (!is.null(data$Precip)) {
       solar = "monthly precipitation"
     } 
-    class(data) <- "Makkink"
-    results<-ET.Makkink(data, constants, ts,  solar=solar)
-  } else if ( all(is.null(data$uz) &
-                    any(!is.null(data$Rs),!is.null(data$n),!is.null(data$Cd),!is.null(data$Precip)) &
-                    all(!is.null(data$Tmax),!is.null(data$Tmin), 
-                        !is.null(data$RHmax),!is.null(data$RHmin))) &
-                !is.null(alpha) ) { # Tmax/Tmin & any Rs & RHmax/RHmin data available
-    message("No ET model specified, choose the Priestley-Taylor model according to the data availability")
-    if (!is.null(data$Rs)) {
-      solar = "data"
-    } else if (!is.null(data$n)) {
-      solar = "sunshine hours"
-    } else if (!is.null(data$Cd)) {
-      solar = "cloud"
-    } else if (!is.null(data$Precip)) {
-      solar = "monthly precipitation"
-    } 
-    results<-ET.PriestleyTaylor(data, constants, ts,  solar=solar,alpha=alpha)
-  } else if ( all(any(!is.null(data$Rs),!is.null(data$n),!is.null(data$Cd),!is.null(data$Precip)) &
-                    all(!is.null(data$Tmax),!is.null(data$Tmin), 
-                        !is.null(data$RHmax),!is.null(data$RHmin),
-                        !is.null(data$uz))) ) { # All data available & crop specified
-    if (!is.null(crop) & any(crop=="short",crop=="tall")) {
-      message("No ET model specified, choose the Penman-Monteith model according to the data availability")
-      
+  } 
+  
+  if (is.null(wind)) {
+    if (!is.null(data$u2)|!is.null(data$uz)) {
       wind = "yes"
-      if (!is.null(data$Rs)) {
-        solar = "data"
-      } else if (!is.null(data$n)) {
-        solar = "sunshine hours"
-      } else if (!is.null(data$Cd)) {
-        solar = "cloud"
-      } else if (!is.null(data$Precip)) {
-        solar = "monthly precipitation"
-      } 
-      class(data) <- "PenmanMonteith"
-      results<-ET.PenmanMonteith(data, constants, ts,  solar=solar, wind=wind, crop=crop)
-    } else if (is.null(alpha)) {
-      message("No ET model specified and no valid evaporative surface specified, estimate the Penman model for open-water evaporation according to the data availability")
+    } else {
+      wind = "no"
+    }
+  }
+    if ( all(any(is.null(data$RHmax),is.null(data$RHmin)),
+             is.null(data$Rs),is.null(data$n),is.null(data$Cd),is.null(data$Precip),
+             all(is.null(data$uz),is.null(data$u2)), 
+             any(is.null(data$Tmax),is.null(data$Tmin))) ) { # no data available
+      stop("No ET model is suitable according to the data availability")
       
-      wind = "yes"
-      alpha=0.08
-      z0=0.001
-      if (!is.null(data$Rs)) {
-        solar = "data"
-      } else if (!is.null(data$n)) {
-        solar = "sunshine hours"
-      } else if (!is.null(data$Cd)) {
-        solar = "cloud"
-      } else if (!is.null(data$Precip)) {
-        solar = "monthly precipitation"
-      } 
-      class(data) <- "Penman"
-      results <- ET.Penman(data, constants, ts,  solar=solar, wind=wind, windfunction_ver=1948, alpha=alpha, z0=z0)
+    } else if ( all(any(is.null(data$RHmax),is.null(data$RHmin)),
+                    is.null(data$Rs),is.null(data$n),is.null(data$Cd),is.null(data$Precip)) &
+                  all(is.null(data$uz),is.null(data$u2)) &
+                  all(!is.null(data$Tmax),!is.null(data$Tmin)) ) { # Only Tmax/Tmin available
+      message("No ET model specified, choose the Hargreaves-Samani model according to the data availability")
+      class(data) = "HargreavesSamani"
+      ET(data, constants, ...)
+    } else if ( all(any(is.null(data$RHmax),is.null(data$RHmin)),all(is.null(data$uz),is.null(data$u2))) &
+                  any(!is.null(data$Rs),!is.null(data$n),!is.null(data$Cd),!is.null(data$Precip)) &
+                  all(!is.null(data$Tmax),!is.null(data$Tmin)) ) { # Tmax/Tmin & any Rs data available
+      message("No ET model specified, choose the Makkink model according to the data availability")
+      class(data) = "Makkink"
+      
+      ET(data, constants, solar=solar, ...)
+    } else if ( all(is.null(data$uz),is.null(data$u2)) &
+                      any(!is.null(data$Rs),!is.null(data$n),!is.null(data$Cd),!is.null(data$Precip)) &
+                      all(!is.null(data$Tmax),!is.null(data$Tmin),!is.null(data$RHmax),!is.null(data$RHmin)) &
+                  !is.null(alpha) ) { # Tmax/Tmin & any Rs & RHmax/RHmin data available
+                    message("No ET model specified, choose the Priestley-Taylor model according to the data availability")
+                    class(data) = "PriestleyTaylor"
+                    
+                    ET(data, constants, solar=solar, ...)
+                  } else if ( any(!is.null(data$Rs),!is.null(data$n),!is.null(data$Cd),!is.null(data$Precip)) &
+                                    all(!is.null(data$Tmax),!is.null(data$Tmin),!is.null(data$RHmax),!is.null(data$RHmin)) &
+                                        any(!is.null(data$uz),!is.null(data$u2)) )  { # All data available & crop specified
+                    Flag = 1
+                  } else {
+                    "No ET model can be recommended according to the data availability"
+                  }
+
+    if (exists('Flag')) {
+      if (Flag == 1) { #Penman-Monteith or Penman
+        
+        if (is.null(crop) | all(crop != "short",crop != "tall")) {
+          alpha=0.08
+          z0=0.001
+          message("No ET model specified and no valid evaporative surface specified, choose the Penman model for open-water evaporation according to the data availability")
+          class(data) = "Penman"
+          
+          ET(data, constants, solar=solar, wind=wind, windfunction_ver=1948, alpha=alpha, z0=z0, ...)
+        } else {
+          
+          message("No ET model specified, choose the Penman-Monteith model according to the data availability")
+          class(data) = "PenmanMonteith"
+          ET(data, constants, solar=solar, wind=wind, crop=crop, ...)
+        }
+      }
     }
     
-  } 
-  #UseMethod("ET",data)
-  #return(results)
-  
-  
+    
 }
 
   #-------------------------------------------------------------------------------------
@@ -392,6 +383,10 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
       CH <- 0.50 # will not be used for calculation - just informative
       ET_RC.Daily <- (0.408 * delta * (R_ng - constants$G) + gamma * 1600 * u2 * (vas - vabar)/(Ta + 273)) / (delta + gamma * (1 + 0.38*u2)) # ASCE-EWRI standardised Penman-Monteith for long grass (S5.19)
     }
+    ET.Daily <- ET_RC.Daily
+    ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+    ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+    
   } else {
     # mean relative humidity
     RHmean <- (data$RHmax + data$RHmin) / 2 
@@ -400,24 +395,18 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     R_a.Monthly <- aggregate(R_a, as.yearmon(data$Date.daily, "%m/%y"),mean)
     Ta.Monthly <- aggregate(Ta, as.yearmon(data$Date.daily, "%m/%y"),mean)
     RHmean.Monthly <- aggregate(RHmean, as.yearmon(data$Date.daily, "%m/%y"),mean)
-    ET_RC.Daily <- matrix(NA,length(data$date.Daily),1)
+    #ET_RC.Daily <- matrix(NA,length(data$date.Daily),1)
     ET_RC.Monthly <- 0.038 * R_s.Monthly * sqrt(Ta.Monthly + 9.5) - 2.4 * (R_s.Monthly/R_a.Monthly)^2 + 0.075 * (Ta.Monthly + 20) * (1 - RHmean.Monthly/100) # Reference crop evapotranspiration without wind data by Valiantzas (2006) (S5.21)
-  }
-  
-  ET.Daily <- ET_RC.Daily
-  if (is.na(mean(ET_RC.Daily))) {
     ET_RC.Daily <- data$Tmax
     for (cont in 1:length(data$i)) {
       ET_RC.Daily[(((as.numeric(as.yearmon(time(ET_RC.Daily))))-floor(as.numeric(as.yearmon(time(ET_RC.Daily)))))*12+1)==data$i[cont]] <- ET_RC.Monthly[cont]
     }
+    
     ET.Daily <- ET_RC.Daily
     ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
     ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.monthly, "%m/%y"))), FUN = sum)
-  } else {
-    ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-    ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   }
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
     i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
@@ -437,11 +426,11 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     if (crop == "short") {
       ET_formulation <- "Penman-Monteith FAO56"
       ET_type <- "Reference Crop ET"
-      Surface <- paste("FAO-56 hypothetical short grass, albedo =", alpha, "; surface resisitance =", r_s, "sm^-1; crop height =", CH, " m; roughness height =", z0, "m")
+      Surface <- paste("FAO-56 hypothetical short grass, albedo =", alpha, "; surface resistance =", r_s, "sm^-1; crop height =", CH, " m; roughness height =", z0, "m")
     } else {
       ET_formulation <- "Penman-Monteith ASCE-EWRI Standardised"
       ET_type <- "Reference Crop ET"
-      Surface <- paste("ASCE-EWRI hypothetical tall grass, albedo =", alpha, "; surface resisitance =", r_s, "sm^-1; crop height =", CH, " m; roughness height =", z0, "m")
+      Surface <- paste("ASCE-EWRI hypothetical tall grass, albedo =", alpha, "; surface resistance =", r_s, "sm^-1; crop height =", CH, " m; roughness height =", z0, "m")
     }
   }
   
@@ -534,7 +523,7 @@ ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hou
     stop("Please use a numeric value for the alpha (albedo of evaporative surface)")
   }
   if (is.na(as.numeric(r_s))) {
-    stop("Please use a numeric value for the r_s (surface resisitance) in sm^-1")
+    stop("Please use a numeric value for the r_s (surface resistance) in sm^-1")
   }
   if (is.na(as.numeric(CH))) {
     stop("Please use a numeric value for the CH (crop height) in m")
@@ -615,7 +604,7 @@ ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hou
   # Generate summary message for results
   ET_formulation <- "Matt-Shuttleworth"
   ET_type <- "Reference Crop ET"
-  Surface <- paste("user-defined, albedo =", alpha, "; surface resisitance =", r_s, "sm^-1; crop height =", CH, "m")
+  Surface <- paste("user-defined, albedo =", alpha, "; surface resistance =", r_s, "sm^-1; crop height =", CH, "m")
   
   if (solar == "data") {
     message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
@@ -815,7 +804,7 @@ ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hour
 
   #-------------------------------------------------------------------------------------
 
-ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alpha=0.23, est="potential ET", pan_coeff=0.71, overest=FALSE, ...) {
+ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alpha=0.23, est="potential ET", pan_coeff=0.71, overest=F, ...) {
   #class(data) <- funname
   if (is.null(data$Tmax) | is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
@@ -1633,7 +1622,7 @@ ET.Makkink <- function(data, constants, ts="daily", solar="sunshine hours", ...)
 
   #-------------------------------------------------------------------------------------
 
-ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours", height=FALSE, ...) {
+ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours", height=F, ...) {
   #class(data) <- funname
   
   # Check of specific data requirement
@@ -1774,7 +1763,7 @@ ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours"
 
   #-------------------------------------------------------------------------------------
 
-ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=FALSE, ...) {
+ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=F, ...) {
   #class(data) <- funname
   
   # Check of specific data requirement
@@ -1906,7 +1895,7 @@ ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=F
 
   #-------------------------------------------------------------------------------------
 
-ET.Hamon <- function(data, ts="daily", ...) {
+ET.Hamon <- function(data, constants = NULL, ts="daily", ...) {
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
     stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
@@ -2051,7 +2040,7 @@ ET.Linacre <- function(data, constants, ts="daily", ...) {
 
   #-------------------------------------------------------------------------------------
 
-ET.Romanenko <- function(data, ts="daily", ...) {
+ET.Romanenko <- function(data, constants = NULL, ts="daily", ...) {
   # Check of specific data requirement
   if (is.null(data$Tmax)|is.null(data$Tmin)) { 
     stop("Required data missing for 'Tmax.daily' and 'Tmin.daily', or 'Temp.subdaily'")
@@ -2321,7 +2310,7 @@ ET.HargreavesSamani <- function(data, constants, ts="daily", ...) {
 
   #-------------------------------------------------------------------------------------
   
-ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=TRUE, solar="sunshine hours", alpha=0.23, ...) {
+ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="sunshine hours", alpha=0.23, ...) {
   #class(data) <- funname
   
   # Check of specific data requirement
@@ -2968,7 +2957,7 @@ Radiation <- function (data, constants, ts="monthly", solar="sunshine hours", Td
 
   
   #-------------------------------------------------------------------------------------
-ET.MortonCRAE <- function (data, constants, ts="monthly", est="potential ET", solar="sunshine hours", Tdew=TRUE, alpha = NULL, ...){
+ET.MortonCRAE <- function (data, constants, ts="monthly", est="potential ET", solar="sunshine hours", Tdew=T, alpha = NULL, ...){
   variables <- Radiation(data, constants, ts, solar, Tdew, alpha)
   
   R_T <- (1 - variables$alpha_Mo) * variables$G_Mo - variables$B_Mo # Wm^-2, net radiation at soil-plant surface at air temperature (S21.66)
@@ -3021,9 +3010,9 @@ ET.MortonCRAE <- function (data, constants, ts="monthly", est="potential ET", so
   E_TP.temp <- 1/(constants$lambdaMo) * E_TP.temp
   E_TW.temp <- 1/(constants$lambdaMo) * E_TW.temp
   E_T_Mo.temp <- 1/(constants$lambdaMo) * E_T_Mo.temp
-  E_TP <- E_TP.temp * data$Ndays
-  E_TW <- E_TW.temp * data$Ndays
-  E_T_Mo <- E_T_Mo.temp * data$Ndays
+  E_TP <- E_TP.temp * data$ndays
+  E_TW <- E_TW.temp * data$ndays
+  E_T_Mo <- E_T_Mo.temp * data$ndays
   if (est == "potential ET") {
     ET_Mo.Monthly <- E_TP
     ET_Mo.Average <- E_TP.temp
@@ -3096,7 +3085,7 @@ ET.MortonCRAE <- function (data, constants, ts="monthly", est="potential ET", so
 }
   
   #-----------------------------------------------------------------------------------
-ET.MortonCRWE <- function(data, constants, ts="monthly", est="potential ET", solar="sunshine hours", Tdew=TRUE, alpha = NULL, ...) {
+ET.MortonCRWE <- function(data, constants, ts="monthly", est="potential ET", solar="sunshine hours", Tdew=T, alpha = NULL, ...) {
 
     constants$epsilonMo <- 0.97 # (Morton, 1983)
     constants$fz <- 25.0 # Wm^-2.mbar^-1 for T >= 0 degree Celcius (Morton, 1983)
@@ -3161,9 +3150,9 @@ ET.MortonCRWE <- function(data, constants, ts="monthly", est="potential ET", sol
     E_T_Mo.temp <- 1/(constants$lambdaMo) * E_T_Mo.temp # mm.day^-1 (S21.90)
     
     # Calculate monthly evaporation in mm.month^-1
-    E_P <- E_P.temp * data$Ndays
-    E_W <- E_W.temp * data$Ndays
-    E_T_Mo <- E_T_Mo.temp * data$Ndays
+    E_P <- E_P.temp * data$ndays
+    E_W <- E_W.temp * data$ndays
+    E_T_Mo <- E_T_Mo.temp * data$ndays
     
     if (est == "potential ET") {
       ET_Mo.Monthly <- E_P

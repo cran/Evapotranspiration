@@ -8,7 +8,7 @@ Implementing the Morton CRWE formulation for estimating potential evapotranspira
 }
 \usage{
 \method{ET}{MortonCRWE}(data, constants, ts="monthly", est="potential ET", 
-solar="sunshine hours", Tdew=TRUE, alpha = NULL, \dots)
+solar="sunshine hours", Tdew= T, alpha = NULL, \dots)
 }
 
 \arguments{
@@ -124,17 +124,18 @@ Morton, F.I. 1983, \emph{Operational estimates of lake evaporation}. Journal of 
 Danlu Guo
 }
 \seealso{
-\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.MortonCRWE}}
+\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.MortonCRWE}}
 }
 \examples{
-# Use processed existing data set and constants from kent Town, Adelaide
+# Use processed existing data set and constants from 
+# kent Town, Adelaide
 data("processeddata")
 data("constants")
 
 # Call ET.MortonCRWE under the generic function ET
 results <- ET.MortonCRWE(data, constants, ts="monthly",
-est="potential ET", solar="sunshine hours", 
-Tdew=TRUE, alpha = NULL) 
+est="potential ET", solar="sunshine hours", Tdew= TRUE, 
+alpha = NULL) 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

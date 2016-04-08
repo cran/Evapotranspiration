@@ -7,8 +7,7 @@
 Implementing the Chapman formulation for estimating potential evapotranspiration.
 }
 \usage{
-\method{ET}{ChapmanAustralian}(data, constants, ts="daily", PenPan=TRUE, 
-solar="sunshine hours", alpha=0.23, \dots) 
+\method{ET}{ChapmanAustralian}(data, constants, ts="daily", PenPan= T, solar="sunshine hours", alpha=0.23, \dots) 
 }
 
 \arguments{
@@ -117,7 +116,7 @@ Chapman, T. 2001, \emph{Estimation of evaporation in rainfall-runoff models}, in
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.PenPan}}
+\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.PenPan}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -125,8 +124,8 @@ data("processeddata")
 data("constants")
 
 # Call ET.ChapmanAustralian under the generic function ET
-results <- ET.ChapmanAustralian(data, constants, ts="daily",
-PenPan=TRUE, solar="sunshine hours", alpha=0.23) 
+results <- ET.ChapmanAustralian(data, constants, ts="daily", PenPan= TRUE, 
+solar="sunshine hours", alpha=0.23) 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

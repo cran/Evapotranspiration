@@ -5,7 +5,7 @@
 \description{
   This data set contains the universal constants required for calculating evapotranspiration in function \code{\link{ET}}, which should be kept unchanged for most conditions. Please note that additional constants may be ET models - check the manual for individual ET models for details.
 }
-\usage{defaultconstants}
+\usage{constants}
 \format{A list containing 20 constant values including:
 \cr
 \emph{lambda} latent heat of evaporisationin = 2.45 MJ.kg^-1 at 20 degree Celcius,\cr

@@ -7,8 +7,7 @@
 Implementing the Turc formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{ET}{Turc}(data, constants, ts="daily", solar="sunshine hours", 
-humid=FALSE, \dots) 
+\method{ET}{Turc}(data, constants, ts="daily", solar="sunshine hours", humid= F, \dots) 
 }
 
 \arguments{
@@ -111,7 +110,7 @@ Alexandris, S., Stricevic, R.Petkovic, S. 2008, \emph{Comparative analysis of re
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -119,8 +118,7 @@ data("processeddata")
 data("constants")
 
 # Call ET.Turc under the generic function ET
-results <- ET.Turc(data, constants, ts="daily", 
-solar="sunshine hours", humid=FALSE)
+results <- ET.Turc(data, constants, ts="daily", solar="sunshine hours", humid= FALSE)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

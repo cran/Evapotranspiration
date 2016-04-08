@@ -7,8 +7,8 @@
 Implementing the Szilagyi-Jozsa formulation for estimating actual evapotranspiration
 }
 \usage{
-\method{ET}{SzilagyiJozsa}(data, constants, ts="daily", solar="sunshine hours", 
-wind="yes", windfunction_ver=1948, alpha=0.23, z0=0.2, \dots)
+\method{ET}{SzilagyiJozsa}(data, constants, ts="daily", solar="sunshine hours", wind="yes", 
+windfunction_ver=1948, alpha=0.23, z0=0.2, \dots)
 }
 
 \arguments{
@@ -129,7 +129,7 @@ Penman, H. L. 1956. \emph{Evaporation: An introductory survey}. Netherlands Jour
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.Penman}}
+\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.Penman}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -138,8 +138,7 @@ data("constants")
 
 # Call ET.SzilagyiJozsa under the generic function ET
 results <- ET.SzilagyiJozsa(data, constants, ts="daily", 
-solar="sunshine hours", wind="yes", 
-windfunction_ver=1948, alpha=0.23, z0=0.2)
+solar="sunshine hours", wind="yes", windfunction_ver=1948, alpha=0.23, z0=0.2)
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

@@ -8,7 +8,7 @@ A generic function including 17 different specific methods that are all named fo
 
 }
 \usage{
-ET(data, constants, ts="daily", crop=NULL, alpha=NULL, \dots)
+ET(data, constants, \dots)
 
 }
 \arguments{
@@ -16,33 +16,7 @@ ET(data, constants, ts="daily", crop=NULL, alpha=NULL, \dots)
   A list of climate data required for estimating evapotranspiration which differs for each evapotranspiration formulations, see specific formulations for details.
   }
   \item{constants}{
-  A list named \code{constants} consists of constants required for the calculation of Penman-Monteith formulation which must contain the following items:\cr
-  \emph{Elev} - ground elevation above mean sea level in m,\cr
-  \emph{lambda} - latent heat of vaporisation = 2.45 MJ.kg^-1,\cr
-  \emph{lat_rad} - latitude in radians,\cr
-  \emph{Gsc} - solar constant = 0.0820 MJ.m^-2.min^-1,\cr
-  \emph{z} - height of wind instrument in m,\cr
-  \emph{sigma} - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.\cr
-  \emph{G} - soil heat flux in MJ.m^-2.day^-1, = 0 when using daily time step.
-  \cr
-  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr 
-  \emph{as} - fraction of extraterrestrial radiation reaching earth on sunless days,\cr
-  \emph{bs} - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
-  }
-  \item{ts}{
-  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
-  Default is \code{daily}.
-  }
-  \item{crop}{
-  Only for the Penman-Monteith model, must be either \code{short} or \code{tall}.\cr 
-  \code{short} indicates that the method for FAO-56 hypothetical short grass will be applied (Allen et al., 1998, Equation 6); \cr
-  \code{tall} indicates that the method for  ASCE-EWRI Standardised crop will be applied (ASCE, 2005, Equation 1, Table 1).\cr
-  Default is \code{NULL}.
-  }
-  \item{alpha}{
-  Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface representing the portion of the incident radiation that is reflected back at the surface. \cr
-  Default is \code{NULL}.
-  }
+  A list named \code{constants} consists of constants required for the ET models which mdiffer for specific ET models - refer to the manual for individual models for details.}
   \item{\dots}{
   Arguments to be passed to methods which differs for each evapotranspiration formulations, see specific formulations for details.
   }
@@ -76,38 +50,17 @@ ET(data, constants, ts="daily", crop=NULL, alpha=NULL, \dots)
 \author{
 Danlu Guo
 }
-\seealso{
-\code{\link{ET.PenmanMonteith}},\code{\link{ET.Penman}},\code{\link{ET.PriestleyTaylor}},\code{\link{ET.Makkink}},\code{\link{ET.HargreavesSamani}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
-}
+
 \examples{
 # Use processed existing data set from kent Town, Adelaide
 data("processeddata")
 data("constants")
 
-# Call generic function ET without specifying 
-# specific method
-results <- ET(data, constants, ts="daily")
-# triggers the use of Penman model according to the data availability
+# Call generic function ET() - leads to the use of Penman model
+results_default <- ET(data, constants)
 
-results <- ET(data, constants, ts="daily", crop="short")
-# triggers the use of Penman-Monteith model according to the data availability
-# evaporative surface
-
-# if no wind data present
-data$uz <- NULL
-results <- ET(data, constants, ts="daily", alpha=0.23)
-# triggers the use of Priestley-Taylor model according to the data availability
-# evaporative surface
-
-# if no wind data & RH data present
-data$uz <- data$RHmax <- data$RHmin <- NULL
-results <- ET(data, constants, ts="daily")
-# triggers the use of Makkink model according to the data availability
-
-# if only temperature data present
-data$uz <- data$RHmax <- data$RHmin <- data$n <- NULL
-results <- ET(data, constants, ts="daily")
-# triggers the use of Hargreaves-Samani model according to the data availability
+# Call generic function ET() - leads to the use of Penman-Monteith model
+results_crop <- ET(data, constants, crop = "short") 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the
