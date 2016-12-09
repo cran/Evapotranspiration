@@ -284,7 +284,7 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
 
   #-------------------------------------------------------------------------------------
 
-ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours", wind="yes", crop="short", ...) {
+ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours", wind="yes", vegetation="reference crop", ...) {
   #class(data) <- funname
   
   # Check of specific data requirement
@@ -310,25 +310,41 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     stop("Required data missing for 'Precip.daily'")
   } 
   
+  # define vegetation parameters http://ldas.gsfc.nasa.gov/nldas/web/web.veg.table.html
+  if (vegetation == "deciduous broad-leaf forest") {
+    veg_par <- data.frame(parameter = c("zveg","z0","zd","Cleafmax","LAI","Albedo","ra","rs"),
+                          value = c(20,0.9,7.2,0.0057,3.5,0.092,NA,NA))
+    
+  } else if (vegetation == "evergreen needle-leaf forest") {
+    veg_par <- data.frame(parameter = c("zveg","z0","zd","Cleafmax","LAI","Albedo","ra","rs"),
+                          value = c(17,0.98,10.2,0.0057,5.5,0.062,NA,NA))
+    
+  } else if (vegetation == "open shrubland") {
+    veg_par <- data.frame(parameter = c("zveg","z0","zd","Cleafmax","LAI","Albedo","ra","rs"),
+                          value = c(4,0.08,0.2,0.0056,3.3,0.121,NA,NA))
+    
+  } else if (vegetation == "grassland") {
+    veg_par <- data.frame(parameter = c("zveg","z0","zd","Cleafmax","LAI","Albedo","ra","rs"),
+                          value = c(0.6,0.04,0.2,0.0061,1.65,0.107,NA,NA))
+    
+  }
   if (wind != "yes" & wind != "no") {
     stop("Please choose if actual data will be used for wind speed from wind = 'yes' and wind = 'no'")
   }
   # check user-input crop type and specify albedo
   if (wind == "yes") {
-    if (crop != "short" & crop != "tall") {
-      stop("Please enter 'short' or 'tall' for the desired reference crop type")
-    } else {
-      alpha <- 0.23 # albedo for both short and tall crop
-      if (crop == "short") {
+      if (vegetation == "reference crop") {
+        alpha <- 0.23 # albedo for both short and tall crop
         z0 <- 0.02 # roughness height for short grass
-      } else {
+      } else if (vegetation == "long grass") {
+        alpha <- 0.23 # albedo for both short and tall crop
         z0 <- 0.1 # roughness height for tall grass
+      } else {
+        z0 <- veg_par[2,]$value # roughness height for short grass
+        alpha <- veg_par[6,]$value # albedo
       }
-    }
-  } else {
-    z0 <- 0.02 # roughness height for short grass
-    alpha <- 0.25 # semi-desert short grass - will not be used for calculation - just informative
-  }
+    
+  } 
   
   # Calculating mean temperature 
   Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
@@ -339,8 +355,8 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
   vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
   # Vapour pressure
   vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
-  
-  # Calculations from data and constants for Penman-Monteith Reference Crop
+  vdef <- vas - vabar
+  # Calculations from data and constants for Penman-Monteith equation
   
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
@@ -366,46 +382,106 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
   R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
   R_ng <- R_nsg - R_nl # net radiation (S3.1)
   
-  if (wind == "yes") {
-    # Wind speed
-    if (is.null(data$u2)) {
-      u2 <- data$uz * 4.87 / log(67.8*constants$z - 5.42) # Equation S5.20 for PET formulations other than Penman
-    } else {
-      u2 <- data$u2
-    }
+  # in the situations when not using FAO56 and ASCE, use Dingman
+  if (vegetation!="reference crop" & vegetation !="long grass") {
     
-    if (crop == "short") {
-      r_s <- 70 # will not be used for calculation - just informative
-      CH <- 0.12 # will not be used for calculation - just informative
-      ET_RC.Daily <- (0.408 * delta * (R_ng - constants$G) + gamma * 900 * u2 * (vas - vabar)/(Ta + 273)) / (delta + gamma * (1 + 0.34*u2)) # FAO-56 reference crop evapotranspiration from short grass (S5.18)
-    } else {
-      r_s <- 45 # will not be used for calculation - just informative
-      CH <- 0.50 # will not be used for calculation - just informative
-      ET_RC.Daily <- (0.408 * delta * (R_ng - constants$G) + gamma * 1600 * u2 * (vas - vabar)/(Ta + 273)) / (delta + gamma * (1 + 0.38*u2)) # ASCE-EWRI standardised Penman-Monteith for long grass (S5.19)
-    }
+    # calculate atmospheric resistance
+    z2 = 2+veg_par[1,]$value # zveg #according to Federer et al., 1996, height for wind speed to adjust to
+    #z0 = veg_par[2,]$value # z0
+    zd = veg_par[3,]$value # zd
+    
+    # the below calculations in between ### are from Federer et al., 1996 to adjust wind measured at 10m (BoM) to 2m above canopy
+    
+    #### simplified not used
+    # L_p # projected leaf area index
+    # z_0c # roughness of a 'closed' canopy
+    # c_d # drag coefficient for canopy) 
+    # S_p # projected stem area index, for closed canopy
+    # Federer method for z0 and zd
+    
+    z_b <- 0.334*(5000^0.875)*(0.005^0.125) #(B8 Federer et al., 1996, roughness parameter at weather station)
+    # assume fetch 5000m 
+    # assume roughness parameter for weather station surface 0.005m    
+    
+    u2 <- data$uz*log(z_b/0.005)*log((z2-zd)/z0)/ #(B9 Federer et al., 1996, adjusted wind measurement from weather station to 2m above top of canopy)
+      (log(z_b/z0)*log(constants$z/0.005)) 
+    
+    # calculate ra according to Dingman
+    ra <- 6.25*(log((z2-zd)/z0))^2/u2 #(6.49 Dingman, 2015)
+    
+    # estimate Cleaf - Table 6.5 Dingman 2013
+    
+    fRs <- (12.78*R_s)/(11.57*R_s+104.4) # Table 6.5 Dingman 2013
+    
+    # checked - all R_s between 0 and 86.5
+    delta_pv <- (100 * (vas - vabar))/(461 * (Ta + 273.2)) # humidity deficit
+    
+    
+    
+    fdelta_pv <- 1- 66.6*delta_pv
+    fdelta_pv[which(delta_pv >= 0.01152)] <- 0.233 # Table 6.5 Dingman 2013
+    
+    Ta[which(Ta>40)] == 39.5
+    fT_Tz2 <- (Ta * (40-Ta)^1.18)/691  # Table 6.5 Dingman 2013
+    # checked - all KT data has Tmean < 40deg
+    
+    ftheta_deltatheta <- 1 # assuming completely saturated soils for calculating PET
+    
+    
+    Cleaf <- veg_par[4,]$value * fRs * fdelta_pv * fT_Tz2 * ftheta_deltatheta # (6.53 Dingman 2013)
+    
+    rs <- 1/(0.5*veg_par[5,]$value*Cleaf) #(6.55 Dingman 2013 with ks = 0.5)
+    
+    ET_RC.Daily <- (delta*R_ng + 86400*constants$Roua * constants$Ca * (vdef) / ra)/ 
+      ((delta+gamma*(1 + rs/ra)) * constants$lambda) # (6.70 Dingman, 2015)
+    
     ET.Daily <- ET_RC.Daily
     ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
     ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
     
-  } else {
-    # mean relative humidity
-    RHmean <- (data$RHmax + data$RHmin) / 2 
-    
-    R_s.Monthly <- aggregate(R_s, as.yearmon(data$Date.daily, "%m/%y"),mean)
-    R_a.Monthly <- aggregate(R_a, as.yearmon(data$Date.daily, "%m/%y"),mean)
-    Ta.Monthly <- aggregate(Ta, as.yearmon(data$Date.daily, "%m/%y"),mean)
-    RHmean.Monthly <- aggregate(RHmean, as.yearmon(data$Date.daily, "%m/%y"),mean)
-    #ET_RC.Daily <- matrix(NA,length(data$date.Daily),1)
-    ET_RC.Monthly <- 0.038 * R_s.Monthly * sqrt(Ta.Monthly + 9.5) - 2.4 * (R_s.Monthly/R_a.Monthly)^2 + 0.075 * (Ta.Monthly + 20) * (1 - RHmean.Monthly/100) # Reference crop evapotranspiration without wind data by Valiantzas (2006) (S5.21)
-    ET_RC.Daily <- data$Tmax
-    for (cont in 1:length(data$i)) {
-      ET_RC.Daily[(((as.numeric(as.yearmon(time(ET_RC.Daily))))-floor(as.numeric(as.yearmon(time(ET_RC.Daily)))))*12+1)==data$i[cont]] <- ET_RC.Monthly[cont]
+  } else {  # use FAO-56 or ASCE
+    if (wind == "yes") {
+      # Wind speed
+      if (is.null(data$u2)) {
+        u2 <- data$uz * 4.87 / log(67.8*constants$z - 5.42) # Equation S5.20 for PET formulations other than Penman
+      } else {
+        u2 <- data$u2
+      }
+      
+      if (vegetation == "reference crop") {
+        r_s <- 70 # will not be used for calculation - just informative
+        CH <- 0.12 # will not be used for calculation - just informative
+        ET_RC.Daily <- (0.408 * delta * (R_ng - constants$G) + gamma * 900 * u2 * (vas - vabar)/(Ta + 273)) / (delta + gamma * (1 + 0.34*u2)) # FAO-56 reference crop evapotranspiration from short grass (S5.18)
+      } else if (vegetation == "long grass") {
+        r_s <- 45 # will not be used for calculation - just informative
+        CH <- 0.50 # will not be used for calculation - just informative
+        ET_RC.Daily <- (0.408 * delta * (R_ng - constants$G) + gamma * 1600 * u2 * (vas - vabar)/(Ta + 273)) / (delta + gamma * (1 + 0.38*u2)) # ASCE-EWRI standardised Penman-Monteith for long grass (S5.19)
+      }
+      ET.Daily <- ET_RC.Daily
+      ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+      ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
+      
+    } else {
+      # mean relative humidity
+      RHmean <- (data$RHmax + data$RHmin) / 2 
+      
+      R_s.Monthly <- aggregate(R_s, as.yearmon(data$Date.daily, "%m/%y"),mean)
+      R_a.Monthly <- aggregate(R_a, as.yearmon(data$Date.daily, "%m/%y"),mean)
+      Ta.Monthly <- aggregate(Ta, as.yearmon(data$Date.daily, "%m/%y"),mean)
+      RHmean.Monthly <- aggregate(RHmean, as.yearmon(data$Date.daily, "%m/%y"),mean)
+      #ET_RC.Daily <- matrix(NA,length(data$date.Daily),1)
+      ET_RC.Monthly <- 0.038 * R_s.Monthly * sqrt(Ta.Monthly + 9.5) - 2.4 * (R_s.Monthly/R_a.Monthly)^2 + 0.075 * (Ta.Monthly + 20) * (1 - RHmean.Monthly/100) # Reference crop evapotranspiration without wind data by Valiantzas (2006) (S5.21)
+      ET_RC.Daily <- data$Tmax
+      for (cont in 1:length(data$i)) {
+        ET_RC.Daily[(((as.numeric(as.yearmon(time(ET_RC.Daily))))-floor(as.numeric(as.yearmon(time(ET_RC.Daily)))))*12+1)==data$i[cont]] <- ET_RC.Monthly[cont]
+      }
+      
+      ET.Daily <- ET_RC.Daily
+      ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
+      ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.monthly, "%m/%y"))), FUN = sum)
     }
-    
-    ET.Daily <- ET_RC.Daily
-    ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-    ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.monthly, "%m/%y"))), FUN = sum)
   }
+  
 
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -423,14 +499,19 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     ET_type <- "Reference Crop ET"
     Surface <- paste("short grass, albedo =", alpha, "; roughness height =", z0, "m")
   } else {
-    if (crop == "short") {
+    if (vegetation == "reference crop") {
       ET_formulation <- "Penman-Monteith FAO56"
       ET_type <- "Reference Crop ET"
       Surface <- paste("FAO-56 hypothetical short grass, albedo =", alpha, "; surface resistance =", r_s, "sm^-1; crop height =", CH, " m; roughness height =", z0, "m")
-    } else {
+    } else if (vegetation == "long grass") { 
       ET_formulation <- "Penman-Monteith ASCE-EWRI Standardised"
-      ET_type <- "Reference Crop ET"
-      Surface <- paste("ASCE-EWRI hypothetical tall grass, albedo =", alpha, "; surface resistance =", r_s, "sm^-1; crop height =", CH, " m; roughness height =", z0, "m")
+      ET_type <- "long grass ET"
+      Surface <- paste("ASCE-EWRI hypothetical long grass, albedo =", alpha, "; surface resistance =", r_s, "sm^-1; crop height =", CH, " m; roughness height =", z0, "m")
+    } else {
+      ET_formulation <- "Penman-Monteith"
+      ET_type <- vegetation
+      Surface <- paste(vegetation, "albedo =", alpha, "; mean surface resistance =", round(mean(rs),2), "sm^-1; crop height =", veg_par[1,]$value, " m; roughness height =", veg_par[2,]$value, "m")
+      
     }
   }
   
@@ -1754,9 +1835,9 @@ ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours"
   # write to csv file
   for (i in 1:length(results)) {
     namer <- names(results[i])
-    write.table(as.character(namer), file="ET_PriestleyTaylor.csv", dec=".", 
+    write.table(as.character(namer), file="ET_BlaneyCriddle.csv", dec=".", 
                 quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
-    write.table(data.frame(get(namer,results)), file="ET_PriestleyTaylor.csv", col.names=F, append= T, sep=',' )
+    write.table(data.frame(get(namer,results)), file="ET_BlaneyCriddle.csv", col.names=F, append= T, sep=',' )
   }
   invisible(results)
 }

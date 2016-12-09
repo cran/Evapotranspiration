@@ -1,15 +1,14 @@
-		CHANGES IN Evapotranspiration VERSION 1.9
+		CHANGES IN Evapotranspiration VERSION 1.10
 
 NEW FEATURES
-    o  NA
+    o  Penman-Monteith ET can now be estimated for evaporative surface covered with several different vegetation types
 
 SIGNIFICANT USER-VISIBLE CHANGES
-    o  NA
+    o  ET - argument "crop" has been replaced with "vegetaion", with a number of possible options to choose from, to represent different vegetation covers for the evaporative surface (please see manual for details)
 
 BUG FIXES
-    o  ReadInputs - Fixed errors in processing the date variable when using daily raw data
-    o  ET - Improved the process in the selection of default ET model based on data availability
-    o  ET - Fixed previous bugs of not considering the u2 (wind speed at 2m) data in the selection of default ET model based on data availability
-    o  ET.PenmanMonteith - Fixed previous bugs in returning results when using daily input data
+    o  ReadInputs - Fixed bugs in data processing for when not all climate data are available, to facilitate use of ET models which require less input variables
+    o  ReadInputs - Fixed bugs in functions to perform initial checks for errors in raw data
+    o  ET - Corrected the name for output .csv file from ET.BlaneyCriddle
 DEPRECATED & DEFUNCT
     o  NA

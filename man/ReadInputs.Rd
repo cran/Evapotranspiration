@@ -8,9 +8,9 @@ Load raw date and climate data, perform pre-processing, check for missing and er
 }
 \usage{
 ReadInputs(climatedata, constants, stopmissing, timestep,
-                        interp_missing_days = F, 
-                        interp_missing_entries = F, 
-                        interp_abnormal = F, 
+                        interp_missing_days = FALSE, 
+                        interp_missing_entries = FALSE, 
+                        interp_abnormal = FALSE, 
                         missing_method = NULL, 
                         abnormal_method = NULL)
 }
@@ -178,7 +178,10 @@ Danlu Guo
 # ReadInputs climate data
 data("climatedata")
 data("constants")
-data <- ReadInputs(climatedata, constants, 
+
+# Demo - Processing the first year of data
+data <- ReadInputs(climatedata[1:2448,], 
+constants, 
 stopmissing=c(10,10,3),
 timestep="subdaily", 
 interp_missing_days = TRUE, 

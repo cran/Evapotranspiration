@@ -1,9 +1,9 @@
-f37e10dbe2563b297483d9645d5b67f0 *DESCRIPTION
-6241e4cdd4adc0fae61a8a7ed765ef03 *NAMESPACE
-c198b045e5841f421d80291c7a49af08 *NEWS
-24281e60069be67de85f7a7f97845890 *R/Evapotranspiration.R
+3cdb2ca9faa14e59066fc90eed782136 *DESCRIPTION
+71c1b247a1ed4b3a4232f901b1c2eb57 *NAMESPACE
+66c9f31279f13f4d9bae746ab8be6367 *NEWS
+7a253496a3c72a8c8ae2fdfc8817ee6b *R/Evapotranspiration.R
 9b21dccee9959cc676d370a2433ab443 *R/Plotting.R
-81cd62b73cca6bacc1a0f1d604454e9a *R/Reading.R
+41c3cfecd1cad3d3ae045272a995382c *R/Reading.R
 d3f043d5b92de35fb14986d6937d1443 *data/E_OBS.RData
 27d08b7bacec477c9ff174343a4a7d1d *data/climatedata.rda
 e539705ed9f9ce9ee2000e2e5c03bf4b *data/constants.RData
@@ -25,7 +25,7 @@ d4e7283ac9630f41509614eef20ba7e4 *man/ET.McGuinnessBordne.Rd
 fdccbfa1b9bf78957c1bd01988ac67c5 *man/ET.MortonCRWE.Rd
 d62f441a8b6d68ac18956a719a078f46 *man/ET.PenPan.Rd
 dddd6f158b62201a2c047c1f58064bc1 *man/ET.Penman.Rd
-27d1cba72f1dceaeb13d1fd1f79ef630 *man/ET.PenmanMonteith.Rd
+4751a54691fad879b3bf5258d18e1a3b *man/ET.PenmanMonteith.Rd
 903dfcc6ca948c0304f514d347e61492 *man/ET.PriestleyTaylor.Rd
 a64212fcd0576be8ee08d560c70ea83c *man/ET.Rd
 db9926486ed4aa4ce66c473fa7082514 *man/ET.Romanenko.Rd
@@ -39,7 +39,7 @@ dcbfa6f95cdb8181b13661f8327438ac *man/E_OBS.Rd
 c5af7b7d4a2ef52c3f87b199be82d23f *man/Radiation.Rd
 9b0d779c786f7155e8bf30ebc063ccdd *man/ReadInput_InterpAbnormal.Rd
 c7d222197433247a588f08eacbbdd597 *man/ReadInput_InterpMissing.Rd
-e03ec5f078544273bc78c4c8c341c12b *man/ReadInputs.Rd
+e4c074da60eaa69a88a38f9ea6a539d5 *man/ReadInputs.Rd
 2a58f5f2faac83d3de6b235bd0081d02 *man/ReadOBSEvaporation.Rd
 9b95253303e3acb2168562e2fc018a01 *man/climatedata.Rd
 d4a1569ee9b232b38685e3dd0f5a998a *man/constants.Rd

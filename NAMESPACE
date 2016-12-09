@@ -22,6 +22,8 @@ S3method(ET,Hamon)
 S3method(ET,Abtew)
 S3method(ET,Romanenko)
 S3method(ET,Linacre)
-importFrom("graphics", "boxplot", "legend", "lines", "par", "plot","plot.new", "text")
+
+importFrom("graphics", "boxplot", "legend", "lines", "par", "plot",
+           "plot.new", "text")
 importFrom("stats", "aggregate", "ave", "na.omit", "time")
 importFrom("utils", "write.table")
