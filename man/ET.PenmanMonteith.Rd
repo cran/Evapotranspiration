@@ -13,7 +13,7 @@ vegetation="reference crop", \dots)
 
 \arguments{
   \item{data}{
-  A list which contains the following items (climate variables) required by Penman-Monteith formulation:\cr
+  A 'zoo object' created by the Evapotranspiration function ReadInputs().  This is a list which contains the following items (climate variables) required by Penman-Monteith formulation:\cr
   \emph{Tmax} - Maximum temperature (Celsisus), 
   \emph{Tmin} - Minimum temperature (Celsisus), 
   \emph{RHmax} - Maximum relative humidity (%), 
