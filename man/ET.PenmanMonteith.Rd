@@ -14,7 +14,18 @@ vegetation="reference crop", \dots)
 \arguments{
   \item{data}{
   A list which contains the following items (climate variables) required by Penman-Monteith formulation:\cr
-  \emph{Tmax}, \emph{Tmin}, \emph{RHmax}, \emph{RHmin}, \emph{Rs} or \emph{n} or \emph{Cd}, \emph{u2} or \emph{uz}
+  \emph{Tmax} - Maximum temperature (Celsisus), 
+  \emph{Tmin} - Minimum temperature (Celsisus), 
+  \emph{RHmax} - Maximum relative humidity (%), 
+  \emph{RHmin} - Minimum relative humidity (%), 
+  \emph{Rs} - Incoming Solar radiation (MJ.m^{-2})
+    or 
+    \emph{n} - Unknown 
+    or 
+    \emph{Cd} - Unknown, 
+  \emph{u2} - Wind speed at 2m above surface (m.s^{-1})
+    or 
+    \emph{uz} - Wind speed at surface (m.s^{-1}) 
   }
   \item{constants}{
   A list named \code{constants} consists of constants required for the calculation of Penman-Monteith formulation which must contain the following items:\cr
