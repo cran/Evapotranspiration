@@ -13,7 +13,7 @@ Implementing the Hamon formulation for estimating potential evapotranspiration.
 \arguments{
   \item{data}{
   A list of data which contains the following items (climate variables) required by Hamon formulation:\cr
-  \emph{Tmax}, \emph{Tmin}
+  \emph{Tmax}, \emph{Tmin} (degree Celcius), \emph{n} (hour)
   }
   \item{constants}{
   Dummy argument with a \code{NULL} value.

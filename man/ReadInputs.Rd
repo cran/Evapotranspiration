@@ -7,7 +7,7 @@
 Load raw date and climate data, perform pre-processing, check for missing and error entries and then compile data list of daily time step.
 }
 \usage{
-ReadInputs(climatedata, constants, stopmissing, timestep,
+ReadInputs(varnames, climatedata, constants, stopmissing, timestep = "daily", 
                         interp_missing_days = FALSE, 
                         interp_missing_entries = FALSE, 
                         interp_abnormal = FALSE, 
@@ -16,29 +16,41 @@ ReadInputs(climatedata, constants, stopmissing, timestep,
 }
 
 \arguments{
+  \item{varnames}{
+  A character vector with length equals to the number of climate variables to be processed. Can include any element from:
+  \emph{Tmax}, \emph{Tmin}, \emph{Temp}, \emph{Tdew},
+  \emph{RHmax}, \emph{RHmin}, \emph{RH},
+  \emph{Rs}, \emph{n}, \emph{Cd}, \emph{Precip},
+  \emph{uz}, \emph{u2}, \emph{Epan}, \emph{va}, \emph{vs}.\cr
+  
+  Each variable is detailed as below:
+  
+  \emph{Tmax} - daily maximum temperature in degree Celcius,\cr
+\emph{Tmin} - daily minimum temperature in degree Celcius,\cr
+\emph{Temp} - subdaily temperature in degree Celcius\cr
+\emph{Tdew} - dew point temperature in degree Celcius, either daily or subdaily accepted,\cr
+\emph{RHmax} - daily maximum relative humidity in percentage,\cr
+\emph{RHmin} - daily minimum relative humidity in percentage,\cr
+\emph{RH} - subdaily relative humidity in degree Celcius,\cr
+\emph{Rs} - incoming solar radiation in Megajoules per square metres per day, either daily or subdaily accepted,\cr
+\emph{n} - daily sunshine hour in hours,\cr
+\emph{Cd} - daily cloud cover in oktas,\cr
+\emph{Precip} - precipitation in millimitres, either daily or subdaily accepted,\cr
+\emph{u2} - wind speed measured at 2 metres from the ground surface in metres per second, either daily or subdaily accepted,\cr
+\emph{uz} - wind speed in metres per second, either daily or subdaily accepted,\cr
+\emph{Epan} - daily Class-A pan evaporation in millimitres,\cr
+\emph{va} - average vapour pressure in KPa, either daily or subdaily accepted,\cr
+\emph{vs} - saturated vapour pressure in KPa, either daily or subdaily accepted.\cr
+
+  }
   \item{climatedata}{A data frame named "climatedata" containing the raw data of date and climate variables. \cr
-  The data frame contain objects named as "Year", "Month" and "Day" to indicate the date.\cr
-  The climate variables will be of the following names while it is not compulsory to have all of them:\cr
+  The data frame must have objects named as \emph{Year}, \emph{Month} and \emph{Day} to indicate the date.\cr
+  The climate variables to include should be consistent with \emph{varnames}. \cr
+  In order to determine which variables are needed for ET estimation, please see \code{\link{ET}} for the specific data requirements for different formulations.
   
-\emph{Tmax.daily} - daily maximum temperature in degree Celcius,\cr
-\emph{Tmin.daily} - daily minimum temperature in degree Celcius,\cr
-\emph{Temp.subdaily} - subdaily temperature in degree Celcius,\cr
-\emph{Tdew.subdaily} - subdaily dew point temperature in degree Celcius,\cr
-\emph{RHmax.daily} - daily maximum relative humidity in percentage,\cr
-\emph{RHmin.daily} - daily minimum relative humidity in percentage,\cr
-\emph{RH.subdaily} - subdaily relative humidity in degree Celcius,\cr
-\emph{Rs.daily} - daily incoming solar radiation in Megajoules per square metres per day,\cr
-\emph{n.daily} - daily sunshine hour in hours,\cr
-\emph{Cd.daily} - daily cloud cover in oktas,\cr
-\emph{Precip.daily} - daily precipitation in millimitres,\cr
-\emph{u2.subdaily} - subdaily wind speed measured at 2 metres from the ground surface in metres per second,\cr
-\emph{uz.subdaily} - subdaily wind speed in metres per second,\cr
-\emph{Epan.daily} - daily Class-A pan evaporation in millimitres,\cr
-\emph{Vp.daily} - daily vapour pressure in hectopascal,\cr
-\emph{Vp.subdaily} - subdaily vapour pressure in hectopascal.\cr
-  
-  In order to determine which variables to include in "climatedata", please see \code{\link{ET}} for the specific data requirements for different formulations.
-  
+  }
+  \item{timestep}{
+  Should be either \code{daily} or \code{subdaily} to specify the time step of raw climate data used.
   }
   \item{constants}{
   A list named "constants" consists of constants required for data pre-processing which may contain the following items:\cr
@@ -64,22 +76,23 @@ ReadInputs(climatedata, constants, stopmissing, timestep,
   \code{T} or \code{F}, if abnormal values within individual climate variables should be interpolated, with a default of \code{F} which leaves the abnormal values unchanged.\cr
   Abnormal values are defined differently according to the input variable, as following:\cr
   \cr
-  - \emph{Tmax.daily} > 100 degree Celcius\cr
-  - \emph{Tmin.daily} > Tmax.daily\cr
-  - \emph{Temp.subdaily} > 100 degree Celcius\cr
-  - \emph{Tdew.daily/Tdew.subdaily} > 100 degree Celcius\cr
-  - \emph{RHmax.daily} > 100 per cent\cr
-  - \emph{RHmin.daily}  > RHmax.daily \cr
-  - \emph{RH.subdaily} > 100 per cent\cr
-  - \emph{Rs.daily/Rs.subdaily} < 0 MJ.m^2\cr
-  - \emph{n.daily} < 0 hour\cr
-  - \emph{Cd.daily}  < 0 Okta\cr
-  - \emph{Precip.daily}  < 0 mm\cr
-  - \emph{uz.daily/uz.subdaily}	< 0 m/s\cr
-  - \emph{u2.daily/u2.subdaily}	< 0 m/s\cr
-  - \emph{Epan.daily}	< 0 mm\cr
-  - \emph{Vp.daily/Vp.subdaily}	< 0 hPa
-
+  - \emph{Tmax} > 100 or < -50 degree Celcius\cr
+  - \emph{Tmin} > Tmax or < -50 degree Celcius \cr
+  - \emph{Temp} > 100 or < -50 degree Celcius\cr
+  - \emph{Tdew} > 100 or < -50 degree Celcius\cr
+  - \emph{RHmax} > 100 or < 0 per cent\cr
+  - \emph{RHmin}  > RHmax or < 0 per cent\cr
+  - \emph{RH} > 100 per cent\cr 
+  - \emph{Rs} < 0 MJ.m^2\cr
+  - \emph{n} < 0 hour\cr
+  - \emph{Cd}  < 0 Okta\cr
+  - \emph{Precip}  < 0 mm\cr
+  - \emph{uz}	< 0 m/s\cr
+  - \emph{u2}	< 0 m/s\cr
+  - \emph{Epan}	< 0 mm\cr
+  - \emph{vs}	< 0 KPa\cr
+  - \emph{va}	< 0 KPa\cr
+  
   }
   \item{missing_method}{
   A character string for the name of the interpolated methods chosen for filling in missing days and missing data entries. Can be either: \cr
@@ -100,9 +113,7 @@ ReadInputs(climatedata, constants, stopmissing, timestep,
   
   }
 
-  \item{timestep}{
-  Should be either \code{daily} or \code{subdaily} to specify the time step of raw climate data used.
-  }
+
   }
 
 \value{
@@ -178,17 +189,16 @@ Danlu Guo
 # ReadInputs climate data
 data("climatedata")
 data("constants")
-
-# Demo - Processing the first year of data
-data <- ReadInputs(climatedata[1:2448,], 
-constants, 
-stopmissing=c(10,10,3),
-timestep="subdaily", 
-interp_missing_days = TRUE, 
-interp_missing_entries = TRUE, 
-interp_abnormal = TRUE, 
-missing_method = "DoY average", 
-abnormal_method = "DoY average")
+data <- ReadInputs(varnames = c("Temp","Tdew","n","RH","uz"),
+                   climatedata, 
+                   constants, 
+                   stopmissing=c(10,10,3),
+                   timestep = "subdaily",
+                   interp_missing_days = FALSE, 
+                   interp_missing_entries = FALSE, 
+                   interp_abnormal = FALSE, 
+                   missing_method = NULL, 
+                   abnormal_method = NULL)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

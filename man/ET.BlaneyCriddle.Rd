@@ -13,7 +13,7 @@ Implementing the Blaney-Criddle formulation for estimating reference crop evapot
 \arguments{
   \item{data}{
   A list of data which contains the following items (climate variables) required by Blaney-Criddle formulation:\cr
-  \emph{Tmax}, \emph{Tmin}, \emph{RHmin}, \emph{n} or \emph{Cd}, \emph{u2} or \emph{uz}
+  \emph{Tmax}, \emph{Tmin} (degree Celcius), \emph{RHmin} (per cent), \emph{n} (hour) or \emph{Cd} (okta), \emph{u2} or \emph{uz} (meter per second)
   }
   \item{constants}{
     A list named \code{constants} consists of constants required for the calculation of PenPan formulation which must contain the following items:\cr
@@ -28,7 +28,7 @@ Implementing the Blaney-Criddle formulation for estimating reference crop evapot
   Default is \code{daily}.
   }
   \item{solar}{
-  Must be either \\code{sunshine hours} or \code{cloud}:\cr
+  Must be either \code{sunshine hours} or \code{cloud}:\cr
   \code{sunshine hours} indicates that solar radiation is to be calculated using the real data of sunshine hours;\cr
   \code{cloud} sunshine hours is to be estimated from cloud data. \cr
   Default is \code{sunshine hours}.

@@ -13,7 +13,7 @@ Implementing the Makkink formulation for estimating reference crop evapotranspir
 \arguments{
   \item{data}{
   A list of data which contains the following items (climate variables) required by Makkink formulation:\cr
-  \emph{Tmax}, \emph{Tmin}, \emph{Rs} or \emph{n} or \emph{Cd}
+  \emph{Tmax}, \emph{Tmin} (degree Celcius), \emph{Rs} (Megajoules per sqm) or \emph{n} (hour) or \emph{Cd} (okta)
   }
   \item{constants}{
   A list named \code{constants} consists of constants required for the calculation of Makkink formulation which must contain the following items:\cr

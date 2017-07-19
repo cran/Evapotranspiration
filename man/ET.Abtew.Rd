@@ -13,7 +13,7 @@ Implementing the Abtew formulation for estimating actual evapotranspiration.
 \arguments{
   \item{data}{
   A list of data in class "Abtew" which contains the following items (climate variables) required by Abtew formulation:\cr
-  \emph{Tmax}, \emph{Tmin}, \emph{Rs} or \emph{n} or \emph{Cd}
+  \emph{Tmax}, \emph{Tmin} (degree Celcius), \emph{Rs} (Megajoules per sqm) or \emph{n} (hour) or \emph{Cd} (okta)
   }
   \item{constants}{
   A list named \code{constants} consists of constants required for the calculation of Abtew formulation which must contain the following items:\cr

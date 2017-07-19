@@ -14,7 +14,7 @@ solar="sunshine hours", Tdew= T, alpha = NULL, \dots)
 \arguments{
   \item{data}{
   A list of data which contains the following items (climate variables) required by Morton CRWE formulation:\cr
-  \emph{Tmax}, \emph{Tmin}, \emph{Tdew}, \emph{Rs} or \emph{n} or \emph{Cd}
+  \emph{Tmax}, \emph{Tmin}, \emph{Tdew} (degree Celcius), \emph{Rs} (Megajoules per sqm) or \emph{n} (hour) or \emph{Cd} (okta)
   }
   \item{constants}{
   A list named \code{constants} consists of constants required for the calculation of Morton CRWE formulation which must contain the following items:\cr

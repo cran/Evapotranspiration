@@ -13,7 +13,7 @@ Implementing the Linacre formulation for estimating actual evapotranspiration.
 \arguments{
   \item{data}{
   A list of data which contains the following items (climate variables) required by Linacre formulation:\cr
-  \emph{Tmax}, \emph{Tmin}, \emph{Tdew}
+  \emph{Tmax}, \emph{Tmin}, \emph{Tdew} (degree Celcius)
   }
   \item{constants}{
   A list named \code{constants} consists of constants required for the calculation of Linacre formulation which must contain the following items:\cr

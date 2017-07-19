@@ -13,7 +13,7 @@ Implementing the Romanenko formulation for estimating potential evapotranspirati
 \arguments{
   \item{data}{
   A list of data which contains the following items (climate variables) required by Romanenko formulation:\cr
-  \emph{Tmax}, \emph{Tmin}, \emph{RHmax}, \emph{RHmin}
+  \emph{Tmax}, \emph{Tmin} (degree Celcius), \emph{RHmax}, \emph{RHmin} (per cent)
   }
   \item{constants}{
   Dummy argument with a \code{NULL} value.

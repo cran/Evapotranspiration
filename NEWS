@@ -1,14 +1,21 @@
-		CHANGES IN Evapotranspiration VERSION 1.10
+    CHANGES IN Evapotranspiration VERSION 1.11
 
 NEW FEATURES
-    o  Penman-Monteith ET can now be estimated for evaporative surface covered with several different vegetation types
-
+    o  ReadInputs - now enabling processing only the user-specified climate variables.
+    o  ReadInputs - now enabling processing data of vapour pressure and saturated vapoure pressure ('va' and 'vs').
+    o  ET - vapour pressure and saturated vapoure pressure can be used instead of RH for formulations requiring RH data.
+   
 SIGNIFICANT USER-VISIBLE CHANGES
-    o  ET - argument "crop" has been replaced with "vegetaion", with a number of possible options to choose from, to represent different vegetation covers for the evaporative surface (please see manual for details)
+    o  ReadInputs - additional argument 'varnames' used to specify the names of climate variables to be processed. Please see the manual of ReadInputs() for details. 
+    o  ReadInputs - changed column names for raw data - no extension of .daily or .subdaily is required now
 
 BUG FIXES
-    o  ReadInputs - Fixed bugs in data processing for when not all climate data are available, to facilitate use of ET models which require less input variables
-    o  ReadInputs - Fixed bugs in functions to perform initial checks for errors in raw data
-    o  ET - Corrected the name for output .csv file from ET.BlaneyCriddle
+    o  ReadInputs - Fixed bugs several bugs in aggregating and error checking 
+    o  ET.MortonCRWE - Fixed bugs when estimating with solar radiation data 
+
+MINOR CHANGES
+    o  add units in ET. formulation manuals
+    o  ET.Hamon - updated the manual to specify that climate input of n (sunshine hours) is required.
+    
 DEPRECATED & DEFUNCT
     o  NA

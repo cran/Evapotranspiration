@@ -12,8 +12,8 @@ Implementing the Matt-Shuttleworth formulation for reference crop evapotranspira
 
 \arguments{
   \item{data}{
-  A list which contains the following items (climate variables) required by Matt-Shuttleworth formulation:
-  \emph{Tmax}, \emph{Tmin}, \emph{RHmax}, \emph{RHmin}, \emph{Rs} or \emph{n} or \emph{Cd}, \emph{u2} or \emph{uz}
+  A list which contains the following items (climate variables) required by Matt-Shuttleworth formulation:\cr
+  \emph{Tmax}, \emph{Tmin} (degree Celcius), \emph{RHmax}, \emph{RHmin} (per cent), \emph{Rs} (Megajoules per sqm) or \emph{n} (hour) or \emph{Cd} (okta), \emph{u2} or \emph{uz} (meter per second)
   }
   \item{constants}{
   A list named \code{constants} consists of constants required for the calculation of Matt-Shuttleworth formulation which must contain the following items:\cr

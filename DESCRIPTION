@@ -1,14 +1,14 @@
 Package: Evapotranspiration
-Version: 1.10
-Date: 2016-12-08
+Version: 1.11
+Date: 2017-07-16
 Title: Modelling Actual, Potential and Reference Crop
         Evapotranspiration
-Author: Danlu Guo <danlu.guo@unsw.edu.au>, Seth Westra <seth.westra@adelaide.edu.au>
+Author: Danlu Guo <danlu.guo@adelaide.edu.au>, Seth Westra <swestra@civeng.adelaide.edu.au>
 Maintainer: Danlu Guo <danlu.guo@unsw.edu.au>
 Depends: R (>= 2.10), zoo
 Description: Uses data and constants to calculate potential evapotranspiration (PET) and actual evapotranspiration (AET) from 21 different formulations including Penman, Penman-Monteith FAO 56, Priestley-Taylor and Morton formulations.
 License: GPL (>= 2)
-Packaged: 2016-12-08 22:49:39 UTC; danlu_000
+Packaged: 2017-07-19 07:29:44 UTC; Danlu
 NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2016-12-09 08:58:36
+Date/Publication: 2017-07-19 07:53:50 UTC

@@ -13,7 +13,7 @@ Implementing the Priestley-Taylor formulation for potential evaporation
 \arguments{
   \item{data}{
   A list which contains the following items (climate variables) required by Priestley-Taylor formulation:\cr
-  \emph{Tmax}, \emph{Tmin}, \emph{RHmax}, \emph{RHmin}, \emph{Rs} or \emph{n} or \emph{Cd}
+  \emph{Tmax}, \emph{Tmin} (degree Celcius), \emph{RHmax}, \emph{RHmin} (per cent), \emph{Rs} (Megajoules per sqm) or \emph{n} (hour) or \emph{Cd} (okta)
   }
   \item{constants}{
     A list named \code{constants} consists of constants required for the calculation of Priestley-Taylor formulation which must contain the following items:\cr

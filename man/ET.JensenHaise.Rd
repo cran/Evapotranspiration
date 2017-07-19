@@ -14,6 +14,7 @@ Implementing the Jensen-Haise formulation for estimating potential evapotranspir
   \item{data}{
   A list of data which contains the following items (climate variables) required by Jensen-Haise formulation:
   \emph{Tmax}, \emph{Tmin}, \emph{Rs} or \emph{n} or \emph{Cd}
+  \emph{Tmax}, \emph{Tmin} (degree Celcius), \emph{Rs} (Megajoules per sqm) or \emph{n} (hour) or \emph{Cd} (okta)
   }
   \item{constants}{
   A list named \code{constants} consists of constants required for the calculation of Jensen-Haise formulation which must contain the following items:\cr
