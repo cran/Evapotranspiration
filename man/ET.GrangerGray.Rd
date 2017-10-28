@@ -8,7 +8,7 @@ Implementing the Granger-Gray formulation for estimating actual areal evapotrans
 }
 \usage{
 \method{ET}{GrangerGray}(data, constants, ts="daily", solar="sunshine hours", 
-windfunction_ver=1948, alpha=0.23, \dots)
+windfunction_ver=1948, alpha=0.23, message="yes", save.csv="yes", \dots)
 }
 
 \arguments{
@@ -52,6 +52,20 @@ windfunction_ver=1948, alpha=0.23, \dots)
   Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface representing the portion of the incident radiation that is reflected back at the surface. \cr
   Default is 0.23 for surface covered with short reference crop.
   }
+  \item{message}{
+  Must be either \code{yes} or \code{no}, indicating whether message should be printed for calculation summary including the following elements:\cr
+ - ET model name and ET quantity estimated\cr
+- Evaporative surface with values of albedo\cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- The version of Penman wind function has been used (i.e. the value of argument \code{windfunction_ver})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.}
+  \item{save.csv}{
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  }
   \item{\dots}{
   Dummy for generic function, no need to define.
   }
@@ -63,19 +77,7 @@ windfunction_ver=1948, alpha=0.23, \dots)
 }
 
 \value{
-The function prints a calculation summary to the screen containing the following elements:\cr
-- ET model name and ET quantity estimated\cr
-- Evaporative surface with values of albedo\cr
-- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
-- The version of Penman wind function has been used (i.e. the value of argument \code{windfunction_ver})\cr
-- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
-- Units of the output ET estimates\cr
-- Time duration of the ET estimation\cr
-- Number of ET estimates obtained in the entire time-series\cr
-- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
-\cr
-
-The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_GrangerGray.csv} in the working directory:
+The function generates a list containing the following components:
 
   \item{ET.Daily}{
   Daily aggregated estimations of Granger-Gray actual areal evapotranspiration.
@@ -125,7 +127,8 @@ data("constants")
 
 # Call ET.GrangerGray under the generic function ET
 results <- ET.GrangerGray(data, constants, ts="daily", 
-solar="sunshine hours", windfunction_ver=1948, alpha=0.23)
+solar="sunshine hours", windfunction_ver=1948, alpha=0.23, 
+message="yes", save.csv="yes")
 
 }
 

@@ -7,7 +7,8 @@
 Implementing the Brutsaert-Strickler formulation for actual areal evapotranspiration
 }
 \usage{
-\method{ET}{BrutsaertStrickler}(data, constants, ts="daily", solar="sunshine hours", alpha=0.23, \dots)
+\method{ET}{BrutsaertStrickler}(data, constants, ts="daily", solar="sunshine hours", alpha=0.23,
+message="yes", save.csv="yes", \dots)
 }
 
 \arguments{
@@ -46,6 +47,20 @@ Implementing the Brutsaert-Strickler formulation for actual areal evapotranspira
   Any numeric value between 0 and 1 (dimensionless), albedo of the evaporative surface representing the portion of the incident radiation that is reflected back at the surface. \cr
   Default is 0.23 for surface covered with short reference crop.
   }
+  \item{message}{
+  Must be either \code{yes} or \code{no}, indicating whether message should be printed for calculation summary including the following elements:\cr
+- ET model name and ET quantity estimated\cr
+- Evaporative surface with values of albedo, surface resistance, crop height and roughness height\cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values
+}
+  \item{save.csv}{
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  }
   \item{\dots}{
   Dummy for generic function, no need to define.
   }
@@ -57,18 +72,7 @@ Implementing the Brutsaert-Strickler formulation for actual areal evapotranspira
 }
 
 \value{
-The function prints a calculation summary to the screen containing the following elements:\cr
-- ET model name and ET quantity estimated\cr
-- Evaporative surface with values of albedo, surface resistance, crop height and roughness height\cr
-- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
-- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
-- Units of the output ET estimates\cr
-- Time duration of the ET estimation\cr
-- Number of ET estimates obtained in the entire time-series\cr
-- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
-\cr
-
-The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_BrutsaertStrickler.csv} in the working directory:
+The function also generates a list containing the following components:
 
   \item{ET.Daily}{
   Daily aggregated estimations of Brutsaert-Strickler actual areal evapotranspiration.
@@ -111,7 +115,8 @@ data("processeddata")
 data("constants")
 
 # Call ET.BrutsaertStrickler under the generic function ET
-results <- ET.BrutsaertStrickler(data, constants, ts="daily", solar="sunshine hours", alpha=0.23)
+results <- ET.BrutsaertStrickler(data, constants, ts="daily", solar="sunshine hours", 
+alpha=0.23, message="yes", save.csv="yes")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

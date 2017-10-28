@@ -7,7 +7,8 @@
 Implementing the Jensen-Haise formulation for estimating potential evapotranspiration.
 }
 \usage{
-\method{ET}{JensenHaise}(data, constants, ts="daily", solar="sunshine hours", \dots)
+\method{ET}{JensenHaise}(data, constants, ts="daily", solar="sunshine hours", 
+message="yes", save.csv="yes", \dots)
 }
 
 \arguments{
@@ -40,6 +41,18 @@ Implementing the Jensen-Haise formulation for estimating potential evapotranspir
   \code{monthly precipitation} indicates that solar radiation is to be calculated directly from monthly precipitation.\cr
   Default is \code{sunshine hours}.
   }
+  \item{message}{
+  Must be either \code{yes} or \code{no}, indicating whether message should be printed for calculation summary including the following elements:\cr
+- ET model name and ET quantity estimated \cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values. }
+  \item{save.csv}{
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  }
   \item{\dots}{
   Dummy for generic function, no need to define.
   }
@@ -50,17 +63,7 @@ Implementing the Jensen-Haise formulation for estimating potential evapotranspir
 }
 
 \value{
-The function prints a calculation summary to the screen containing the following elements:\cr
-- ET model name and ET quantity estimated \cr
-- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
-- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
-- Units of the output ET estimates\cr
-- Time duration of the ET estimation\cr
-- Number of ET estimates obtained in the entire time-series\cr
-- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
-\cr
-
-The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_JensenHaise.csv} in the working directory:
+The function also generates a list containing the following components:
 
   \item{ET.Daily}{
   Daily aggregated estimations of Jensen-Haise potential evapotranspiration.
@@ -104,7 +107,8 @@ data("processeddata")
 data("constants")
 
 # Call ET.JensenHaise under the generic function ET
-results <- ET.JensenHaise(data, constants, ts="daily", solar="sunshine hours")
+results <- ET.JensenHaise(data, constants, ts="daily", solar="sunshine hours",
+message="yes",save.csv="yes")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

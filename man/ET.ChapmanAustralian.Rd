@@ -7,7 +7,8 @@
 Implementing the Chapman formulation for estimating potential evapotranspiration.
 }
 \usage{
-\method{ET}{ChapmanAustralian}(data, constants, ts="daily", PenPan= T, solar="sunshine hours", alpha=0.23, \dots) 
+\method{ET}{ChapmanAustralian}(data, constants, ts="daily", PenPan= T, solar="sunshine hours", alpha=0.23,
+message="yes", save.csv="yes", \dots) 
 }
 
 \arguments{
@@ -53,6 +54,20 @@ Implementing the Chapman formulation for estimating potential evapotranspiration
   Any numeric value between 0 and 1 (dimensionless), albedo of the evaporative surface incident radiation that is reflected back at the surface. \cr
   Default is 0.23 for surface covered with short reference crop.
   }
+  \item{message}{
+  Must be either \code{yes} or \code{no}, indicating whether message should be printed for calculation summary including the following elements:\cr
+- ET model name and ET quantity estimated, and the value of pan coefficient (only for when potential ET is estimated)\cr
+- Evaporative surface with values of albedo \cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- If the PenPan formulation is used for estimating Class-A pan evaporation required in Chapman formulation (i.e. the value of argument \code{PenPan})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.}
+  \item{save.csv}{
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  }
   \item{\dots}{
   Dummy for generic function, no need to define.
   }
@@ -63,19 +78,7 @@ Implementing the Chapman formulation for estimating potential evapotranspiration
 }
 
 \value{
-The function prints a calculation summary to the screen containing the following elements:\cr
-- ET model name and ET quantity estimated, and the value of pan coefficient (only for when potential ET is estimated)\cr
-- Evaporative surface with values of albedo \cr
-- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
-- If the PenPan formulation is used for estimating Class-A pan evaporation required in Chapman formulation (i.e. the value of argument \code{PenPan})\cr
-- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
-- Units of the output ET estimates\cr
-- Time duration of the ET estimation\cr
-- Number of ET estimates obtained in the entire time-series\cr
-- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
-\cr
-
-The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_ChapmanAustralian.csv} in the working directory:
+The function generates a list containing the following components:
 
   \item{ET.Daily}{
   Daily aggregated estimations of Chapman potential evapotranspiration.
@@ -125,7 +128,7 @@ data("constants")
 
 # Call ET.ChapmanAustralian under the generic function ET
 results <- ET.ChapmanAustralian(data, constants, ts="daily", PenPan= TRUE, 
-solar="sunshine hours", alpha=0.23) 
+solar="sunshine hours", alpha=0.23, message="yes", save.csv="yes") 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

@@ -8,13 +8,13 @@ Implementing the Morton CRAE formulation for estimating potential evapotranspira
 }
 \usage{
 \method{ET}{MortonCRAE}(data, constants, ts="monthly", est="potential ET", 
-solar="sunshine hours", Tdew= T, alpha = NULL, \dots)
+solar="sunshine hours", Tdew= T, alpha = NULL, message="yes", save.csv="yes", \dots)
 }
 
 \arguments{
   \item{data}{
   A list of data which contains the following items (climate variables) required by Morton CRAE formulation:\cr
-  \emph{Tmax}, \emph{Tmin}, \emph{Tdew} (degree Celcius), \emph{Rs} (Megajoules per sqm) or \emph{n} (hour) or \emph{Cd} (okta)
+  \emph{Tmax}, \emph{Tmin}, \emph{Tdew} (degree Celcius) or \emph{va} or \emph{RHmax} and \emph{RHmin}, \emph{Rs} (Megajoules per sqm) or \emph{n} (hour) or \emph{Cd} (okta)
   }
   \item{constants}{
   A list named \code{constants} consists of constants required for the calculation of Morton CRAE formulation which must contain the following items:\cr
@@ -64,6 +64,19 @@ solar="sunshine hours", Tdew= T, alpha = NULL, \dots)
  Any numeric value between 0 and 1 (dimensionless), albedo of evaporative surface representing the portion of the incident radiation that is reflected back at the surface. \cr
   Default is \code{NULL} in line with the default use of sunshine hours to estimate solar radiation (i.e. argument \code{solar} is \code{sunshine hours}.
   }
+  \item{message}{
+  Must be either \code{yes} or \code{no}, indicating whether message should be printed for calculation summary including the following elements:\cr
+- ET model name and ET quantity estimated (i.e. the value of argument \code{est}) \cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- If the actual dew point temperature data are used (i.e. the value of argument \code{Tdew})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.}
+  \item{save.csv}{
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  }
   \item{\dots}{
   Dummy for generic function, no need to define.
   }
@@ -75,18 +88,7 @@ solar="sunshine hours", Tdew= T, alpha = NULL, \dots)
 }
 
 \value{
-The function prints a calculation summary to the screen containign the following elements:\cr
-- ET model name and ET quantity estimated (i.e. the value of argument \code{est}) \cr
-- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
-- If the actual dew point temperature data are used (i.e. the value of argument \code{Tdew})\cr
-- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
-- Units of the output ET estimates\cr
-- Time duration of the ET estimation\cr
-- Number of ET estimates obtained in the entire time-series\cr
-- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
-\cr
-
-The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_MortonCRAE.csv} in the working directory:
+The function generates a list containing the following components:
 
   \item{ET.Daily}{
   Daily aggregated estimations of Morton CRAE potential evapotranspiration, wet-environment areal evapotranspiration or actual areal evapotranspiration.
@@ -137,7 +139,7 @@ data("constants")
 # Call ET.MortonCRAE under the generic function ET
 results <- ET.MortonCRAE(data, constants, ts="monthly", 
 est="potential ET", solar="sunshine hours", Tdew= TRUE, 
-alpha = NULL) 
+alpha = NULL, message="yes", save.csv="yes") 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

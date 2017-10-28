@@ -7,7 +7,8 @@
 Implementing the Turc formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{ET}{Turc}(data, constants, ts="daily", solar="sunshine hours", humid= F, \dots) 
+\method{ET}{Turc}(data, constants, ts="daily", solar="sunshine hours", humid= F, 
+message="yes", save.csv="yes", \dots) 
 }
 
 \arguments{
@@ -44,6 +45,20 @@ Implementing the Turc formulation for estimating reference crop evapotranspirati
   Must be \code{T} or \code{F}, indicating if adjustment for non-humid conditions is applied in Turc formulation (Alexandris et al., 2008, Equation 5b).\cr
   Default is \code{F} for no adjustment.
   }
+  \item{message}{
+  Must be either \code{yes} or \code{no}, indicating whether message should be printed for calculation summary including the following elements:\cr
+- ET model name and ET quantity estimated \cr
+- Evaporative surface \cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- if adjustment for non-humid conditions has been applied (i.e. the value of argument \code{humid})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.}
+  \item{save.csv}{
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  }
   \item{\dots}{
   Dummy for generic function, no need to define.
   }
@@ -55,19 +70,7 @@ Implementing the Turc formulation for estimating reference crop evapotranspirati
 }
 
 \value{
-The function prints a calculation summary to the screen containing the following elements:\cr
-- ET model name and ET quantity estimated \cr
-- Evaporative surface \cr
-- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
-- if adjustment for non-humid conditions has been applied (i.e. the value of argument \code{humid})\cr
-- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
-- Units of the output ET estimates\cr
-- Time duration of the ET estimation\cr
-- Number of ET estimates obtained in the entire time-series\cr
-- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
-\cr
-
-The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_Turc.csv} in the working directory:
+The function generates a list containing the following components:
 
   \item{ET.Daily}{
   Daily aggregated estimations of Turc reference crop evapotranspiration.
@@ -118,7 +121,8 @@ data("processeddata")
 data("constants")
 
 # Call ET.Turc under the generic function ET
-results <- ET.Turc(data, constants, ts="daily", solar="sunshine hours", humid= FALSE)
+results <- ET.Turc(data, constants, ts="daily", solar="sunshine hours", humid= FALSE,
+message="yes", save.csv="yes")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

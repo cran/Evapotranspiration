@@ -2316,6 +2316,3 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing,
     OBS <- list(Date.OBS=Date.OBS, E_obs.Daily=E_obs.Daily, E_obs.Monthly=E_obs.Monthly, E_obs.Annual=E_obs.Annual, E_obs.MonthlyAve=E_obs.MonthlyAve, E_obs.AnnualAve=E_obs.AnnualAve)
     return(OBS)
   }
-  
-  
-  

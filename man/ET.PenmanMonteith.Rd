@@ -7,7 +7,8 @@
 Implementing the Penman-Monteith formulation (including the method for FAO-56 hypothetical short grass and the method for ASCE-EWRI Standardised crop) for estimating reference crop evapotranspiration
 }
 \usage{
-\method{ET}{PenmanMonteith}(data, constants, ts="daily", solar="sunshine hours", wind="yes", crop="short", \dots)
+\method{ET}{PenmanMonteith}(data, constants, ts="daily", solar="sunshine hours", 
+wind="yes", crop="short", message="yes", save.csv="yes", \dots)
 }
 
 \arguments{
@@ -53,6 +54,20 @@ Implementing the Penman-Monteith formulation (including the method for FAO-56 hy
   \code{tall} indicates that the method for  ASCE-EWRI Standardised crop will be applied (ASCE, 2005, Equation 1, Table 1).\cr
   Default is \code{short}.
   }
+  \item{message}{
+  Must be either \code{yes} or \code{no}, indicating whether message should be printed for calculation summary including the following elements:\cr
+- ET model name and ET quantity estimated\cr
+- Evaporative surface with values of albedo, surface resistance, crop height and roughness height\cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- If actual wind data has been used for calculation (i.e. the value of argument \code{wind}) \cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.}
+  \item{save.csv}{
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  }
   \item{\dots}{
   Dummy for generic function, no need to define.
   }
@@ -64,19 +79,7 @@ Implementing the Penman-Monteith formulation (including the method for FAO-56 hy
 }
 
 \value{
-The function prints a calculation summary to the screen containing the following elements:\cr
-- ET model name and ET quantity estimated\cr
-- Evaporative surface with values of albedo, surface resistance, crop height and roughness height\cr
-- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
-- If actual wind data has been used for calculation (i.e. the value of argument \code{wind}) \cr
-- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
-- Units of the output ET estimates\cr
-- Time duration of the ET estimation\cr
-- Number of ET estimates obtained in the entire time-series\cr
-- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
-\cr
-
-The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_PenmanMonteith.csv} in the working directory:
+The function generates a list containing the following components:
   \item{ET.Daily}{
   Daily aggregated estimations of Penman-Monteith rerference crop evapotranspiration.
   }
@@ -125,7 +128,7 @@ data("constants")
 
 # Call ET.PenmanMonteith under the generic function ET
 results <- ET.PenmanMonteith(data, constants, ts="daily", solar="sunshine hours", 
-wind="yes", crop = "short") 
+wind="yes", crop = "short", message="yes", save.csv="yes") 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

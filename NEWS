@@ -1,21 +1,21 @@
-    CHANGES IN Evapotranspiration VERSION 1.11
+    CHANGES IN Evapotranspiration VERSION 1.12
 
 NEW FEATURES
-    o  ReadInputs - now enabling processing only the user-specified climate variables.
-    o  ReadInputs - now enabling processing data of vapour pressure and saturated vapoure pressure ('va' and 'vs').
-    o  ET - vapour pressure and saturated vapoure pressure can be used instead of RH for formulations requiring RH data.
+    o  NA
    
 SIGNIFICANT USER-VISIBLE CHANGES
-    o  ReadInputs - additional argument 'varnames' used to specify the names of climate variables to be processed. Please see the manual of ReadInputs() for details. 
-    o  ReadInputs - changed column names for raw data - no extension of .daily or .subdaily is required now
+    o  ET - additional argument 'message' which allow users to specify if estimation summary should be displayed on screen.
+    o  ET - additional argument 'save.csv' which allow users to specify if ET estimates should be saved as a .csv file in the working directory.
+    o  ET.MortonCRAE and ET.MortonCRWE - incorporated the equation from Morton (1983) to estimate sunshine hours when solar radiation data is used as an input which significantly improved the calculation speed. 
 
 BUG FIXES
-    o  ReadInputs - Fixed bugs several bugs in aggregating and error checking 
-    o  ET.MortonCRWE - Fixed bugs when estimating with solar radiation data 
+    o  ET.MortonCRAE and ET.MortonCRWE - corrected previous bug that requires both actual and saturated  vapour pressure data for estimating dew point temperature. Updated version only requires actual vapour pressure, while saturated vapoure pressure can be estimated using RHmax and RHmin.
 
 MINOR CHANGES
-    o  add units in ET. formulation manuals
-    o  ET.Hamon - updated the manual to specify that climate input of n (sunshine hours) is required.
+    o  NA
     
 DEPRECATED & DEFUNCT
     o  NA
+    
+REFERENCES
+    o  Morton, F.I. 1983, Operational estimates of areal evapotranspiration and their significance to the science and practice of hydrology. Journal of Hydrology, vol. 66, no. 1-4, pp. 1-76.

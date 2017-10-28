@@ -7,7 +7,7 @@
 Implementing the McGuinness-Bordne formulation for estimating potential evapotranspiration.
 }
 \usage{
-\method{ET}{McGuinnessBordne}(data, constants, ts="daily", \dots) 
+\method{ET}{McGuinnessBordne}(data, constants, ts="daily", message="yes", save.csv="yes", \dots) 
 }
 
 \arguments{
@@ -26,6 +26,17 @@ Implementing the McGuinness-Bordne formulation for estimating potential evapotra
   Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
   Default is \code{daily}.
   }
+  \item{message}{
+  Must be either \code{yes} or \code{no}, indicating whether message should be printed for calculation summary including the following elements:\cr
+- ET model name and ET quantity estimated \cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.}
+  \item{save.csv}{
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  }
   \item{\dots}{
   Dummy for generic function, no need to define.
   }
@@ -36,16 +47,7 @@ Implementing the McGuinness-Bordne formulation for estimating potential evapotra
 }
 
 \value{
-The function prints a calculation summary to the screen containing the following elements:\cr
-- ET model name and ET quantity estimated \cr
-- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
-- Units of the output ET estimates\cr
-- Time duration of the ET estimation\cr
-- Number of ET estimates obtained in the entire time-series\cr
-- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
-\cr
-
-The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_McGuinnessBordne.csv} in the working directory:
+The function generates a list containing the following components:
 
   \item{ET.Daily}{
   Daily aggregated estimations of McGuinness-Bordne potential evapotranspiration.
@@ -86,7 +88,8 @@ data("processeddata")
 data("constants")
 
 # Call ET.McGuinnessBordne under the generic function ET
-results <- ET.McGuinnessBordne(data, constants, ts="daily")
+results <- ET.McGuinnessBordne(data, constants, ts="daily",
+message="yes", save.csv="yes")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

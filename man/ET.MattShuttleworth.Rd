@@ -7,7 +7,8 @@
 Implementing the Matt-Shuttleworth formulation for reference crop evapotranspiration
 }
 \usage{
-\method{ET}{MattShuttleworth}(data, constants, ts="daily", solar="sunshine hours", alpha=0.23, r_s=70, CH=0.12, \dots)
+\method{ET}{MattShuttleworth}(data, constants, ts="daily", solar="sunshine hours", 
+alpha=0.23, r_s=70, CH=0.12, message="yes", save.csv="yes", \dots)
 }
 
 \arguments{
@@ -55,6 +56,19 @@ Implementing the Matt-Shuttleworth formulation for reference crop evapotranspira
   Any value (metres), crop height depends on the reference crop.\cr
   Default is 0.12 for short reference crop.
   }
+  \item{message}{
+  Must be either \code{yes} or \code{no}, indicating whether message should be printed for calculation summary including the following elements:\cr
+- ET model name and ET quantity estimated\cr
+- Evaporative surface with values of albedo, surface resistance and crop height\cr
+- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
+- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
+- Units of the output ET estimates\cr
+- Time duration of the ET estimation\cr
+- Number of ET estimates obtained in the entire time-series\cr
+- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.}
+  \item{save.csv}{
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  }
   \item{\dots}{
   Dummy for generic function, no need to define.
   }
@@ -65,18 +79,7 @@ Implementing the Matt-Shuttleworth formulation for reference crop evapotranspira
   User-defined evaporative surface is allowed through arguments \code{alpha}, \code{r_s} and \code{CH}, please see \code{Arguments} for details.
 }
 \value{
-The function prints a calculation summary to the screen containing the following elements:\cr
-- ET model name and ET quantity estimated\cr
-- Evaporative surface with values of albedo, surface resistance and crop height\cr
-- Option for calculating solar radiation (i.e. the value of argument \code{solar})\cr
-- Time step of the output ET estimates (i.e. the value of argument \code{ts})\cr
-- Units of the output ET estimates\cr
-- Time duration of the ET estimation\cr
-- Number of ET estimates obtained in the entire time-series\cr
-- Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.\cr
-\cr
-
-The function also generates a list containing the following components, which is saved into a \code{csv} file named as \emph{ET_MattShuttleworth.csv} in the working directory:
+The function generates a list containing the following components:
   \item{ET.Daily}{
   Daily aggregated estimations of Matt-Shuttleworth reference crop evapotranspiration.
   }
@@ -122,7 +125,8 @@ data("constants")
 
 # Call ET.MattShuttleworth under the generic function ET
 results <- ET.MattShuttleworth(data, constants, ts="daily",
-solar="sunshine hours", alpha=0.23, r_s=70, CH=0.12)
+solar="sunshine hours", alpha=0.23, r_s=70, CH=0.12,
+message="yes", save.csv="yes")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the
