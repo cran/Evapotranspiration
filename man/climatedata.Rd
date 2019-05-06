@@ -14,7 +14,7 @@
 \emph{Day} - day of record,\cr
 \emph{Hour} - hour of record,\cr
 \emph{Tdew} - subdaily dew point temperature in degree Celcius,\cr
-\emph{RH} - subdaily relative humidity in degree Celcius,\cr
+\emph{RH} - subdaily relative humidity in percentage,\cr
 \emph{Rs} - subdaily solar radiation in Megajoule per square meter,\cr
 \emph{uz} - subdaily wind speed in meter per second.
 

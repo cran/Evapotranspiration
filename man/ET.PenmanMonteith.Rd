@@ -27,8 +27,10 @@ wind="yes", crop="short", message="yes", save.csv="yes", \dots)
   \emph{G} - soil heat flux in MJ.m^-2.day^-1, = 0 when using daily time step.
   \cr
   The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr 
-  \emph{as} - fraction of extraterrestrial radiation reaching earth on sunless days,\cr
-  \emph{bs} - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
+  \emph{as} - only for when cloud data is used for calculating radiation i.e. solar = "cloud" - fraction of extraterrestrial 
+  radiation reaching earth on sunless days,\cr
+  \emph{bs} - only for when cloud data is used for calculating radiation i.e. solar = "cloud" - difference between fracion of 
+  extraterrestrial radiation reaching full-sun days and that on sunless days.
   }
   \item{ts}{
   Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 

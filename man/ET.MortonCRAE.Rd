@@ -21,7 +21,6 @@ solar="sunshine hours", Tdew= T, alpha = NULL, message="yes", save.csv="yes", \d
   \emph{Elev} - ground elevation above mean sea level in m,\cr
   \emph{lat_rad} - latitude in radians,\cr
   \emph{PA} - annual precipitation in mm, required when precipitation data is not available,\cr
-  \emph{z} - height of wind instrument in m,\cr
   \emph{sigma} - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1,\cr
   \emph{lat} - latitude in degrees,\cr
  \emph{epsilonMo} - surface emissivity = 0.92 (Morton, 1986),\cr

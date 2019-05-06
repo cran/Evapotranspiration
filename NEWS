@@ -1,21 +1,20 @@
-    CHANGES IN Evapotranspiration VERSION 1.12
+    CHANGES IN Evapotranspiration VERSION 1.13
 
 NEW FEATURES
     o  NA
    
 SIGNIFICANT USER-VISIBLE CHANGES
-    o  ET - additional argument 'message' which allow users to specify if estimation summary should be displayed on screen.
-    o  ET - additional argument 'save.csv' which allow users to specify if ET estimates should be saved as a .csv file in the working directory.
-    o  ET.MortonCRAE and ET.MortonCRWE - incorporated the equation from Morton (1983) to estimate sunshine hours when solar radiation data is used as an input which significantly improved the calculation speed. 
+    o  Significant speed up for the feature to detect maximum missing data duration in function 'ReadInputs' - tested for a daily dataset over 100 years and achieved a 4-fold speed up than version 1.12.
 
 BUG FIXES
-    o  ET.MortonCRAE and ET.MortonCRWE - corrected previous bug that requires both actual and saturated  vapour pressure data for estimating dew point temperature. Updated version only requires actual vapour pressure, while saturated vapoure pressure can be estimated using RHmax and RHmin.
-
+    o  Fixed previous bug that ReadInputs didn't interpolate missing data in 'vs' and 'va'
+    
 MINOR CHANGES
-    o  NA
+    o  User manual 'ET.Penman' and 'ET.PenmanMonteith' - specify that 'as' and 'bs' are needed in 'constants' when argument 'solar' = 'cloud'
+    o  User manual 'ET.MortonCRAE' and 'ET.MortonCRWE' - does not require 'z' (wind instrument height) in 'constants'
+    o  User manual 'climatedata' - subdaily RH has the unit of %
+    o  User manual 'constants' - a total of 36 constants instead of 46
+    o  Corrected inconsistency: user manual 'ReadInputs' states that the four temperature inputs must be > -50 degC but the code has > -20 degC (-50 degC now used for both)
     
 DEPRECATED & DEFUNCT
     o  NA
-    
-REFERENCES
-    o  Morton, F.I. 1983, Operational estimates of areal evapotranspiration and their significance to the science and practice of hydrology. Journal of Hydrology, vol. 66, no. 1-4, pp. 1-76.

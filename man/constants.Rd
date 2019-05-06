@@ -6,7 +6,7 @@
    This data set contains the universal constants, and examples of other variable constants required for calculating evapotranspiration in function \code{\link{ET}}, based on the climatic condition at Kent Town station in Adelaide, Australia.
 }
 \usage{constants}
-\format{A list containing 46 constant values including:\cr
+\format{A list containing 36 constant values including:\cr
 \cr
 - 20 universal constants, which should be kept unchanged for most conditions:\cr
 \cr
