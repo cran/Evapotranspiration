@@ -1,7 +1,7 @@
 globalVariables(c("tmpdata"))
 ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep = "daily", 
                         interp_missing_days = FALSE, interp_missing_entries = FALSE, 
-                        interp_abnormal = FALSE, missing_method = NULL, abnormal_method = NULL) 
+                        interp_abnormal = FALSE, missing_method = NULL, abnormal_method = NULL,message="yes") 
 {
   if ("Year" %in% (colnames(climatedata)) == FALSE) {
     stop("missing data of 'Year'")
@@ -49,10 +49,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
   }
   Stdzoo <- zoo(StdDate.daily, as.Date(StdDate.daily))
   if (length(Missing_DateIndex.daily) > 0) {
-    message(paste("Warning: Number of missing date indices: ", 
-                  length(Missing_DateIndex.daily), " days", sep = ""))
-    message(paste("% missing date indices: ", signif(length(Missing_DateIndex.daily)/length(StdDate.daily), 
-                                                     digits = -3), "%", sep = ""))
+    if (message == "yes") {
+      message(paste("Warning: Number of missing date indices: ", 
+                    length(Missing_DateIndex.daily), " days", sep = ""))
+      message(paste("% missing date indices: ", signif(length(Missing_DateIndex.daily)/length(StdDate.daily), 
+                                                       digits = -3), "%", sep = ""))
+    }
+    
     if (length(Missing_DateIndex.daily) >= stopmissing[1]/100 * 
         nrow(climatedata)) {
       stop("missing date indices exceeds ", stopmissing[1], 
@@ -66,12 +69,17 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       Ndays <- merge(Ndays.temp, Stdzoo, all = TRUE, fill = NA)$Ndays.temp
       Ndays.temp[which(is.na(Ndays.temp))] <- as.numeric(format(as.Date(time(Ndays.temp[which(is.na(Ndays.temp))])), 
                                                                 "%d"))
-      message(paste("All climate variables for missing dates will be interpolated with ", 
-                    missing_method, sep = ""))
+      if (message == "yes") {
+        message(paste("All climate variables for missing dates will be interpolated with ", 
+                      missing_method, sep = ""))
+      }
+      
     }
     else {
       J = J.temp
-      message("NA will be filled in for all climate variables for missing dates")
+      if (message == "yes") {
+        message("NA will be filled in for all climate variables for missing dates")
+      }
     }
   }
   else {
@@ -98,12 +106,15 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       }
     }
   }
-  message(paste("The maximum acceptable percentage of date indices is", 
-                stopmissing[1], "%"))
-  message(paste("The maximum acceptable percentage of missing data is", 
-                stopmissing[2], "%"))
-  message(paste("The maximum acceptable percentage of continuous missing data is", 
-                stopmissing[3], "%"))
+  if (message == "yes") {
+    message(paste("The maximum acceptable percentage of date indices is", 
+                  stopmissing[1], "%"))
+    message(paste("The maximum acceptable percentage of missing data is", 
+                  stopmissing[2], "%"))
+    message(paste("The maximum acceptable percentage of continuous missing data is", 
+                  stopmissing[3], "%"))
+  }
+  
   Tmax = NULL
   Tmin = NULL
   RHmax = NULL
@@ -118,11 +129,14 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
     if ("Tmax" %in% (colnames(climatedata))) {
       Tmax.temp <- zoo(as.vector(climatedata$Tmax), dateagg)
       if ("TRUE" %in% (is.na(climatedata$Tmax))) {
-        message("Warning: missing values in 'Tmax' (daily maximum temperature)")
-        message(paste("Number of missing values in Tmax: ", 
-                      sum(is.na(climatedata$Tmax))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$Tmax))/nrow(climatedata) * 
-                                                   100, digits = -3), "%"))
+        if (message == "yes") {
+          message("Warning: missing values in 'Tmax' (daily maximum temperature)")
+          message(paste("Number of missing values in Tmax: ", 
+                        sum(is.na(climatedata$Tmax))))
+          message(paste("% missing data: ", signif(sum(is.na(climatedata$Tmax))/nrow(climatedata) * 
+                                                     100, digits = -3), "%"))
+        }
+        
         #x <- df <- NULL
         #x <- as.numeric(!is.na(climatedata$Tmax))
         #df <- data.frame(x, zcount = NA)
@@ -142,9 +156,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
         
         max.gapSize = max(gapEndTime - gapStartTime + 1)
-        message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                      signif(max.gapSize/nrow(climatedata) * 100, digits = -3), 
-                      "%"))
+        if (message == "yes") {
+          message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                        signif(max.gapSize/nrow(climatedata) * 100, digits = -3), 
+                        "%"))
+        }
         if (sum(is.na(climatedata$Tmax)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
           stop("missing data of Tmax exceeds ", stopmissing[2], 
@@ -166,9 +182,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       }
       if (length(which(as.vector(Tmax.temp) > 100 | as.vector(Tmax.temp) < 
                        (-50))) > 0) {
-        message(paste("Number of day increments when Tmax has errors (Tmax > 100 deg or < -50 deg): ", 
-                      length(which(as.vector(Tmax.temp) > 100 | 
-                                     as.vector(Tmax.temp) < (-50)))))
+        if (message == "yes") {
+          message(paste("Number of day increments when Tmax has errors (Tmax > 100 deg or < -50 deg): ", 
+                        length(which(as.vector(Tmax.temp) > 100 | 
+                                       as.vector(Tmax.temp) < (-50)))))
+        }
         if (interp_abnormal == T) {
           Tmax.temp <- ReadInput_InterpAbnormal("Tmax.temp", 
                                                 upperdata = NULL, Tmax.temp, abnormal_method)
@@ -206,11 +224,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
     if ("Tmin" %in% (colnames(climatedata))) {
       Tmin.temp <- zoo(as.vector(climatedata$Tmin), dateagg)
       if ("TRUE" %in% (is.na(climatedata$Tmin))) {
-        message("Warning: missing values in 'Tmin' (daily minimum temperature)")
-        message(paste("Number of missing values in Tmin: ", 
-                      sum(is.na(climatedata$Tmin))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$Tmin))/nrow(climatedata) * 
-                                                   100, digits = -3), "%"))
+        if (message == "yes") {
+          message("Warning: missing values in 'Tmin' (daily minimum temperature)")
+          message(paste("Number of missing values in Tmin: ", 
+                        sum(is.na(climatedata$Tmin))))
+          message(paste("% missing data: ", signif(sum(is.na(climatedata$Tmin))/nrow(climatedata) * 
+                                                     100, digits = -3), "%"))
+        }
         #x <- df <- NULL
         #x <- as.numeric(!is.na(climatedata$Tmin))
         #df <- data.frame(x, zcount = NA)
@@ -230,9 +250,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
         
         max.gapSize = max(gapEndTime - gapStartTime + 1)
-        message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                      signif(max.gapSize/nrow(climatedata) * 100, digits = -3), 
-                      "%"))
+        if (message == "yes") {
+          message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                        signif(max.gapSize/nrow(climatedata) * 100, digits = -3), 
+                        "%"))
+        }
         if (sum(is.na(climatedata$Tmin)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
           stop("missing data of Tmin exceeds ", stopmissing[2], 
@@ -254,9 +276,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       }
       if (length(which(as.vector(Tmin.temp - Tmax) > 0 | 
                        as.vector(Tmin.temp) < (-50))) > 0) {
-        message(paste("Number of day increments when Tmin has errors (Tmin > Tmax or Tmin < -50 deg): ", 
-                      length(which(as.vector(Tmin.temp - Tmax) > 
-                                     0 | as.vector(Tmin.temp) < (-50)))))
+        if (message == "yes") {
+          message(paste("Number of day increments when Tmin has errors (Tmin > Tmax or Tmin < -50 deg): ", 
+                        length(which(as.vector(Tmin.temp - Tmax) > 
+                                       0 | as.vector(Tmin.temp) < (-50)))))
+        }
         if (interp_abnormal == T) {
           Tmin.temp <- ReadInput_InterpAbnormal("Tmin.temp", 
                                                 upperdata = Tmax, Tmin.temp, abnormal_method)
@@ -296,11 +320,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         temp.temp <- zoo(as.vector(climatedata$Temp), 
                          dateagg)
         if ("TRUE" %in% (is.na(climatedata$Temp))) {
-          message("Warning: missing values in 'Temp' (sub-daily temperature)")
-          message(paste("Number of missing values in Temp: ", 
-                        sum(is.na(climatedata$Temp))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$Temp))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'Temp' (sub-daily temperature)")
+            message(paste("Number of missing values in Temp: ", 
+                          sum(is.na(climatedata$Temp))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$Temp))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$Temp))
           #df <- data.frame(x, zcount = NA)
@@ -320,10 +346,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$Temp)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of Temp exceeds ", stopmissing[2], 
@@ -345,9 +372,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(temp.temp) > 100 | 
                          as.vector(temp.temp) < (-50))) > 0) {
-          message(paste("Number of data entries where Temp has errors (Temp > 100 deg or < -50 deg): ", 
-                        length(which(as.vector(temp.temp) > 100 | 
-                                       as.vector(temp.temp) < (-50)))))
+          if (message == "yes") {
+            message(paste("Number of data entries where Temp has errors (Temp > 100 deg or < -50 deg): ", 
+                          length(which(as.vector(temp.temp) > 100 | 
+                                         as.vector(temp.temp) < (-50)))))
+          }
           if (interp_abnormal == T) {
             temp.temp <- ReadInput_InterpAbnormal("temp.temp", 
                                                   upperdata = NULL, temp.temp, abnormal_method)
@@ -409,11 +438,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         Tdew.temp <- zoo(as.vector(climatedata$Tdew), 
                          dateagg)
         if ("TRUE" %in% (is.na(climatedata$Tdew))) {
-          message("Warning: missing values in 'Tdew' (daily dew point temperature)")
-          message(paste("Number of missing values in Tdew: ", 
-                        sum(is.na(climatedata$Tdew))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$Tdew))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'Tdew' (daily dew point temperature)")
+            message(paste("Number of missing values in Tdew: ", 
+                          sum(is.na(climatedata$Tdew))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$Tdew))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$Tdew))
           #df <- data.frame(x, zcount = NA)
@@ -433,9 +464,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$Tdew)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of Tdew exceeds ", stopmissing[2], 
@@ -457,9 +490,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(Tdew.temp) > 100 | 
                          as.vector(Tdew.temp) < (-50))) > 0) {
-          message(paste("Number of day increments when Tdew has errors (Tdew > 100 deg and Tdew < -50 deg): ", 
-                        length(which(as.vector(Tdew.temp) > 100 | 
-                                       as.vector(Tdew.temp) < (-50)))))
+          if (message == "yes") {
+            message(paste("Number of day increments when Tdew has errors (Tdew > 100 deg and Tdew < -50 deg): ", 
+                          length(which(as.vector(Tdew.temp) > 100 | 
+                                         as.vector(Tdew.temp) < (-50)))))
+          }
           if (interp_abnormal == T) {
             Tdew.temp <- ReadInput_InterpAbnormal("Tdew.temp", 
                                                   upperdata = NULL, Tdew.temp, abnormal_method)
@@ -495,11 +530,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         Tdew.temp <- zoo(as.vector(climatedata$Tdew), 
                          dateagg)
         if ("TRUE" %in% (is.na(climatedata$Tdew))) {
-          message("Warning: missing values in 'Tdew' (sub-daily dew point temperature)")
-          message(paste("Number of missing values in Tdew: ", 
-                        sum(is.na(climatedata$Tdew))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$Tdew))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'Tdew' (sub-daily dew point temperature)")
+            message(paste("Number of missing values in Tdew: ", 
+                          sum(is.na(climatedata$Tdew))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$Tdew))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$Tdew))
           #df <- data.frame(x, zcount = NA)
@@ -519,9 +556,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$Tdew)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of Tdew exceeds ", stopmissing[2], 
@@ -543,9 +582,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(Tdew.temp) > 100 | 
                          as.vector(Tdew.temp) < (-50))) > 0) {
-          message(paste("Number of day increments when Tdew has errors (Tdew > 100 deg and Tdew < -50 deg): ", 
-                        length(which(as.vector(Tdew.temp) > 100 | 
-                                       as.vector(Tdew.temp) < (-50)))))
+          if (message == "yes") {
+            message(paste("Number of day increments when Tdew has errors (Tdew > 100 deg and Tdew < -50 deg): ", 
+                          length(which(as.vector(Tdew.temp) > 100 | 
+                                         as.vector(Tdew.temp) < (-50)))))
+          }
           if (interp_abnormal == T) {
             Tdew.temp <- ReadInput_InterpAbnormal("Tdew.temp", 
                                                   upperdata = NULL, Tdew.temp, abnormal_method)
@@ -587,11 +628,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       RHmax.temp <- zoo(as.vector(climatedata$RHmax), 
                         dateagg)
       if ("TRUE" %in% (is.na(climatedata$RHmax))) {
-        message("Warning: missing values in 'RHmax' (daily maximum relative humidity)")
-        message(paste("Number of missing values in RHmax: ", 
-                      sum(is.na(climatedata$RHmax))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$RHmax))/nrow(climatedata) * 
-                                                   100, digits = -3), "%"))
+        if (message == "yes") {
+          message("Warning: missing values in 'RHmax' (daily maximum relative humidity)")
+          message(paste("Number of missing values in RHmax: ", 
+                        sum(is.na(climatedata$RHmax))))
+          message(paste("% missing data: ", signif(sum(is.na(climatedata$RHmax))/nrow(climatedata) * 
+                                                     100, digits = -3), "%"))
+        }
         #x <- df <- NULL
         #x <- as.numeric(!is.na(climatedata$RHmax))
         #df <- data.frame(x, zcount = NA)
@@ -611,9 +654,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
         
         max.gapSize = max(gapEndTime - gapStartTime + 1)
-        message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                      signif(max.gapSize/nrow(climatedata) * 100, digits = -3), 
-                      "%"))
+        if (message == "yes") {
+          message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                        signif(max.gapSize/nrow(climatedata) * 100, digits = -3), 
+                        "%"))
+        }
         if (sum(is.na(climatedata$RHmax)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
           stop("missing data of RHmax exceeds ", stopmissing[2], 
@@ -635,9 +680,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       }
       if (length(which(as.vector(RHmax.temp) > 100 | as.vector(RHmax.temp) < 
                        0)) > 0) {
-        message(paste("Number of day increments when RHmax has errors (RHmax > 100% deg or < 0%): ", 
-                      length(which(as.vector(RHmax.temp) > 100 | 
-                                     as.vector(RHmax.temp) < 0))))
+        if (message == "yes") {
+          message(paste("Number of day increments when RHmax has errors (RHmax > 100% deg or < 0%): ", 
+                        length(which(as.vector(RHmax.temp) > 100 | 
+                                       as.vector(RHmax.temp) < 0))))
+        }
         if (interp_abnormal == T) {
           RHmax.temp <- ReadInput_InterpAbnormal("RHmax.temp", 
                                                  upperdata = NULL, RHmax.temp, abnormal_method)
@@ -676,11 +723,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       RHmin.temp <- zoo(as.vector(climatedata$RHmin), 
                         dateagg)
       if ("TRUE" %in% (is.na(climatedata$RHmin))) {
-        message("Warning: missing values in 'RHmin' (daily mainimum relative humidity)")
-        message(paste("Number of missing values in RHmin: ", 
-                      sum(is.na(climatedata$RHmin))))
-        message(paste("% missing data: ", signif(sum(is.na(climatedata$RHmin))/nrow(climatedata) * 
-                                                   100, digits = -3), "%"))
+        if (message == "yes") {
+          message("Warning: missing values in 'RHmin' (daily mainimum relative humidity)")
+          message(paste("Number of missing values in RHmin: ", 
+                        sum(is.na(climatedata$RHmin))))
+          message(paste("% missing data: ", signif(sum(is.na(climatedata$RHmin))/nrow(climatedata) * 
+                                                     100, digits = -3), "%"))
+        }
         ##x <- df <- NULL
         #x <- as.numeric(!is.na(climatedata$RHmin))
         ##df <- data.frame(x, zcount = NA)
@@ -700,9 +749,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
         
         max.gapSize = max(gapEndTime - gapStartTime + 1)
-        message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                      signif(max.gapSize/nrow(climatedata) * 100, digits = -3), 
-                      "%"))
+        if (message == "yes") {
+          message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                        signif(max.gapSize/nrow(climatedata) * 100, digits = -3), 
+                        "%"))
+        }
         if (sum(is.na(climatedata$RHmin)) >= stopmissing[2]/100 * 
             nrow(climatedata)) {
           stop("missing data of RHmin exceeds ", stopmissing[2], 
@@ -724,9 +775,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       }
       if (length(which(as.vector(RHmin.temp - RHmax) > 
                        0 | as.vector(RHmin.temp) < 0)) > 0) {
-        message(paste("Number of day increments when RHmin has errors (RHmin > RHmax or RHmin < 0%): ", 
-                      length(which(as.vector(RHmin.temp - RHmax) > 
-                                     0 | as.vector(RHmin.temp) < (-50)))))
+        if (message == "yes") {
+          message(paste("Number of day increments when RHmin has errors (RHmin > RHmax or RHmin < 0%): ", 
+                        length(which(as.vector(RHmin.temp - RHmax) > 
+                                       0 | as.vector(RHmin.temp) < (-50)))))
+        }
         if (interp_abnormal == T) {
           RHmin.temp <- ReadInput_InterpAbnormal("RHmin.temp", 
                                                  upperdata = RHmax, RHmin.temp, abnormal_method)
@@ -765,11 +818,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("RH" %in% (colnames(climatedata))) {
         RH.temp <- zoo(as.vector(climatedata$RH), dateagg)
         if ("TRUE" %in% (is.na(climatedata$RH))) {
-          message("Warning: missing values in 'RH' (sub-daily relative humidity)")
-          message(paste("Number of missing values in RH: ", 
-                        sum(is.na(climatedata$RH))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$RH))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'RH' (sub-daily relative humidity)")
+            message(paste("Number of missing values in RH: ", 
+                          sum(is.na(climatedata$RH))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$RH))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$RH))
           #df <- data.frame(x, zcount = NA)
@@ -789,9 +844,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$RH)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of RH exceeds ", stopmissing[2], 
@@ -813,9 +870,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(RH.temp) > 100 | 
                          as.vector(RH.temp) < 0)) > 0) {
-          message(paste("Number of data entries where RH has errors (RH > 100% or < 0%): ", 
-                        length(which(as.vector(RH.temp) > 100 | 
-                                       as.vector(RH.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of data entries where RH has errors (RH > 100% or < 0%): ", 
+                          length(which(as.vector(RH.temp) > 100 | 
+                                         as.vector(RH.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             RH.temp <- ReadInput_InterpAbnormal("RH.temp", 
                                                 upperdata = NULL, RH.temp, abnormal_method)
@@ -873,11 +932,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("u2" %in% (colnames(climatedata))) {
         u2.temp <- zoo(as.vector(climatedata$u2), dateagg)
         if ("TRUE" %in% (is.na(climatedata$u2))) {
-          message("Warning: missing values in 'u2' (daily wind speed at 2m)")
-          message(paste("Number of missing values in u2: ", 
-                        sum(is.na(climatedata$u2))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$u2))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'u2' (daily wind speed at 2m)")
+            message(paste("Number of missing values in u2: ", 
+                          sum(is.na(climatedata$u2))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$u2))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$u2))
           #df <- data.frame(x, zcount = NA)
@@ -897,9 +958,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$u2)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of u2 exceeds ", stopmissing[2], 
@@ -921,8 +984,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(u2.temp) < 0)) > 
             0) {
-          message(paste("Number of day increments when u2 has errors (u2 < 0): ", 
-                        length(which(as.vector(u2.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when u2 has errors (u2 < 0): ", 
+                          length(which(as.vector(u2.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             u2.temp <- ReadInput_InterpAbnormal("u2.temp", 
                                                 upperdata = NULL, u2.temp, abnormal_method)
@@ -957,11 +1022,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("u2" %in% (colnames(climatedata))) {
         u2.temp <- zoo(as.vector(climatedata$u2), dateagg)
         if ("TRUE" %in% (is.na(climatedata$u2))) {
-          message("Warning: missing values in 'u2' (sub-daily wind speed at 2m)")
-          message(paste("Number of missing values in u2: ", 
-                        sum(is.na(climatedata$u2))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$u2))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'u2' (sub-daily wind speed at 2m)")
+            message(paste("Number of missing values in u2: ", 
+                          sum(is.na(climatedata$u2))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$u2))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$u2))
           #df <- data.frame(x, zcount = NA)
@@ -981,9 +1048,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$u2)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of u2 exceeds ", stopmissing[2], 
@@ -1005,8 +1074,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(u2.temp) < 0)) > 
             0) {
-          message(paste("Number of data entries where u2 has errors (u2 < 0): ", 
-                        length(which(as.vector(u2.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of data entries where u2 has errors (u2 < 0): ", 
+                          length(which(as.vector(u2.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             u2.temp <- ReadInput_InterpAbnormal("u2.temp", 
                                                 upperdata = NULL, u2.temp, abnormal_method)
@@ -1047,11 +1118,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("uz" %in% (colnames(climatedata))) {
         uz.temp <- zoo(as.vector(climatedata$uz), dateagg)
         if ("TRUE" %in% (is.na(climatedata$uz))) {
-          message("Warning: missing values in 'uz' (daily wind speed)")
-          message(paste("Number of missing values in uz: ", 
-                        sum(is.na(climatedata$uz))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$uz))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'uz' (daily wind speed)")
+            message(paste("Number of missing values in uz: ", 
+                          sum(is.na(climatedata$uz))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$uz))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$uz))
           #df <- data.frame(x, zcount = NA)
@@ -1071,9 +1144,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$uz)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of uz exceeds ", stopmissing[2], 
@@ -1095,8 +1170,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(uz.temp) < 0)) > 
             0) {
-          message(paste("Number of day increments when uz has errors (uz < 0): ", 
-                        length(which(as.vector(uz.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when uz has errors (uz < 0): ", 
+                          length(which(as.vector(uz.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             uz.temp <- ReadInput_InterpAbnormal("uz.temp", 
                                                 upperdata = NULL, uz.temp, abnormal_method)
@@ -1131,11 +1208,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("uz" %in% (colnames(climatedata))) {
         uz.temp <- zoo(as.vector(climatedata$uz), dateagg)
         if ("TRUE" %in% (is.na(climatedata$uz))) {
-          message("Warning: missing values in 'uz' (sub-daily wind speed)")
-          message(paste("Number of missing values in uz: ", 
-                        sum(is.na(climatedata$uz))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$uz))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'uz' (sub-daily wind speed)")
+            message(paste("Number of missing values in uz: ", 
+                          sum(is.na(climatedata$uz))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$uz))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$uz))
           #df <- data.frame(x, zcount = NA)
@@ -1155,9 +1234,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$uz)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of uz exceeds ", stopmissing[2], 
@@ -1179,8 +1260,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(uz.temp) < 0)) > 
             0) {
-          message(paste("Number of data entries where uz has errors (uz < 0): ", 
-                        length(which(as.vector(uz.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of data entries where uz has errors (uz < 0): ", 
+                          length(which(as.vector(uz.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             uz.temp <- ReadInput_InterpAbnormal("uz.temp", 
                                                 upperdata = NULL, uz.temp, abnormal_method)
@@ -1221,11 +1304,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("Rs" %in% (colnames(climatedata))) {
         Rs.temp <- zoo(as.vector(climatedata$Rs), dateagg)
         if ("TRUE" %in% (is.na(climatedata$Rs))) {
-          message("Warning: missing values in 'Rs' (daily incoming solar radiation)")
-          message(paste("Number of missing values in Rs: ", 
-                        sum(is.na(climatedata$Rs))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$Rs))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'Rs' (daily incoming solar radiation)")
+            message(paste("Number of missing values in Rs: ", 
+                          sum(is.na(climatedata$Rs))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$Rs))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$Rs))
           #df <- data.frame(x, zcount = NA)
@@ -1245,9 +1330,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$Rs)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of Rs exceeds ", stopmissing[2], 
@@ -1269,8 +1356,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(Rs.temp) < 0)) > 
             0) {
-          message(paste("Number of day increments when Rs has errors (Rs < 0): ", 
-                        length(which(as.vector(Rs.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when Rs has errors (Rs < 0): ", 
+                          length(which(as.vector(Rs.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             Rs.temp <- ReadInput_InterpAbnormal("Rs.temp", 
                                                 upperdata = NULL, Rs.temp, abnormal_method)
@@ -1305,11 +1394,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("Rs" %in% (colnames(climatedata))) {
         Rs.temp <- zoo(as.vector(climatedata$Rs), dateagg)
         if ("TRUE" %in% (is.na(climatedata$Rs))) {
-          message("Warning: missing values in 'Rs' (sub-daily incoming solar radiation)")
-          message(paste("Number of missing values in Rs: ", 
-                        sum(is.na(climatedata$Rs))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$Rs))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'Rs' (sub-daily incoming solar radiation)")
+            message(paste("Number of missing values in Rs: ", 
+                          sum(is.na(climatedata$Rs))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$Rs))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$Rs))
           #df <- data.frame(x, zcount = NA)
@@ -1329,9 +1420,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$Rs)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of Rs exceeds ", stopmissing[2], 
@@ -1353,8 +1446,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(Rs.temp) < 0)) > 
             0) {
-          message(paste("Number of data entries where Rs has errors (Rs < 0): ", 
-                        length(which(as.vector(Rs.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of data entries where Rs has errors (Rs < 0): ", 
+                          length(which(as.vector(Rs.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             Rs.temp <- ReadInput_InterpAbnormal("Rs.temp", 
                                                 upperdata = NULL, Rs.temp, abnormal_method)
@@ -1395,11 +1490,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("n" %in% (colnames(climatedata))) {
         n.temp <- zoo(as.vector(climatedata$n), dateagg)
         if ("TRUE" %in% (is.na(climatedata$n))) {
-          message("Warning: missing values in 'n' (daily sunshine hours)")
-          message(paste("Number of missing values in n: ", 
-                        sum(is.na(climatedata$n))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$n))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'n' (daily sunshine hours)")
+            message(paste("Number of missing values in n: ", 
+                          sum(is.na(climatedata$n))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$n))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$n))
           #df <- data.frame(x, zcount = NA)
@@ -1419,9 +1516,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$n)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of n exceeds ", stopmissing[2], 
@@ -1443,9 +1542,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(n.temp) < 0 | as.vector(n.temp) > 
                          24)) > 0) {
-          message(paste("Number of day increments when n has errors (n < 0 or > 24 hours): ", 
-                        length(which(as.vector(n.temp) < 0 | as.vector(n.temp) > 
-                                       24))))
+          if (message == "yes") {
+            message(paste("Number of day increments when n has errors (n < 0 or > 24 hours): ", 
+                          length(which(as.vector(n.temp) < 0 | as.vector(n.temp) > 
+                                         24))))
+          }
           if (interp_abnormal == T) {
             n.temp <- ReadInput_InterpAbnormal("n.temp", 
                                                upperdata = NULL, n.temp, abnormal_method)
@@ -1480,11 +1581,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("n" %in% (colnames(climatedata))) {
         n.temp <- zoo(as.vector(climatedata$n), dateagg)
         if ("TRUE" %in% (is.na(climatedata$n))) {
-          message("Warning: missing values in 'n' (daily sunshine hours)")
-          message(paste("Number of missing values in n: ", 
-                        sum(is.na(climatedata$n))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$n))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'n' (daily sunshine hours)")
+            message(paste("Number of missing values in n: ", 
+                          sum(is.na(climatedata$n))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$n))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$n))
           #df <- data.frame(x, zcount = NA)
@@ -1504,9 +1607,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$n)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of n exceeds ", stopmissing[2], 
@@ -1528,9 +1633,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(n.temp) < 0 | as.vector(n.temp) > 
                          24)) > 0) {
-          message(paste("Number of day increments when n has errors (n < 0 or > 24 hours): ", 
-                        length(which(as.vector(n.temp) < 0 | as.vector(n.temp) > 
-                                       24))))
+          if (message == "yes") {
+            message(paste("Number of day increments when n has errors (n < 0 or > 24 hours): ", 
+                          length(which(as.vector(n.temp) < 0 | as.vector(n.temp) > 
+                                         24))))
+          }
           if (interp_abnormal == T) {
             n.temp <- ReadInput_InterpAbnormal("n.temp", 
                                                upperdata = NULL, n.temp, abnormal_method)
@@ -1569,11 +1676,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("Cd" %in% (colnames(climatedata))) {
         C0.temp <- zoo(as.vector(climatedata$Cd), dateagg)
         if ("TRUE" %in% (is.na(climatedata$Cd))) {
-          message("Warning: missing values in 'Cd' (daily cloud cover)")
-          message(paste("Number of missing values in Cd: ", 
-                        sum(is.na(climatedata$Cd))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$Cd))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'Cd' (daily cloud cover)")
+            message(paste("Number of missing values in Cd: ", 
+                          sum(is.na(climatedata$Cd))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$Cd))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$Cd))
           #df <- data.frame(x, zcount = NA)
@@ -1593,9 +1702,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$Cd)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of Cd exceeds ", stopmissing[2], 
@@ -1617,8 +1728,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(C0.temp) < 0)) > 
             0) {
-          message(paste("Number of day increments when Cd has errors (Cd < 0): ", 
-                        length(which(as.vector(C0.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when Cd has errors (Cd < 0): ", 
+                          length(which(as.vector(C0.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             C0.temp <- ReadInput_InterpAbnormal("C0.temp", 
                                                 upperdata = NULL, C0.temp, abnormal_method)
@@ -1656,11 +1769,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("Cd" %in% (colnames(climatedata))) {
         C0.temp <- zoo(as.vector(climatedata$Cd), dateagg)
         if ("TRUE" %in% (is.na(climatedata$Cd))) {
-          message("Warning: missing values in 'Cd' (daily cloud cover)")
-          message(paste("Number of missing values in Cd: ", 
-                        sum(is.na(climatedata$Cd))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$Cd))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'Cd' (daily cloud cover)")
+            message(paste("Number of missing values in Cd: ", 
+                          sum(is.na(climatedata$Cd))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$Cd))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$Cd))
           #df <- data.frame(x, zcount = NA)
@@ -1680,9 +1795,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$Cd)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of Cd exceeds ", stopmissing[2], 
@@ -1704,8 +1821,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(C0.temp) < 0)) > 
             0) {
-          message(paste("Number of day increments when Cd has errors (Cd < 0): ", 
-                        length(which(as.vector(C0.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when Cd has errors (Cd < 0): ", 
+                          length(which(as.vector(C0.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             C0.temp <- ReadInput_InterpAbnormal("C0.temp", 
                                                 upperdata = NULL, C0.temp, abnormal_method)
@@ -1750,11 +1869,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         P.temp <- zoo(as.vector(climatedata$Precip), 
                       dateagg)
         if ("TRUE" %in% (is.na(climatedata$Precip))) {
-          message("Warning: missing values in 'Precip' (daily precipitation)")
-          message(paste("Number of missing values in Precip: ", 
-                        sum(is.na(climatedata$Precip))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$Precip))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'Precip' (daily precipitation)")
+            message(paste("Number of missing values in Precip: ", 
+                          sum(is.na(climatedata$Precip))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$Precip))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$Precip))
           #df <- data.frame(x, zcount = NA)
@@ -1774,9 +1895,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$Precip)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of Precip exceeds ", 
@@ -1797,8 +1920,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           }
         }
         if (length(which(as.vector(P.temp) < 0)) > 0) {
-          message(paste("Number of day increments when P has errors (P < 0): ", 
-                        length(which(as.vector(P.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when P has errors (P < 0): ", 
+                          length(which(as.vector(P.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             P.temp <- ReadInput_InterpAbnormal("P.temp", 
                                                upperdata = NULL, P.temp, abnormal_method)
@@ -1831,11 +1956,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         P.temp <- zoo(as.vector(climatedata$Precip), 
                       dateagg)
         if ("TRUE" %in% (is.na(climatedata$Precip))) {
-          message("Warning: missing values in 'Precip' (sub-daily precipitation)")
-          message(paste("Number of missing values in Precip: ", 
-                        sum(is.na(climatedata$Precip))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$Precip))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'Precip' (sub-daily precipitation)")
+            message(paste("Number of missing values in Precip: ", 
+                          sum(is.na(climatedata$Precip))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$Precip))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$Precip))
           #df <- data.frame(x, zcount = NA)
@@ -1855,9 +1982,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$Precip)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of Precip exceeds ", 
@@ -1878,8 +2007,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           }
         }
         if (length(which(as.vector(P.temp) < 0)) > 0) {
-          message(paste("Number of day increments when P has errors (P < 0): ", 
-                        length(which(as.vector(P.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when P has errors (P < 0): ", 
+                          length(which(as.vector(P.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             P.temp <- ReadInput_InterpAbnormal("P.temp", 
                                                upperdata = NULL, P.temp, abnormal_method)
@@ -1917,11 +2048,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         Epan.temp <- zoo(as.vector(climatedata$Epan), 
                          dateagg)
         if ("TRUE" %in% (is.na(climatedata$Epan))) {
-          message("Warning: missing values in 'Epan' (daily pan evaporation)")
-          message(paste("Number of missing values in Epan: ", 
-                        sum(is.na(climatedata$Epan))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$Epan))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'Epan' (daily pan evaporation)")
+            message(paste("Number of missing values in Epan: ", 
+                          sum(is.na(climatedata$Epan))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$Epan))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$Epan))
           #df <- data.frame(x, zcount = NA)
@@ -1941,9 +2074,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$Epan)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of Epan exceeds ", stopmissing[2], 
@@ -1965,8 +2100,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(Epan.temp) < 0)) > 
             0) {
-          message(paste("Number of day increments when Epan has errors (Epan < 0): ", 
-                        length(which(as.vector(Epan.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when Epan has errors (Epan < 0): ", 
+                          length(which(as.vector(Epan.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             Epan.temp <- ReadInput_InterpAbnormal("Epan.temp", 
                                                   upperdata = NULL, Epan.temp, abnormal_method)
@@ -2002,11 +2139,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         Epan.temp <- zoo(as.vector(climatedata$Epan), 
                          dateagg)
         if ("TRUE" %in% (is.na(climatedata$Epan))) {
-          message("Warning: missing values in 'Epan' (daily pan evaporation)")
-          message(paste("Number of missing values in Epan: ", 
-                        sum(is.na(climatedata$Epan))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$Epan))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'Epan' (daily pan evaporation)")
+            message(paste("Number of missing values in Epan: ", 
+                          sum(is.na(climatedata$Epan))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$Epan))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$Epan))
           #df <- data.frame(x, zcount = NA)
@@ -2026,9 +2165,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$Epan)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of Epan exceeds ", stopmissing[2], 
@@ -2050,8 +2191,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(Epan.temp) < 0)) > 
             0) {
-          message(paste("Number of day increments when Epan has errors (Epan < 0): ", 
-                        length(which(as.vector(Epan.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when Epan has errors (Epan < 0): ", 
+                          length(which(as.vector(Epan.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             Epan.temp <- ReadInput_InterpAbnormal("Epan.temp", 
                                                   upperdata = NULL, Epan.temp, abnormal_method)
@@ -2091,11 +2234,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("vs" %in% (colnames(climatedata))) {
         vs.temp <- zoo(as.vector(climatedata$vs), dateagg)
         if ("TRUE" %in% (is.na(climatedata$vs))) {
-          message("Warning: missing values in 'vs' (daily saturated vapour pressure)")
-          message(paste("Number of missing values in vs: ", 
-                        sum(is.na(climatedata$vs))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$vs))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'vs' (daily saturated vapour pressure)")
+            message(paste("Number of missing values in vs: ", 
+                          sum(is.na(climatedata$vs))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$vs))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$vs))
           #df <- data.frame(x, zcount = NA)
@@ -2115,9 +2260,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$vs)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of vs exceeds ", stopmissing[2], 
@@ -2139,8 +2286,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(vs.temp) < 0)) > 
             0) {
-          message(paste("Number of day increments when vs has errors (vs < 0): ", 
-                        length(which(as.vector(vs.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when vs has errors (vs < 0): ", 
+                          length(which(as.vector(vs.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             vs.temp <- ReadInput_InterpAbnormal("vs.temp", 
                                                 upperdata = NULL, vs.temp, abnormal_method)
@@ -2175,11 +2324,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("vs" %in% (colnames(climatedata))) {
         vs.temp <- zoo(as.vector(climatedata$vs), dateagg)
         if ("TRUE" %in% (is.na(climatedata$vs))) {
-          message("Warning: missing values in 'vs' (sub-daily saturated vapour pressure)")
-          message(paste("Number of missing values in vs: ", 
-                        sum(is.na(climatedata$vs))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$vs))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'vs' (sub-daily saturated vapour pressure)")
+            message(paste("Number of missing values in vs: ", 
+                          sum(is.na(climatedata$vs))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$vs))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$vs))
           #df <- data.frame(x, zcount = NA)
@@ -2199,9 +2350,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$vs)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of vs exceeds ", stopmissing[2], 
@@ -2223,8 +2376,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(vs.temp) < 0)) > 
             0) {
-          message(paste("Number of day increments when vs has errors (vs < 0): ", 
-                        length(which(as.vector(vs.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when vs has errors (vs < 0): ", 
+                          length(which(as.vector(vs.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             vs.temp <- ReadInput_InterpAbnormal("vs.temp", 
                                                 upperdata = NULL, vs.temp, abnormal_method)
@@ -2263,11 +2418,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("va" %in% (colnames(climatedata))) {
         va.temp <- zoo(as.vector(climatedata$va), dateagg)
         if ("TRUE" %in% (is.na(climatedata$va))) {
-          message("Warning: missing values in 'va' (daily average vapour pressure)")
-          message(paste("Number of missing values in va: ", 
-                        sum(is.na(climatedata$va))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$va))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'va' (daily average vapour pressure)")
+            message(paste("Number of missing values in va: ", 
+                          sum(is.na(climatedata$va))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$va))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$va))
           #df <- data.frame(x, zcount = NA)
@@ -2287,9 +2444,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$va)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of va exceeds ", stopmissing[2], 
@@ -2311,8 +2470,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(va.temp) < 0)) > 
             0) {
-          message(paste("Number of day increments when va has errors (va < 0): ", 
-                        length(which(as.vector(va.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when va has errors (va < 0): ", 
+                          length(which(as.vector(va.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             va.temp <- ReadInput_InterpAbnormal("va.temp", 
                                                 upperdata = NULL, va.temp, abnormal_method)
@@ -2347,11 +2508,13 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
       if ("va" %in% (colnames(climatedata))) {
         va.temp <- zoo(as.vector(climatedata$va), dateagg)
         if ("TRUE" %in% (is.na(climatedata$va))) {
-          message("Warning: missing values in 'va' (sub-daily average vapour pressure)")
-          message(paste("Number of missing values in va: ", 
-                        sum(is.na(climatedata$va))))
-          message(paste("% missing data: ", signif(sum(is.na(climatedata$va))/nrow(climatedata) * 
-                                                     100, digits = -3), "%"))
+          if (message == "yes") {
+            message("Warning: missing values in 'va' (sub-daily average vapour pressure)")
+            message(paste("Number of missing values in va: ", 
+                          sum(is.na(climatedata$va))))
+            message(paste("% missing data: ", signif(sum(is.na(climatedata$va))/nrow(climatedata) * 
+                                                       100, digits = -3), "%"))
+          }
           #x <- df <- NULL
           #x <- as.numeric(!is.na(climatedata$va))
           #df <- data.frame(x, zcount = NA)
@@ -2371,9 +2534,11 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
           gapEndTime = gapEndTime[seq(length(gapEndTime),1,by=-1)]
           
           max.gapSize = max(gapEndTime - gapStartTime + 1)
-          message(paste("Maximum duration of missing data as percentage of total duration: ", 
-                        signif(max.gapSize/nrow(climatedata) * 100, 
-                               digits = -3), "%"))
+          if (message == "yes") {
+            message(paste("Maximum duration of missing data as percentage of total duration: ", 
+                          signif(max.gapSize/nrow(climatedata) * 100, 
+                                 digits = -3), "%"))
+          }
           if (sum(is.na(climatedata$va)) >= stopmissing[2]/100 * 
               nrow(climatedata)) {
             stop("missing data of va exceeds ", stopmissing[2], 
@@ -2395,8 +2560,10 @@ ReadInputs <- function (varnames, climatedata, constants, stopmissing, timestep 
         }
         if (length(which(as.vector(va.temp) < 0)) > 
             0) {
-          message(paste("Number of day increments when va has errors (va < 0): ", 
-                        length(which(as.vector(va.temp) < 0))))
+          if (message == "yes") {
+            message(paste("Number of day increments when va has errors (va < 0): ", 
+                          length(which(as.vector(va.temp) < 0))))
+          }
           if (interp_abnormal == T) {
             va.temp <- ReadInput_InterpAbnormal("va.temp", 
                                                 upperdata = NULL, va.temp, abnormal_method)

@@ -7,8 +7,9 @@
 Implementing the Chapman formulation for estimating potential evapotranspiration.
 }
 \usage{
-\method{ET}{ChapmanAustralian}(data, constants, ts="daily", PenPan= T, solar="sunshine hours", alpha=0.23,
-message="yes", save.csv="yes", \dots) 
+\method{ET}{ChapmanAustralian}(data, constants, ts="daily", PenPan= T, 
+solar="sunshine hours", alpha=0.23, message="yes", AdditionalStats="yes", 
+save.csv="yes", \dots) 
 }
 
 \arguments{
@@ -65,6 +66,9 @@ message="yes", save.csv="yes", \dots)
 - Time duration of the ET estimation\cr
 - Number of ET estimates obtained in the entire time-series\cr
 - Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.}
+ \item{AdditionalStats}{
+  "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
+  }
   \item{save.csv}{
   Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
   }
@@ -107,6 +111,7 @@ The function generates a list containing the following components:
   \item{message5}{
   A message to inform the users about if the Class-A pan evaporation is from actual data or from PenPan estimation. 
   }
+  
 }
 \references{
 
@@ -128,7 +133,8 @@ data("constants")
 
 # Call ET.ChapmanAustralian under the generic function ET
 results <- ET.ChapmanAustralian(data, constants, ts="daily", PenPan= TRUE, 
-solar="sunshine hours", alpha=0.23, message="yes", save.csv="yes") 
+solar="sunshine hours", alpha=0.23, message="yes", AdditionalStats="yes", 
+save.csv="yes") 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

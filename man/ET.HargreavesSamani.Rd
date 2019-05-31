@@ -7,7 +7,8 @@
 Implementing the Hargreaves-Samani formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{ET}{HargreavesSamani}(data, constants, ts="daily", message="yes", save.csv="yes", \dots)
+\method{ET}{HargreavesSamani}(data, constants, ts="daily",
+message="yes", AdditionalStats="yes", save.csv="yes", \dots)
 }
 
 \arguments{
@@ -35,6 +36,9 @@ Implementing the Hargreaves-Samani formulation for estimating reference crop eva
 - Time duration of the ET estimation\cr
 - Number of ET estimates obtained in the entire time-series\cr
 - Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.}
+  \item{AdditionalStats}{
+  "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
+  }
   \item{save.csv}{
   Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
   }
@@ -90,7 +94,8 @@ data("processeddata")
 data("constants")
 
 # Call ET.HargreavesSamani under the generic function ET
-results <- ET.HargreavesSamani(data, constants, ts="daily", message="yes", save.csv="yes")
+results <- ET.HargreavesSamani(data, constants, ts="daily", message="yes", 
+AdditionalStats="yes", save.csv="yes")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

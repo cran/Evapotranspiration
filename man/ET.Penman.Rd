@@ -9,7 +9,7 @@ Implementing the Penman formulation for estimating open-water evaporation or pot
 \usage{
 \method{ET}{Penman}(data, constants, ts="daily", solar="sunshine hours", 
 wind="yes", windfunction_ver=1948, alpha=0.08, z0=0.001, message="yes",
-save.csv="yes", \dots)
+AdditionalStats="yes", save.csv="yes", \dots)
 }
 
 \arguments{
@@ -75,6 +75,9 @@ save.csv="yes", \dots)
 - Time duration of the ET estimation\cr
 - Number of ET estimates obtained in the entire time-series\cr
 - Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values  }
+  \item{AdditionalStats}{
+  "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
+  }
   \item{save.csv}{
   Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
   }
@@ -147,7 +150,7 @@ data("constants")
 results <- ET.Penman(data, constants, ts="daily", 
 solar="sunshine hours", wind="yes", 
 windfunction_ver = "1948", alpha = 0.08, z0 = 0.001, 
-message="yes", save.csv="yes") 
+message="yes", AdditionalStats="yes", save.csv="yes") 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

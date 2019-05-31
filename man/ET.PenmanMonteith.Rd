@@ -8,7 +8,7 @@ Implementing the Penman-Monteith formulation (including the method for FAO-56 hy
 }
 \usage{
 \method{ET}{PenmanMonteith}(data, constants, ts="daily", solar="sunshine hours", 
-wind="yes", crop="short", message="yes", save.csv="yes", \dots)
+wind="yes", crop="short", message="yes", AdditionalStats="yes", save.csv="yes", \dots)
 }
 
 \arguments{
@@ -67,6 +67,9 @@ wind="yes", crop="short", message="yes", save.csv="yes", \dots)
 - Time duration of the ET estimation\cr
 - Number of ET estimates obtained in the entire time-series\cr
 - Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.}
+  \item{AdditionalStats}{
+  "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
+  }
   \item{save.csv}{
   Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
   }
@@ -130,7 +133,7 @@ data("constants")
 
 # Call ET.PenmanMonteith under the generic function ET
 results <- ET.PenmanMonteith(data, constants, ts="daily", solar="sunshine hours", 
-wind="yes", crop = "short", message="yes", save.csv="yes") 
+wind="yes", crop = "short", message="yes", AdditionalStats="yes", save.csv="yes") 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

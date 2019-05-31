@@ -8,7 +8,7 @@ Implementing the Brutsaert-Strickler formulation for actual areal evapotranspira
 }
 \usage{
 \method{ET}{BrutsaertStrickler}(data, constants, ts="daily", solar="sunshine hours", alpha=0.23,
-message="yes", save.csv="yes", \dots)
+message="yes", AdditionalStats="yes", save.csv="yes", \dots)
 }
 
 \arguments{
@@ -58,6 +58,9 @@ message="yes", save.csv="yes", \dots)
 - Number of ET estimates obtained in the entire time-series\cr
 - Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values
 }
+  \item{AdditionalStats}{
+  "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
+  }
   \item{save.csv}{
   Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
   }
@@ -116,7 +119,7 @@ data("constants")
 
 # Call ET.BrutsaertStrickler under the generic function ET
 results <- ET.BrutsaertStrickler(data, constants, ts="daily", solar="sunshine hours", 
-alpha=0.23, message="yes", save.csv="yes")
+alpha=0.23, message="yes", AdditionalStats="yes", save.csv="yes")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

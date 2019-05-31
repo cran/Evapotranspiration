@@ -8,7 +8,7 @@ Implementing the Jensen-Haise formulation for estimating potential evapotranspir
 }
 \usage{
 \method{ET}{JensenHaise}(data, constants, ts="daily", solar="sunshine hours", 
-message="yes", save.csv="yes", \dots)
+message="yes", AdditionalStats="yes", save.csv="yes", \dots)
 }
 
 \arguments{
@@ -50,6 +50,9 @@ message="yes", save.csv="yes", \dots)
 - Time duration of the ET estimation\cr
 - Number of ET estimates obtained in the entire time-series\cr
 - Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values. }
+  \item{AdditionalStats}{
+  "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
+  }
   \item{save.csv}{
   Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
   }
@@ -108,7 +111,7 @@ data("constants")
 
 # Call ET.JensenHaise under the generic function ET
 results <- ET.JensenHaise(data, constants, ts="daily", solar="sunshine hours",
-message="yes",save.csv="yes")
+message="yes",AdditionalStats="yes", save.csv="yes")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

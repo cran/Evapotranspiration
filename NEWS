@@ -1,20 +1,19 @@
-    CHANGES IN Evapotranspiration VERSION 1.13
+    CHANGES IN Evapotranspiration VERSION 1.14
 
 NEW FEATURES
     o  NA
    
 SIGNIFICANT USER-VISIBLE CHANGES
-    o  Significant speed up for the feature to detect maximum missing data duration in function 'ReadInputs' - tested for a daily dataset over 100 years and achieved a 4-fold speed up than version 1.12.
+    o  Significant speed up functionc 'ET.MortonCRAE' and 'ET.MortonCRWE' via vectorization of estimation - tested for a daily dataset over 50 years and achieved a 8-fold speed up than version 1.13.
+    o  Enabled users to turn off on-screen messages when running 'ReadInputs'
+    o  Enabled users to disable estimation of monthly and annual averages when running 'ET...' functions
 
 BUG FIXES
-    o  Fixed previous bug that ReadInputs didn't interpolate missing data in 'vs' and 'va'
-    
+    o  NA
+
 MINOR CHANGES
-    o  User manual 'ET.Penman' and 'ET.PenmanMonteith' - specify that 'as' and 'bs' are needed in 'constants' when argument 'solar' = 'cloud'
-    o  User manual 'ET.MortonCRAE' and 'ET.MortonCRWE' - does not require 'z' (wind instrument height) in 'constants'
-    o  User manual 'climatedata' - subdaily RH has the unit of %
-    o  User manual 'constants' - a total of 36 constants instead of 46
-    o  Corrected inconsistency: user manual 'ReadInputs' states that the four temperature inputs must be > -50 degC but the code has > -20 degC (-50 degC now used for both)
+    o  Argument 'AdditionalStats' added to all 'ET....' functions to allow enable/disable of estimation of monthly and annual average ET, manual updated accordingly
+    o  Argument 'message' added to 'ReadInputs' to enable users to turn off on-screen messages 
     
 DEPRECATED & DEFUNCT
     o  NA

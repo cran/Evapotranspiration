@@ -8,7 +8,8 @@ Implementing the Morton CRAE formulation for estimating potential evapotranspira
 }
 \usage{
 \method{ET}{MortonCRAE}(data, constants, ts="monthly", est="potential ET", 
-solar="sunshine hours", Tdew= T, alpha = NULL, message="yes", save.csv="yes", \dots)
+solar="sunshine hours", Tdew= T, alpha = NULL, message="yes", AdditionalStats="yes", 
+save.csv="yes", \dots)
 }
 
 \arguments{
@@ -73,6 +74,9 @@ solar="sunshine hours", Tdew= T, alpha = NULL, message="yes", save.csv="yes", \d
 - Time duration of the ET estimation\cr
 - Number of ET estimates obtained in the entire time-series\cr
 - Basic statistics of the estimated ET time-series including \emph{mean}, \emph{max} and \emph{min} values.}
+  \item{AdditionalStats}{
+  "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
+  }
   \item{save.csv}{
   Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
   }
@@ -138,7 +142,7 @@ data("constants")
 # Call ET.MortonCRAE under the generic function ET
 results <- ET.MortonCRAE(data, constants, ts="monthly", 
 est="potential ET", solar="sunshine hours", Tdew= TRUE, 
-alpha = NULL, message="yes", save.csv="yes") 
+alpha = NULL, message="yes", AdditionalStats="yes", save.csv="yes") 
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

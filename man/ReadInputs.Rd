@@ -12,7 +12,8 @@ ReadInputs(varnames, climatedata, constants, stopmissing, timestep = "daily",
                         interp_missing_entries = FALSE, 
                         interp_abnormal = FALSE, 
                         missing_method = NULL, 
-                        abnormal_method = NULL)
+                        abnormal_method = NULL,
+                        message = "yes")
 }
 
 \arguments{
@@ -112,7 +113,8 @@ ReadInputs(varnames, climatedata, constants, stopmissing, timestep = "daily",
   \code{neighbouring average} - interpolation between the two bounding values, which is only suitable for time increments in which non-abnormal values are available at adjacent increments (McMahon et al., 2013). When there is more than one consecutive abnormal entry, this interpolation fails, with a warning given.
   
   }
-
+  \item{message }{"yes" or "no" indicating whether checking messages should be printed on screen.
+  }
 
   }
 
