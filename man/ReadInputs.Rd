@@ -32,7 +32,7 @@ ReadInputs(varnames, climatedata, constants, stopmissing, timestep = "daily",
 \emph{Tdew} - dew point temperature in degree Celcius, either daily or subdaily accepted,\cr
 \emph{RHmax} - daily maximum relative humidity in percentage,\cr
 \emph{RHmin} - daily minimum relative humidity in percentage,\cr
-\emph{RH} - subdaily relative humidity in degree Celcius,\cr
+\emph{RH} - subdaily relative humidity in percentage,\cr
 \emph{Rs} - incoming solar radiation in Megajoules per square metres per day, either daily or subdaily accepted,\cr
 \emph{n} - daily sunshine hour in hours,\cr
 \emph{Cd} - daily cloud cover in oktas,\cr

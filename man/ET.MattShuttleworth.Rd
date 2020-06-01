@@ -7,8 +7,8 @@
 Implementing the Matt-Shuttleworth formulation for reference crop evapotranspiration
 }
 \usage{
-\method{ET}{MattShuttleworth}(data, constants, ts="daily", solar="sunshine hours", 
-alpha=0.23, r_s=70, CH=0.12, message="yes", AdditionalStats="yes", save.csv="yes", \dots)
+\method{ET}{MattShuttleworth}(data, constants, ts="daily", solar="sunshine hours",
+alpha=0.23, r_s=70, CH=0.12, message="yes", AdditionalStats="yes", save.csv="no", \dots)
 }
 
 \arguments{
@@ -27,13 +27,13 @@ alpha=0.23, r_s=70, CH=0.12, message="yes", AdditionalStats="yes", save.csv="yes
   \emph{Roua} - mean air density = 1.20 kg.m^-3,\cr
   \emph{Ca} - specific heat of air = 0.001013 MJ.kg^-1.oC^-1.\cr
   \cr
-  
-  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr 
+
+  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr
   \emph{as} - fraction of extraterrestrial radiation reaching earth on sunless days,\cr
   \emph{bs} - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
   }
   \item{ts}{
-  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on.
   Default is \code{daily}.
   }
   \item{solar}{
@@ -70,7 +70,7 @@ alpha=0.23, r_s=70, CH=0.12, message="yes", AdditionalStats="yes", save.csv="yes
   "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
   }
   \item{save.csv}{
-  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -119,7 +119,7 @@ McMahon, T., Peel, M., Lowe, L., Srikanthan, R. & McVicar, T. 2012. \emph{Estima
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -127,9 +127,9 @@ data("processeddata")
 data("constants")
 
 # Call ET.MattShuttleworth under the generic function ET
-results <- ET.MattShuttleworth(data, constants, ts="daily",
+results <- ET.MattShuttleworth(processeddata, constants, ts="daily",
 solar="sunshine hours", alpha=0.23, r_s=70, CH=0.12,
-message="yes", AdditionalStats="yes", save.csv="yes")
+message="yes", AdditionalStats="yes", save.csv="no")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

@@ -7,8 +7,8 @@
 Implementing the Blaney-Criddle formulation for estimating reference crop evapotranspiration.
 }
 \usage{
-\method{ET}{BlaneyCriddle}(data, constants, ts="daily", solar="sunshine hours", height = F, 
-message="yes", AdditionalStats="yes", save.csv="yes", \dots) 
+\method{ET}{BlaneyCriddle}(data, constants, ts="daily", solar="sunshine hours", height = F,
+message="yes", AdditionalStats="yes", save.csv="no", \dots)
 }
 
 \arguments{
@@ -25,7 +25,7 @@ message="yes", AdditionalStats="yes", save.csv="yes", \dots)
   \emph{e0},\emph{e1},\emph{e2},\emph{e3},\emph{e4} - recommended values of 0.81917, -0.0040922, 1.0705, 0.065649, -0.0059684, -0.0005967 respectively (Table 1 in Frevert et al., 1983).
   }
   \item{ts}{
-  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on.
   Default is \code{daily}.
   }
   \item{solar}{
@@ -53,7 +53,7 @@ message="yes", AdditionalStats="yes", save.csv="yes", \dots)
   "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
   }
   \item{save.csv}{
-  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -111,7 +111,7 @@ Frevert, D.K., Hill, R.W.Braaten, B.C. 1983, \emph{Estimation of FAO evapotransp
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -119,8 +119,8 @@ data("processeddata")
 data("constants")
 
 # Call ET.BlaneyCriddle under the generic function ET
-results <- ET.BlaneyCriddle(data, constants, ts="daily", solar="sunshine hours", 
-height= FALSE, message="yes", AdditionalStats="yes", save.csv="yes")
+results <- ET.BlaneyCriddle(processeddata, constants, ts="daily", solar="sunshine hours",
+height= FALSE, message="yes", AdditionalStats="yes", save.csv="no")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

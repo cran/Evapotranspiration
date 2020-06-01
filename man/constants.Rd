@@ -1,11 +1,11 @@
 \name{constants}
-\docType{data}
 \alias{constants}
+\docType{data}
 \title{Constants Required for Calculating Evapotranspriation}
 \description{
    This data set contains the universal constants, and examples of other variable constants required for calculating evapotranspiration in function \code{\link{ET}}, based on the climatic condition at Kent Town station in Adelaide, Australia.
 }
-\usage{constants}
+\usage{data(constants)}
 \format{A list containing 36 constant values including:\cr
 \cr
 - 20 universal constants, which should be kept unchanged for most conditions:\cr

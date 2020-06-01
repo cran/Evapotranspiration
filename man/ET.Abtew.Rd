@@ -7,8 +7,8 @@
 Implementing the Abtew formulation for estimating actual evapotranspiration.
 }
 \usage{
-\method{ET}{Abtew}(data, constants, ts="daily", solar="sunshine hours", 
-message="yes", AdditionalStats="yes", save.csv="yes", \dots) 
+\method{ET}{Abtew}(data, constants, ts="daily", solar="sunshine hours",
+message="yes", AdditionalStats="yes", save.csv="no", \dots)
 }
 
 \arguments{
@@ -24,12 +24,12 @@ message="yes", AdditionalStats="yes", save.csv="yes", \dots)
   \emph{Gsc} - solar constant = 0.0820 MJ.m^-2.min^-1,\cr
   \emph{sigma} - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.\cr
   \cr
-  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr 
+  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr
   \emph{as} - fraction of extraterrestrial radiation reaching earth on sunless days,\cr
   \emph{bs} - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
    }
   \item{ts}{
-  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on.
   Default is \code{daily}.
   }
   \item{solar}{
@@ -54,7 +54,7 @@ message="yes", AdditionalStats="yes", save.csv="yes", \dots)
   "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
   }
   \item{save.csv}{
-  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -102,7 +102,7 @@ Abtew, W. 1996. \emph{Evapotranspiration measurements and modeling for three wet
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -110,8 +110,8 @@ data("processeddata")
 data("constants")
 
 # Call ET.Abtew under the generic function ET
-results <- ET.Abtew(data, constants,ts="daily", solar="sunshine hours",
-message="yes", AdditionalStats="yes", save.csv="yes") 
+results <- ET.Abtew(processeddata, constants,ts="daily", solar="sunshine hours",
+message="yes", AdditionalStats="yes", save.csv="no")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

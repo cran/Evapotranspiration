@@ -27,24 +27,24 @@ ET(data, constants, \dots)
   \cr
   When the ET model selection is not specified by users, this function determines the default model to use based on the availability of climate data presented. Wherever data are available, the more comprehensive, physically-based models are always preferred over the empirical models, in the following hierarchy:\cr
   \cr
-- If all variables of \emph{Tmax/Tmin} and \emph{RHmax/RHmin} and either \emph{uz} or \emph{u2}, and either \emph{Rs} of \emph{n} or \emph{Cd} are available, and short crop surface is specified in argument: \cr 
+- If all variables of \emph{Tmax/Tmin} and \emph{RHmax/RHmin} and either \emph{uz} or \emph{u2}, and either \emph{Rs} of \emph{n} or \emph{Cd} are available, and short crop surface is specified in argument: \cr
   Penman-Monteith FAO56 (\code{\link{ET.PenmanMonteith}} with \emph{crop = "short"});\cr
-  \cr 
-- If all variables of \emph{Tmax/Tmin} and \emph{RHmax/RHmin} and either \emph{uz} or \emph{u2}, and either \emph{Rs} of \emph{n} or \emph{Cd} are available, and long crop surface is specified in argument: \cr 
+  \cr
+- If all variables of \emph{Tmax/Tmin} and \emph{RHmax/RHmin} and either \emph{uz} or \emph{u2}, and either \emph{Rs} of \emph{n} or \emph{Cd} are available, and long crop surface is specified in argument: \cr
   Penman-Monteith ASCE-EWRI (\code{\link{ET.PenmanMonteith}} with \emph{crop = "long"});\cr
-  \cr 
-- If all variables of \emph{Tmax/Tmin} and \emph{RHmax/RHmin} and either \emph{uz} or \emph{u2}, and either \emph{Rs}      of \emph{n} or \emph{Cd} are available, and no surface is specified:\cr 
+  \cr
+- If all variables of \emph{Tmax/Tmin} and \emph{RHmax/RHmin} and either \emph{uz} or \emph{u2}, and either \emph{Rs}      of \emph{n} or \emph{Cd} are available, and no surface is specified:\cr
   Penman (\code{\link{ET.Penman}});\cr
-  \cr 
-- If all variables of \emph{Tmax/Tmin} and \emph{RHmax/RHmin}, and either \emph{Rs} of \emph{n} or \emph{Cd} are available:\cr 
+  \cr
+- If all variables of \emph{Tmax/Tmin} and \emph{RHmax/RHmin}, and either \emph{Rs} of \emph{n} or \emph{Cd} are available:\cr
   Priestley-Taylor (\code{\link{ET.PriestleyTaylor}});\cr
-  \cr 
-- If all variables of \emph{Tmax/Tmin} and either \emph{Rs} of \emph{n} or \emph{Cd} are available:\cr 
+  \cr
+- If all variables of \emph{Tmax/Tmin} and either \emph{Rs} of \emph{n} or \emph{Cd} are available:\cr
   Makkink (\code{\link{ET.Makkink}});\cr
-  \cr 
-- If all variables of \emph{Tmax/Tmin} are available:\cr 
+  \cr
+- If all variables of \emph{Tmax/Tmin} are available:\cr
   Hargreaves-Samani (\code{\link{ET.HargreavesSamani}}).
-  
+
 }
 
 \author{
@@ -57,10 +57,10 @@ data("processeddata")
 data("constants")
 
 # Call generic function ET() - leads to the use of Penman model
-results_default <- ET(data, constants)
+results_default <- ET(processeddata, constants, save.csv="no")
 
 # Call generic function ET() - leads to the use of Penman-Monteith model
-results_crop <- ET(data, constants, crop = "short") 
+results_crop <- ET(processeddata, constants, crop = "short", save.csv="no")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

@@ -1,5 +1,5 @@
 exportPattern("^[^\\.]")
-import(zoo)
+import("zoo")
 importFrom("graphics","par","boxplot","legend","lines","plot","plot.new","text")
 importFrom("stats","aggregate","ave","na.omit","time")
 importFrom("utils","write.table")

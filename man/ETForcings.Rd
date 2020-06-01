@@ -53,11 +53,11 @@ data("processeddata")
 data("constants")
 
 # Call ET.Penman under the generic function ET
-results <- ET.Penman(data, constants, ts="daily", solar="sunshine hours", 
-wind="yes", windfunction_ver = "1948", alpha = 0.08, z0 = 0.001) 
+results <- ET.Penman(processeddata, constants, ts="daily", solar="sunshine hours",
+wind="yes", windfunction_ver = "1948", alpha = 0.08, z0 = 0.001, save.csv="no")
 
 # Plot the estimated Penman open-water evaporation against average temperature
-ETForcings(data, results, forcing = "Tmax")
+ETForcings(processeddata, results, forcing = "Tmax")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

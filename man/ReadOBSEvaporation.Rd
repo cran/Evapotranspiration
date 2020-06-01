@@ -22,7 +22,7 @@ ReadOBSEvaporation(E_OBS, data)
   A list of data named \code{data} which contains data of climate variables over the same period as the evaporation data
   }
   }
-  
+
 \value{
 This function returns a list with all components of class \code{zoo} which have been processed from the raw data, including:
   \item{Date.OBS}{
@@ -58,7 +58,7 @@ data("constants")
 
 # Reading obsevations of evaporation within specified time period
 data("E_OBS")
-OBS <- ReadOBSEvaporation(E_OBS, data)
+OBS <- ReadOBSEvaporation(E_OBS, processeddata)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

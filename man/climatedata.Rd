@@ -1,11 +1,11 @@
 \name{climatedata}
-\docType{data}
 \alias{climatedata}
+\docType{data}
 \title{Raw Climate Data Required for Calculating Evapotranspiration}
 \description{
   This data set contains the raw climate data including the variables required for calculating evapotranspiration in function \code{\link{ET}} over the observation period between 1/3/2001 and 08/31/2004 at the Kent Town station in Adelaide, Australia.
 }
-\usage{climatedata}
+\usage{data(climatedata)}
 \format{A data frame containing 10240 obserations of 9 objects:\cr
 \cr
 \emph{Station.Number} - weather station number,\cr

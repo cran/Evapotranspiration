@@ -4,10 +4,10 @@
 \title{Plot the daily, monthly and annual aggregations of esimtated evapotranspiration
 }
 \description{
-Produce plot of aggregated estimations of evapotranspiration in daily, monthly and annual steps, or averaged daily estimations in monthly or annual steps. 
+Produce plot of aggregated estimations of evapotranspiration in daily, monthly and annual steps, or averaged daily estimations in monthly or annual steps.
 }
 \usage{
-ETPlot(results, type = "Aggregation", OBS, OBSplot, Sdate = time(results$ET.Daily)[1], 
+ETPlot(results, type = "Aggregation", OBS, OBSplot, Sdate = time(results$ET.Daily)[1],
 Edate = time(results$ET.Daily)[length(results$ET.Daily)])
 
 }
@@ -56,16 +56,16 @@ data("processeddata")
 data("constants")
 
 # Call ET.Penman under the generic function ET
-results <- ET.Penman(data, constants, ts="daily", solar="sunshine hours", 
-wind="yes", windfunction_ver = "1948", alpha = 0.08, z0 = 0.001) 
+results <- ET.Penman(processeddata, constants, ts="daily", solar="sunshine hours",
+wind="yes", windfunction_ver = "1948", alpha = 0.08, z0 = 0.001, save.csv="no")
 
 
 # Read evaporation data
 data("E_OBS")
-OBS <- ReadOBSEvaporation(E_OBS, data)
+OBS <- ReadOBSEvaporation(E_OBS, processeddata)
 
 # Plot the aggregation of estimated Penman open-water evaporation with observed evaporation
-ETPlot(results, type = "Aggregation", OBS, OBSplot = TRUE, Sdate = "2001-05-01", 
+ETPlot(results, type = "Aggregation", OBS, OBSplot = TRUE, Sdate = "2001-05-01",
 Edate = "2004-05-01")
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the

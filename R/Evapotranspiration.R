@@ -1,8 +1,8 @@
 
-ET <- function(data, constants, ...) UseMethod("ET") 
+ET <- function(data, constants, ...) UseMethod("ET")
 
-ET.default <- function(data, constants, crop=NULL, alpha=NULL, solar=NULL, wind=NULL, ...) { 
-  
+ET.default <- function(data, constants, crop=NULL, alpha=NULL, solar=NULL, wind=NULL, ...) {
+
   if (is.null(solar)) {
     if (!is.null(data$Rs)) {
       solar = "data"
@@ -12,9 +12,9 @@ ET.default <- function(data, constants, crop=NULL, alpha=NULL, solar=NULL, wind=
       solar = "cloud"
     } else if (!is.null(data$Precip)) {
       solar = "monthly precipitation"
-    } 
-  } 
-  
+    }
+  }
+
   if (is.null(wind)) {
     if (!is.null(data$u2)|!is.null(data$uz)) {
       wind = "yes"
@@ -24,10 +24,10 @@ ET.default <- function(data, constants, crop=NULL, alpha=NULL, solar=NULL, wind=
   }
   if ( all(any(is.null(data$RHmax),is.null(data$RHmin)),
            is.null(data$Rs),is.null(data$n),is.null(data$Cd),is.null(data$Precip),
-           all(is.null(data$uz),is.null(data$u2)), 
+           all(is.null(data$uz),is.null(data$u2)),
            any(is.null(data$Tmax),is.null(data$Tmin))) ) { # no data available
     stop("No ET model is suitable according to the data availability")
-    
+
   } else if ( all(any(is.null(data$RHmax),is.null(data$RHmin)),
                   is.null(data$Rs),is.null(data$n),is.null(data$Cd),is.null(data$Precip)) &
               all(is.null(data$uz),is.null(data$u2)) &
@@ -40,7 +40,7 @@ ET.default <- function(data, constants, crop=NULL, alpha=NULL, solar=NULL, wind=
               all(!is.null(data$Tmax),!is.null(data$Tmin)) ) { # Tmax/Tmin & any Rs data available
     message("No ET model specified, choose the Makkink model according to the data availability")
     class(data) = "Makkink"
-    
+
     ET(data, constants, solar=solar, ...)
   } else if ( all(is.null(data$uz),is.null(data$u2)) &
               any(!is.null(data$Rs),!is.null(data$n),!is.null(data$Cd),!is.null(data$Precip)) &
@@ -48,7 +48,7 @@ ET.default <- function(data, constants, crop=NULL, alpha=NULL, solar=NULL, wind=
               !is.null(alpha) ) { # Tmax/Tmin & any Rs & RHmax/RHmin data available
     message("No ET model specified, choose the Priestley-Taylor model according to the data availability")
     class(data) = "PriestleyTaylor"
-    
+
     ET(data, constants, solar=solar, ...)
   } else if ( any(!is.null(data$Rs),!is.null(data$n),!is.null(data$Cd),!is.null(data$Precip)) &
               all(!is.null(data$Tmax),!is.null(data$Tmin),!is.null(data$RHmax),!is.null(data$RHmin)) &
@@ -57,52 +57,52 @@ ET.default <- function(data, constants, crop=NULL, alpha=NULL, solar=NULL, wind=
   } else {
     "No ET model can be recommended according to the data availability"
   }
-  
+
   if (exists('Flag')) {
     if (Flag == 1) { #Penman-Monteith or Penman
-      
+
       if (is.null(crop) | all(crop != "short",crop != "tall")) {
         alpha=0.08
         z0=0.001
         message("No ET model specified and no valid evaporative surface specified, choose the Penman model for open-water evaporation according to the data availability")
         class(data) = "Penman"
-        
+
         ET(data, constants, solar=solar, wind=wind, windfunction_ver=1948, alpha=alpha, z0=z0, ...)
       } else {
-        
+
         message("No ET model specified, choose the Penman-Monteith model according to the data availability")
         class(data) = "PenmanMonteith"
         ET(data, constants, solar=solar, wind=wind, crop=crop, ...)
       }
     }
   }
-  
-  
+
+
 }
 
 #-------------------------------------------------------------------------------------
 
-ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind="yes", windfunction_ver=1948, alpha = 0.08, z0 = 0.001, 
-                      message = "yes", AdditionalStats= "yes", save.csv = "yes", ...) {
+ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind="yes", windfunction_ver=1948, alpha = 0.08, z0 = 0.001,
+                      message = "yes", AdditionalStats= "yes", save.csv = "no", ...) {
   #class(data) <- "funname"
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
-  
+
   if (is.null(data$va)|is.null(data$vs)) {
     if (is.null(data$RHmax)|is.null(data$RHmin)) {
       stop("Required data missing: need either 'va' and 'vs', or 'RHmax' and 'RHmin' (or 'RH')")
     }
-  } 
-  
+  }
+
   if (wind == "yes") { # wind data is required
     if (is.null(data$uz) & is.null(data$u2)) {
       stop("Required data missing for 'uz' or 'u2'")
     }
   }
-  
+
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
     stop("Required data missing for 'Rs'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
@@ -111,12 +111,12 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
     stop("Required data missing for 'Cd'")
   } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
     stop("Required data missing for 'Precip'")
-  } 
-  
+  }
+
   if (wind != "yes" & wind != "no") {
     stop("Please choose if actual data will be used for wind speed from wind = 'yes' and wind = 'no'")
   }
-  
+
   # check user-input albedo
   if (wind == "yes") {
     if (is.na(as.numeric(alpha))) {
@@ -129,14 +129,14 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
     }
     if (is.na(as.numeric(z0))) {
       stop("Please use a numeric value for the z0 (roughness height)")
-    }  
+    }
   }
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   # Calculations from data and constants for Penman
-  
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -146,17 +146,16 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
-  
+
   if (solar == "data") {
     R_s <- data$Rs
-  } else if (solar!="monthly precipitation") {
-    # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
-  } else {
-    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-    R_s <- (0.85 - 0.047*data$Cd)*R_a 
+  }else if (solar != "monthly precipitation"&
+            solar != "cloud") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+  }else {
+    R_s <- (0.85 - 0.047 * data$Cd) * R_a
   }
-  
+
   if (wind == "yes") {
     # Wind speed at 2 meters
     if (is.null(data$u2)) {
@@ -164,7 +163,7 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
     } else {
       u2 <- data$u2
     }
-    
+
     if (!is.null(data$va) & !is.null(data$vs)) {
       vabar <- data$va
       vas <- data$vs
@@ -173,15 +172,15 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
       vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
       vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
       vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-      
+
       # Vapour pressure
       vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
-      
+
     }
-    
+
     R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
     R_ns <- (1 - alpha) * R_s # net incoming shortwave radiation - water or other evaporative surface with specified Albedo (S3.2)
-    
+
     R_n = R_ns - R_nl # net radiation (S3.1)
     if (windfunction_ver == "1948") {
       f_u = 2.626 + 1.381 * u2 # wind function Penman 1948 (S4.11)
@@ -190,22 +189,21 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
     } else if (windfunction_ver != "1948" & windfunction_ver != "1956") {
       stop("Please select the version of wind function (1948 or 1956)")
     }
-    
+
     Ea = f_u * (vas - vabar) # (S4.2)
-    
+
     Epenman.Daily <-  delta / (delta +  gamma) * (R_n / constants$lambda) + gamma  / (delta + gamma) * Ea # Penman open-water evaporation (S4.1)
   } else {
     # mean relative humidity
-    RHmean <- (data$RHmax + data$RHmin) / 2 
-    
+    RHmean <- (data$RHmax + data$RHmin) / 2
+
     Epenman.Daily <-  0.047 * R_s * sqrt(Ta + 9.5) - 2.4 * (R_s/R_a)^2 + 0.09 * (Ta + 20) * (1 - RHmean/100) # Penman open-water evaporation without wind data by Valiantzas (2006) (S4.12)
   }
-  
+
   ET.Daily <- Epenman.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
-  
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily))), FUN = sum)
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -216,10 +214,10 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
-  # Generate summary message for results  
-  ET_formulation <- "Penman" 
+  # Generate summary message for results
+  ET_formulation <- "Penman"
   if (wind == "no") {
     ET_type <- "Open-water Evaporation"
     Surface <- paste("water, albedo =", alpha, "; roughness height =", z0, "m")
@@ -233,7 +231,7 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
     }
   }
   if (solar == "data") {
-    message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"    
+    message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
     message1 <- "Sunshine hour data have been used for calculating incoming solar radiation"
   } else if (solar == "cloud") {
@@ -241,18 +239,18 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
   } else {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
-  
+
   if (wind == "yes") {
     if (windfunction_ver == "1948") {
       message2 <- "Wind data have been used for calculating the Penman evaporation. Penman 1948 wind function has been used."
     } else if (windfunction_ver == "1956") {
       message2 <- "Wind data have been used for calculating the Penman evaporation. Penman 1956 wind function has been used."
-    } 
+    }
   } else {
     message2 <- "Alternative calculation for Penman evaporation without wind data have been performed"
   }
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
-  
+
   if (ts=="daily") {
     res_ts <-  ET.Daily
   } else if (ts=="monthly") {
@@ -260,16 +258,16 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message == "yes") {
-    
-    
+
+
     message(ET_formulation, " ", ET_type)
     message("Evaporative surface: ", Surface)
     message(message1)
     message(message2)
-    
-    
+
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -291,7 +289,7 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_Penman.csv", dec=".", 
+      write.table(as.character(namer), file="ET_Penman.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_Penman.csv", col.names=F, append= T, sep=',' )
     }
@@ -304,25 +302,25 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
 
 #-------------------------------------------------------------------------------------
 
-ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours", wind="yes", crop="short", 
-                              message = "yes", AdditionalStats= "yes", save.csv = "yes", ...) {
+ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours", wind="yes", crop="short",
+                              message = "yes", AdditionalStats= "yes", save.csv = "no", ...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   if (is.null(data$va)|is.null(data$vs)) {
     if (is.null(data$RHmax)|is.null(data$RHmin)) {
       stop("Required data missing: need either 'va' and 'vs', or 'RHmax' and 'RHmin' (or 'RH')")
     }
-  } 
+  }
   if (wind == "yes") { # wind data is required
     if (is.null(data$u2) & is.null(data$uz)) {
       stop("Required data missing for 'uz' or 'u2'")
     }
   }
-  
+
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
     stop("Required data missing for 'Rs'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
@@ -331,8 +329,8 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     stop("Required data missing for 'Cd'")
   } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
     stop("Required data missing for 'Precip'")
-  } 
-  
+  }
+
   if (wind != "yes" & wind != "no") {
     stop("Please choose if actual data will be used for wind speed from wind = 'yes' and wind = 'no'")
   }
@@ -352,10 +350,10 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     z0 <- 0.02 # roughness height for short grass
     alpha <- 0.25 # semi-desert short grass - will not be used for calculation - just informative
   }
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   if (!is.null(data$va) & !is.null(data$vs)) {
     vabar <- data$va
     vas <- data$vs
@@ -364,13 +362,13 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
     vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
     vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-    
+
     # Vapour pressure
     vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
-    
-  }  
+
+  }
   # Calculations from data and constants for Penman-Monteith Reference Crop
-  
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -380,21 +378,20 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
-  
+
   if (solar == "data") {
     R_s <- data$Rs
-  } else if (solar!="monthly precipitation") {
-    # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
-  } else {
-    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-    R_s <- (0.85 - 0.047*data$Cd)*R_a 
+  }else if (solar != "monthly precipitation"&
+            solar != "cloud") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+  }else {
+    R_s <- (0.85 - 0.047 * data$Cd) * R_a
   }
-  
+
   R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
   R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
   R_ng <- R_nsg - R_nl # net radiation (S3.1)
-  
+
   if (wind == "yes") {
     # Wind speed
     if (is.null(data$u2)) {
@@ -402,7 +399,7 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     } else {
       u2 <- data$u2
     }
-    
+
     if (crop == "short") {
       r_s <- 70 # will not be used for calculation - just informative
       CH <- 0.12 # will not be used for calculation - just informative
@@ -414,12 +411,11 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     }
     ET.Daily <- ET_RC.Daily
     ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-    ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-    
+    ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily))), FUN = sum)
   } else {
     # mean relative humidity
-    RHmean <- (data$RHmax + data$RHmin) / 2 
-    
+    RHmean <- (data$RHmax + data$RHmin) / 2
+
     R_s.Monthly <- aggregate(R_s, as.yearmon(data$Date.daily, "%m/%y"),mean)
     R_a.Monthly <- aggregate(R_a, as.yearmon(data$Date.daily, "%m/%y"),mean)
     Ta.Monthly <- aggregate(Ta, as.yearmon(data$Date.daily, "%m/%y"),mean)
@@ -430,12 +426,12 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     for (cont in 1:length(data$i)) {
       ET_RC.Daily[(((as.numeric(as.yearmon(time(ET_RC.Daily))))-floor(as.numeric(as.yearmon(time(ET_RC.Daily)))))*12+1)==data$i[cont]] <- ET_RC.Monthly[cont]
     }
-    
+
     ET.Daily <- ET_RC.Daily
     ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-    ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.monthly, "%m/%y"))), FUN = sum)
+    ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily))), FUN = sum)
   }
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -446,9 +442,9 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
-  
+
   # Generate summary message for results
   if (wind == "no") {
     ET_formulation <- "Penman-Monteith (without wind data)"
@@ -474,15 +470,15 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
   } else {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
-  
+
   if (wind == "yes") {
     message2 <- "Wind data have been used for calculating the reference crop evapotranspiration"
   } else {
     message2 <- "Alternative calculation for reference crop evapotranspiration without wind data have been performed"
   }
-  
+
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
-  
+
   if (ts=="daily") {
     res_ts <-  ET.Daily
   } else if (ts=="monthly") {
@@ -491,13 +487,13 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     res_ts <- ET.Annual
   }
   if (message == "yes") {
-    
+
     message(ET_formulation, " ", ET_type)
     message("Evaporative surface: ", Surface)
     message(message1)
     message(message2)
-    
-    
+
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -515,13 +511,13 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
       message("Min: ",round(min(res_ts),digits=2))
     }
   }
-  
+
   #class(results) <- funname
   if (save.csv == "yes") {
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_PenmanMonteith.csv", dec=".", 
+      write.table(as.character(namer), file="ET_PenmanMonteith.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_PenmanMonteith.csv", col.names=F, append= T, sep=',' )
     }
@@ -529,18 +525,18 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
   } else {
     return(results)
   }
-  
-  
+
+
 }
 
 #-------------------------------------------------------------------------------------
 
-ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hours", alpha=0.23, r_s=70, CH=0.12, 
-                                message = "yes", AdditionalStats= "yes", save.csv = "yes", ...) { 
+ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hours", alpha=0.23, r_s=70, CH=0.12,
+                                message = "yes", AdditionalStats= "yes", save.csv = "no", ...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   if (is.null(data$va)|is.null(data$vs)) {
@@ -551,7 +547,7 @@ ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hou
   if (is.null(data$u2) & is.null(data$uz)) {
     stop("Required data missing for 'uz' or 'u2'")
   }
-  
+
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
     stop("Required data missing for 'Rs'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
@@ -561,7 +557,7 @@ ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hou
   } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
     stop("Required data missing for 'Precip'")
   }
-  
+
   # check user-input albedo, surface resistance and crop height
   if (is.na(as.numeric(alpha))) {
     stop("Please use a numeric value for the alpha (albedo of evaporative surface)")
@@ -576,11 +572,11 @@ ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hou
     if (as.numeric(alpha) < 0 | as.numeric(alpha) > 1) {
       stop("Please use a value between 0 and 1 for the alpha (albedo of evaporative surface)")
     }
-  } 
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+  }
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   if (!is.null(data$va) & !is.null(data$vs)) {
     vabar <- data$va
     vas <- data$vs
@@ -589,13 +585,13 @@ ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hou
     vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
     vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
     vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-    
+
     # Vapour pressure
     vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
   }
-  
+
   # Calculations from data and constants for Matt-Shuttleworth Reference Crop
-  
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -605,41 +601,40 @@ ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hou
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
-  
+
   if (solar == "data") {
     R_s <- data$Rs
-  } else if (solar!="monthly precipitation") {
-    # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
-  } else {
-    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-    R_s <- (0.85 - 0.047*data$Cd)*R_a 
+  }else if (solar != "monthly precipitation"&
+            solar != "cloud") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+  }else {
+    R_s <- (0.85 - 0.047 * data$Cd) * R_a
   }
-  
+
   R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
   # For short grass
   R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
   R_ng <- R_nsg - R_nl # net radiation (S3.1)
-  
+
   # Wind speed
   if (is.null(data$u2)) {
     u2 <- data$uz * 4.87 / log(67.8*constants$z - 5.42) # Equation S5.20 for PET formulations other than Penman
   } else {
     u2 <- data$u2
   }
-  
+
   r_clim <- 86400 * constants$Roua * constants$Ca * (vas - vabar) / (delta * R_ng) # clinmatological resistance (s*m^-1) (S5.34)
   r_clim[r_clim == 0] <- 0.1 # correction for r_clim = 0
   u2[u2 == 0] <- 0.1 # correction for u2 = 0
   VPD50toVPD2 <- (302 * (delta + gamma) + 70 * gamma * u2) / (208 * (delta + gamma) + 70 * gamma * u2) + 1/r_clim * ((302 * (delta + gamma) + 70 * gamma * u2) / (208 * (delta + gamma) + 70 * gamma * u2) * (208 / u2) - (302 / u2)) # ratio of vapour pressure deficits at 50m to vapour pressure deficits at 2m heights (S5.35)
   r_c50 <- 1 / ((0.41)^2) * log((50 - 0.67 * CH) / (0.123 * CH)) * log((50 - 0.67 * CH) / (0.0123 * CH)) * log((2 - 0.08) / 0.0148) / log((50 - 0.08) / 0.0148) # aerodynamic coefficient (s*m^-1) (S5.36)
-  
+
   E_Tc.Daily <- 1/constants$lambda * (delta * R_ng + (constants$Roua * constants$Ca * u2 * (vas - vabar)) / r_c50 * VPD50toVPD2) / (delta + gamma * (1 + r_s * u2 / r_c50)) # well-watered crop evapotranspiration in a semi-arid and windy location (S5.37)
-  
+
   ET.Daily <- E_Tc.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily))), FUN = sum)
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -650,7 +645,7 @@ ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hou
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
   # Generate summary message for results
   ET_formulation <- "Matt-Shuttleworth"
@@ -666,7 +661,7 @@ ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hou
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
-  
+
   if (ts=="daily") {
     res_ts <-  ET.Daily
   } else if (ts=="monthly") {
@@ -674,15 +669,15 @@ ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hou
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message == "yes") {
-    
-    
+
+
     message(ET_formulation, " ", ET_type)
     message("Evaporative surface: ", Surface)
     message(message1)
-    
-    
+
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -700,12 +695,12 @@ ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hou
       message("Min: ",round(min(res_ts),digits=2))
     }
   }
-  
+
   if (save.csv == "yes") {
     #class(results) <- funname
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_MattShuttleworth.csv", dec=".", 
+      write.table(as.character(namer), file="ET_MattShuttleworth.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_MattShuttleworth.csv", col.names=F, append= T, sep=',' )
     }
@@ -714,26 +709,26 @@ ET.MattShuttleworth <- function(data, constants, ts="daily", solar="sunshine hou
   } else {
     return(results)
   }
-  
-  
+
+
 }
 
 #-------------------------------------------------------------------------------------
 
-ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hours", alpha=0.23, 
-                               message = "yes", AdditionalStats= "yes", save.csv = "yes", ...) {  
+ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hours", alpha=0.23,
+                               message = "yes", AdditionalStats= "yes", save.csv = "no", ...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   if (is.null(data$va)|is.null(data$vs)) {
     if (is.null(data$RHmax)|is.null(data$RHmin)) {
       stop("Required data missing: need either 'va' and 'vs', or 'RHmax' and 'RHmin' (or 'RH')")
     }
-  } 
-  
+  }
+
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
     stop("Required data missing for 'Rs'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
@@ -743,7 +738,7 @@ ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hour
   } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
     stop("Required data missing for 'Precip'")
   }
-  
+
   # check user-input albedo
   if (is.na(as.numeric(alpha))) {
     stop("Please use a numeric value for the alpha (albedo of evaporative surface)")
@@ -752,11 +747,11 @@ ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hour
     if (as.numeric(alpha) < 0 | as.numeric(alpha) > 1) {
       stop("Please use a value between 0 and 1 for the alpha (albedo of evaporative surface)")
     }
-  } 
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+  }
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   if (!is.null(data$va) & !is.null(data$vs)) {
     vabar <- data$va
     vas <- data$vs
@@ -765,13 +760,13 @@ ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hour
     vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
     vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
     vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-    
+
     # Vapour pressure
     vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
   }
-  
+
   # Calculations from data and constants for Matt-Shuttleworth Reference Crop
-  
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -781,28 +776,27 @@ ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hour
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
-  
+
   if (solar == "data") {
     R_s <- data$Rs
-  } else if (solar!="monthly precipitation") {
-    # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
-  } else {
-    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-    R_s <- (0.85 - 0.047*data$Cd)*R_a 
+  }else if (solar != "monthly precipitation"&
+            solar != "cloud") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+  }else {
+    R_s <- (0.85 - 0.047 * data$Cd) * R_a
   }
-  
+
   R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
   # For short grass
   R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
   R_ng <- R_nsg - R_nl # net radiation (S3.1)
-  
+
   E_PT.Daily <- constants$alphaPT * (delta/(delta + gamma) * R_ng / constants$lambda - constants$G / constants$lambda) # well-watered crop evapotranspiration in a semi-arid and windy location (S5.37)
-  
+
   ET.Daily <- E_PT.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -813,9 +807,9 @@ ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hour
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
-  
+
   # Generate summary message for results
   ET_formulation <- "Priestley-Taylor"
   ET_type <- "Potential ET"
@@ -834,7 +828,7 @@ ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hour
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
-  
+
   if (ts=="daily") {
     res_ts <-  ET.Daily
   } else if (ts=="monthly") {
@@ -842,15 +836,15 @@ ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hour
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message == "yes") {
-    
-    
+
+
     message(ET_formulation, " ", ET_type)
     message("Evaporative surface: ", Surface)
     message(message1)
-    
-    
+
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -868,13 +862,13 @@ ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hour
       message("Min: ",round(min(res_ts),digits=2))
     }
   }
-  
+
   if (save.csv == "yes") {
     #class(results) <- funname
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_PriestleyTaylor.csv", dec=".", 
+      write.table(as.character(namer), file="ET_PriestleyTaylor.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_PriestleyTaylor.csv", col.names=F, append= T, sep=',' )
     }
@@ -882,12 +876,12 @@ ET.PriestleyTaylor <- function(data, constants, ts="daily", solar="sunshine hour
   } else {
     return(results)
   }
-  
+
 }
 
 #-------------------------------------------------------------------------------------
 
-ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alpha=0.23, est="potential ET", pan_coeff=0.71, overest=F, message="yes",AdditionalStats= "yes",  save.csv="yes", ...) {
+ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alpha=0.23, est="potential ET", pan_coeff=0.71, overest=F, message="yes",AdditionalStats= "yes",  save.csv="no", ...) {
   #class(data) <- funname
   if (is.null(data$Tmax) | is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
@@ -896,7 +890,7 @@ ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alph
     if (is.null(data$RHmax)|is.null(data$RHmin)) {
       stop("Required data missing: need either 'va' and 'vs', or 'RHmax' and 'RHmin' (or 'RH')")
     }
-  } 
+  }
   if (is.null(data$u2) & is.null(data$uz)) {
     stop("Required data missing for 'uz' or 'u2'")
   }
@@ -921,7 +915,7 @@ ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alph
     }
   }
   Ta <- (data$Tmax + data$Tmin)/2
-  
+
   if (!is.null(data$va) & !is.null(data$vs)) {
     vabar <- data$va
     vas <- data$vs
@@ -930,31 +924,30 @@ ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alph
     vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
     vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
     vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-    
+
     # Vapour pressure
     vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
   }
-  
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev)/293)^5.26
-  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta + 237.3)))/((Ta + 
+  delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta + 237.3)))/((Ta +
                                                                 237.3)^2)
   gamma <- 0.00163 * P/constants$lambda
   d_r2 <- 1 + 0.033 * cos(2 * pi/365 * data$J)
   delta2 <- 0.409 * sin(2 * pi/365 * data$J - 1.39)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))
   N <- 24/pi * w_s
-  R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * 
-                                               sin(delta2) + cos(constants$lat_rad) * cos(delta2) * 
+  R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) *
+                                               sin(delta2) + cos(constants$lat_rad) * cos(delta2) *
                                                sin(w_s))
   R_so <- (0.75 + (2 * 10^-5) * constants$Elev) * R_a
+
   if (solar == "data") {
     R_s <- data$Rs
-  }
-  else if (solar != "monthly precipitation") {
-    R_s <- (constants$as + constants$bs * (data$n/N)) * 
-      R_a
-  }
-  else {
+  }else if (solar != "monthly precipitation"&
+            solar != "cloud") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+  }else {
     R_s <- (0.85 - 0.047 * data$Cd) * R_a
   }
   if (is.null(data$u2)) {
@@ -963,18 +956,18 @@ ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alph
   else {
     u2 <- data$u2
   }
-  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * 
-    ((data$Tmax + 273.2)^4 + (data$Tmin + 273.2)^4)/2 * 
+  R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) *
+    ((data$Tmax + 273.2)^4 + (data$Tmin + 273.2)^4)/2 *
     (1.35 * R_s/R_so - 0.35)
-  P_rad <- 1.32 + 4 * 10^(-4) * abs(constants$lat) + 8 * 10^(-5) * 
+  P_rad <- 1.32 + 4 * 10^(-4) * abs(constants$lat) + 8 * 10^(-5) *
     (constants$lat)^2
   f_dir <- -0.11 + 1.31 * R_s/R_a
-  R_span <- (f_dir * P_rad + 1.42 * (1 - f_dir) + 0.42 * alpha) * 
+  R_span <- (f_dir * P_rad + 1.42 * (1 - f_dir) + 0.42 * alpha) *
     R_s
   R_npan <- (1 - constants$alphaA) * R_span - R_nl
   f_pan_u <- 1.201 + 1.621 * u2
-  Epenpan.Daily <- delta/(delta + constants$ap * gamma) * 
-    R_npan/constants$lambda + constants$ap * gamma/(delta + 
+  Epenpan.Daily <- delta/(delta + constants$ap * gamma) *
+    R_npan/constants$lambda + constants$ap * gamma/(delta +
                                                       constants$ap * gamma) * f_pan_u * (vas - vabar)
   if (overest == TRUE) {
     if (est == "potential ET") {
@@ -983,11 +976,11 @@ ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alph
       Epenpan.Daily <- Epenpan.Daily/1.078
     }
   }
-  
+
   ET.Daily <- Epenpan.Daily
-  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, 
+  ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily,
                                                "%m/%y"), FUN = sum)
-  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, 
+  ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily,
                                                                "%m/%y"))), FUN = sum)
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
@@ -999,7 +992,7 @@ ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alph
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
   ET_formulation <- "PenPan"
   if (est == "potential ET") {
@@ -1020,11 +1013,11 @@ ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alph
   else {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
-  results <- list(ET.Daily = ET.Daily, ET.Monthly = ET.Monthly, 
-                  ET.Annual = ET.Annual, ET.MonthlyAve = ET.MonthlyAve, 
-                  ET.AnnualAve = ET.AnnualAve, ET_formulation = ET_formulation, 
+  results <- list(ET.Daily = ET.Daily, ET.Monthly = ET.Monthly,
+                  ET.Annual = ET.Annual, ET.MonthlyAve = ET.MonthlyAve,
+                  ET.AnnualAve = ET.AnnualAve, ET_formulation = ET_formulation,
                   ET_type = ET_type, message1 = message1)
-  
+
   if (ts=="daily") {
     res_ts <-  ET.Daily
   } else if (ts=="monthly") {
@@ -1032,17 +1025,17 @@ ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alph
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message == "yes") {
-    
+
     message(ET_formulation, " ", ET_type)
     message("Evaporative surface: ", Surface)
     if (ET_type == "potential ET") {
       message("Pan coeffcient: ", pan_coeff)
     }
     message(message1)
-    
-    
+
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -1060,13 +1053,13 @@ ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alph
       message("Min: ",round(min(res_ts),digits=2))
     }
   }
-  
+
   if (save.csv == "yes") {
     #class(results) <- funname
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_PenPan.csv", dec=".", 
+      write.table(as.character(namer), file="ET_PenPan.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_PenPan.csv", col.names=F, append= T, sep=',' )
     }
@@ -1074,29 +1067,29 @@ ET.PenPan <- function (data, constants, ts="daily", solar="sunshine hours", alph
   } else {
     return(results)
   }
-  
+
 }
 
 
 #-------------------------------------------------------------------------------------
 
-ET.BrutsaertStrickler <- function(data, constants, ts="daily", solar="sunshine hours", alpha=0.23, 
-                                  message = "yes", AdditionalStats= "yes", save.csv = "yes", ...) {
+ET.BrutsaertStrickler <- function(data, constants, ts="daily", solar="sunshine hours", alpha=0.23,
+                                  message = "yes", AdditionalStats= "yes", save.csv = "no", ...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   if (is.null(data$va)|is.null(data$vs)) {
     if (is.null(data$RHmax)|is.null(data$RHmin)) {
       stop("Required data missing: need either 'va' and 'vs', or 'RHmax' and 'RHmin' (or 'RH')")
     }
-  } 
+  }
   if (is.null(data$u2) & is.null(data$uz)) {
     stop("Required data missing for 'uz' or 'u2'")
   }
-  
+
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
     stop("Required data missing for 'Rs'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
@@ -1106,7 +1099,7 @@ ET.BrutsaertStrickler <- function(data, constants, ts="daily", solar="sunshine h
   } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
     stop("Required data missing for 'Precip'")
   }
-  
+
   # check user-input albedo
   if (is.na(as.numeric(alpha))) {
     stop("Please use a numeric value for the alpha (albedo of evaporative surface)")
@@ -1115,11 +1108,11 @@ ET.BrutsaertStrickler <- function(data, constants, ts="daily", solar="sunshine h
     if (as.numeric(alpha) < 0 | as.numeric(alpha) > 1) {
       stop("Please use a value between 0 and 1 for the alpha (albedo of evaporative surface)")
     }
-  } 
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+  }
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   if (!is.null(data$va) & !is.null(data$vs)) {
     vabar <- data$va
     vas <- data$vs
@@ -1128,16 +1121,16 @@ ET.BrutsaertStrickler <- function(data, constants, ts="daily", solar="sunshine h
     vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
     vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
     vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-    
+
     # Vapour pressure
     vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
   }
-  
+
   # update alphaPT according to Brutsaert and Strickler (1979)
   constants$alphaPT <- 1.28
-  
+
   # Calculations from data and constants for Brutsaert and Strickler actual evapotranspiration
-  
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -1147,36 +1140,35 @@ ET.BrutsaertStrickler <- function(data, constants, ts="daily", solar="sunshine h
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
-  
+
   if (solar == "data") {
     R_s <- data$Rs
-  } else if (solar!="monthly precipitation") {
-    # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
-  } else {
-    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-    R_s <- (0.85 - 0.047*data$Cd)*R_a 
+  }else if (solar != "monthly precipitation"&
+            solar != "cloud") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+  }else {
+    R_s <- (0.85 - 0.047 * data$Cd) * R_a
   }
-  
+
   # Wind speed
   if (is.null(data$u2)) {
     u2 <- data$uz * 4.87 / log(67.8*constants$z - 5.42) # Equation S5.20 for PET formulations other than Penman
   } else {
     u2 <- data$u2
   }
-  
+
   R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
   # For short grass
   R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
   R_ng <- R_nsg - R_nl # net radiation (S3.1)
   f_u2 <- 2.626 + 1.381 * u2 # Penman's wind function adopted with Priestley and Tayloy constant alphaPT by Brutsaert and Strickler (1979) (S8.3)
-  
+
   ET_BS_Act.Daily <- (2 * constants$alphaPT - 1) * (delta / (delta + gamma)) * R_ng / constants$lambda - gamma / (delta + gamma) * f_u2 * (vas - vabar) # Brutsaert and Strickler actual areal evapotranspiration (mm.day^-1) Brutsaert and Strickler (1979) (S8.2)
-  
+
   ET.Daily <- ET_BS_Act.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -1187,9 +1179,9 @@ ET.BrutsaertStrickler <- function(data, constants, ts="daily", solar="sunshine h
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
-  
+
   # Generate summary message for results
   ET_formulation <- "Brutsaert-Strickler"
   ET_type <- "Actual Areal ET"
@@ -1204,7 +1196,7 @@ ET.BrutsaertStrickler <- function(data, constants, ts="daily", solar="sunshine h
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
-  
+
   if (ts=="daily") {
     res_ts <-  ET.Daily
   } else if (ts=="monthly") {
@@ -1212,15 +1204,15 @@ ET.BrutsaertStrickler <- function(data, constants, ts="daily", solar="sunshine h
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message == "yes") {
-    
-    
+
+
     message(ET_formulation, " ", ET_type)
     message("Evaporative surface: ", Surface)
     message(message1)
-    
-    
+
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -1239,12 +1231,12 @@ ET.BrutsaertStrickler <- function(data, constants, ts="daily", solar="sunshine h
     }
     #class(results) <- funname
   }
-  
+
   if (save.csv == "yes") {
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_BrutsaertStrickler.csv", dec=".", 
+      write.table(as.character(namer), file="ET_BrutsaertStrickler.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_BrutsaertStrickler.csv", col.names=F, append= T, sep=',' )
     }
@@ -1252,28 +1244,28 @@ ET.BrutsaertStrickler <- function(data, constants, ts="daily", solar="sunshine h
   } else {
     return(results)
   }
-  
+
 }
 
 #-------------------------------------------------------------------------------------
 
-ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", windfunction_ver=1948, alpha=0.23, 
-                           message = "yes", AdditionalStats= "yes", save.csv = "yes",...) {
+ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", windfunction_ver=1948, alpha=0.23,
+                           message = "yes", AdditionalStats= "yes", save.csv = "no",...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   if (is.null(data$va)|is.null(data$vs)) {
     if (is.null(data$RHmax)|is.null(data$RHmin)) {
       stop("Required data missing: need either 'va' and 'vs', or 'RHmax' and 'RHmin' (or 'RH')")
     }
-  } 
+  }
   if (is.null(data$u2) & is.null(data$uz)) {
     stop("Required data missing for 'uz' or 'u2'")
   }
-  
+
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
     stop("Required data missing for 'Rs'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
@@ -1283,7 +1275,7 @@ ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", 
   } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
     stop("Required data missing for 'Precip'")
   }
-  
+
   # check user-input albedo
   if (is.na(as.numeric(alpha))) {
     stop("Please use a numeric value for the alpha (albedo of evaporative surface)")
@@ -1292,11 +1284,11 @@ ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", 
     if (as.numeric(alpha) < 0 | as.numeric(alpha) > 1) {
       stop("Please use a value between 0 and 1 for the alpha (albedo of evaporative surface)")
     }
-  } 
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+  }
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   if (!is.null(data$va) & !is.null(data$vs)) {
     vabar <- data$va
     vas <- data$vs
@@ -1305,12 +1297,12 @@ ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", 
     vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
     vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
     vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-    
+
     # Vapour pressure
     vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
-  }  
+  }
   # Calculations from data and constants for Granger and Gray actual evapotranspiration
-  
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -1320,29 +1312,27 @@ ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", 
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
-  
+
   if (solar == "data") {
     R_s <- data$Rs
-  } else if (solar!="monthly precipitation") {
-    # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
-  } else {
-    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-    R_s <- (0.85 - 0.047*data$Cd)*R_a 
+  }else if (solar != "monthly precipitation"&
+            solar != "cloud") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+  }else {
+    R_s <- (0.85 - 0.047 * data$Cd) * R_a
   }
-  
   R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
   # For short grass
   R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
   R_ng <- R_nsg - R_nl # net radiation (S3.1)
-  
+
   # Wind speed
   if (is.null(data$u2)) {
     u2 <- data$uz * 4.87 / log(67.8*constants$z - 5.42) # Equation S5.20 for PET formulations other than Penman
   } else {
     u2 <- data$u2
   }
-  
+
   if (windfunction_ver == "1948") {
     f_u = 2.626 + 1.381 * u2 # wind function Penman 1948 (S4.11)
   } else if (windfunction_ver == "1956") {
@@ -1354,11 +1344,11 @@ ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", 
   D_p <- Ea / (Ea + (R_ng - constants$G) / constants$lambda) # dimensionless relative drying power (S8.6)
   G_g <- 1 / (0.793 + 0.20 * exp(4.902 * D_p)) + 0.006 * D_p # dimensionless evaporation parameter (S8.5)
   ET_GG_Act.Daily <- delta * G_g / (delta * G_g + gamma) * (R_ng - constants$G) / constants$lambda + gamma * G_g / (delta * G_g + gamma) * Ea # Granger and Gray actual areal evapotranspiration (mm.day^-1) Granger and Gray (1989) (S8.4)
-  
+
   ET.Daily <- ET_GG_Act.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -1369,9 +1359,9 @@ ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", 
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
-  
+
   # Generate summary message for results
   ET_formulation <- "Granger-Gray"
   ET_type <- "Actual Areal ET"
@@ -1385,14 +1375,14 @@ ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", 
   } else {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
-  
+
   if (windfunction_ver == "1948") {
     message2 <- "Wind data have been used for the calculation of the drying power of air, using Penman 1948 wind function."
   } else if (windfunction_ver == "1956") {
     message2 <- "Wind data have been used for the calculation of the drying power of air, using Penman 1956 wind function."
   }
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
-  
+
   if (ts=="daily") {
     res_ts <-  ET.Daily
   } else if (ts=="monthly") {
@@ -1401,13 +1391,13 @@ ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", 
     res_ts <- ET.Annual
   }
   if (message == "yes") {
-    
-    
+
+
     message(ET_formulation, " ", ET_type)
     message("Evaporative surface: ", Surface)
     message(message1)
     message(message2)
-    
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -1425,13 +1415,13 @@ ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", 
       message("Min: ",round(min(res_ts),digits=2))
     }
     #class(results) <- funname
-  } 
-  
+  }
+
   if (save.csv == "yes") {
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_GrangerGray.csv", dec=".", 
+      write.table(as.character(namer), file="ET_GrangerGray.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_GrangerGray.csv", col.names=F, append= T, sep=',' )
     }
@@ -1439,31 +1429,31 @@ ET.GrangerGray <- function(data, constants, ts="daily", solar="sunshine hours", 
   } else {
     return(results)
   }
-  
-  
+
+
 }
 
 #-------------------------------------------------------------------------------------
 
-ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours", wind="yes", windfunction_ver=1948, alpha=0.23, z0=0.2, 
-                             message = "yes", AdditionalStats= "yes", save.csv = "yes", ...) {
+ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours", wind="yes", windfunction_ver=1948, alpha=0.23, z0=0.2,
+                             message = "yes", AdditionalStats= "yes", save.csv = "no", ...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   if (is.null(data$va)|is.null(data$vs)) {
     if (is.null(data$RHmax)|is.null(data$RHmin)) {
       stop("Required data missing: need either 'va' and 'vs', or 'RHmax' and 'RHmin' (or 'RH')")
     }
-  } 
+  }
   if (wind == "yes") { # wind data is required
     if (is.null(data$u2) & is.null(data$uz)) {
       stop("Required data missing for 'uz' or 'u2'")
     }
   }
-  
+
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
     stop("Required data missing for 'Rs'")
   } else if (solar == "sunshine hours" & is.null(data$n)) { # for alternative calculation of solar radiation with sunshine hour
@@ -1473,11 +1463,11 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
   } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
     stop("Required data missing for 'Precip'")
   }
-  
+
   if (wind != "yes" & wind != "no") {
     stop("Please choose if actual data will be used for wind speed from wind = 'yes' and wind = 'no'")
   }
-  
+
   # check user-input albedo
   if (wind == "yes") {
     if (is.na(as.numeric(alpha))) {
@@ -1490,15 +1480,15 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
     }
     if (is.na(as.numeric(z0))) {
       stop("Please use a numeric value for the z0 (roughness height)")
-    }  
+    }
   }
-  
+
   # update alphaPT according to Szilagyi and Jozsa (2008)
   constants$alphaPT <- 1.31
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   if (!is.null(data$va) & !is.null(data$vs)) {
     vabar <- data$va
     vas <- data$vs
@@ -1507,13 +1497,13 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
     vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
     vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
     vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-    
+
     # Vapour pressure
     vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
   }
-  
+
   # Calculations from data and constants for Penman
-  
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -1523,17 +1513,15 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
-  
+
   if (solar == "data") {
     R_s <- data$Rs
-  } else if (solar!="monthly precipitation") {
-    # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
-  } else {
-    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-    R_s <- (0.85 - 0.047*data$Cd)*R_a 
+  }else if (solar != "monthly precipitation"&
+            solar != "cloud") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+  }else {
+    R_s <- (0.85 - 0.047 * data$Cd) * R_a
   }
-  
   if (wind == "yes") {
     # Wind speed at 2 meters
     if (is.null(data$u2)) {
@@ -1541,8 +1529,8 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
     } else {
       u2 <- data$u2
     }
-    
-    
+
+
     R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
     # For vegetated surface
     R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
@@ -1555,7 +1543,7 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
       stop("Please select the version of wind function (1948 or 1956)")
     }
     Ea = f_u * (vas - vabar) # (S4.2)
-    
+
     Epenman.Daily <-  delta / (delta +  gamma) * (R_ng / constants$lambda) + gamma  / (delta + gamma) * Ea # Penman open-water evaporation (S4.1)
   } else {
     R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
@@ -1563,11 +1551,11 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
     R_nsg <- (1 - alpha) * R_s # net incoming shortwave radiation (S3.2)
     R_ng = R_nsg - R_nl # net radiation (S3.1)
     # mean relative humidity
-    RHmean <- (data$RHmax + data$RHmin) / 2 
-    
+    RHmean <- (data$RHmax + data$RHmin) / 2
+
     Epenman.Daily <-  0.047 * R_s * sqrt(Ta + 9.5) - 2.4 * (R_s/R_a)^2 + 0.09 * (Ta + 20) * (1 - RHmean/100) # Penman open-water evaporation without wind data by Valiantzas (2006) (S4.12)
   }
-  
+
   # Iteration for equilibrium temperature T_e
   T_e <- Ta
   for (i in 1:99999) {
@@ -1581,11 +1569,11 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
   deltaT_e <- 4098 * (0.6108 * exp((17.27 * T_e)/(T_e+237.3))) / ((T_e + 237.3)^2)  # slope of vapour pressure curve (S2.4)
   E_PT_T_e <- constants$alphaPT * (deltaT_e / (deltaT_e + gamma) * R_ng / constants$lambda) # Priestley-Taylor evapotranspiration at T_e
   E_SJ_Act.Daily <- 2 * E_PT_T_e - Epenman.Daily # actual evapotranspiration by Szilagyi and Jozsa (2008) (S8.7)
-  
+
   ET.Daily <- E_SJ_Act.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -1596,14 +1584,14 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
-  
+
   # Generate summary message for results
   ET_formulation <- "Szilagyi-Jozsa"
   ET_type <- "Actual ET"
   Surface <- paste("user-defined, albedo =", alpha, "; roughness height", z0, "m")
-  
+
   if (solar == "data") {
     message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
@@ -1613,18 +1601,18 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
   } else {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
-  
+
   if (wind == "yes") {
     if (windfunction_ver == "1948") {
       message2 <- "Wind data have been used for calculating the Penman evaporation. Penman 1948 wind function has been used."
     } else if (windfunction_ver == "1956") {
       message2 <- "Wind data have been used for calculating the Penman evaporation. Penman 1956 wind function has been used."
-    } 
+    }
   } else {
     message2 <- "Alternative calculation for Penman evaporation without wind data have been performed"
   }
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message2=message2)
-  
+
   if (ts=="daily") {
     res_ts <-  ET.Daily
   } else if (ts=="monthly") {
@@ -1632,16 +1620,16 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
-  
+
+
   if (message == "yes") {
-    
-    
+
+
     message(ET_formulation, " ", ET_type)
     message("Evaporative surface: ", Surface)
     message(message1)
     message(message2)
-    
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -1660,12 +1648,12 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
     }
     #class(results) <- funname
   }
-  
+
   if (save.csv == "yes") {
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_SzilagyiJozsa.csv", dec=".", 
+      write.table(as.character(namer), file="ET_SzilagyiJozsa.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_SzilagyiJozsa.csv", col.names=F, append= T, sep=',' )
     }
@@ -1673,17 +1661,17 @@ ET.SzilagyiJozsa <- function(data, constants, ts="daily", solar="sunshine hours"
   } else {
     return(results)
   }
-  
+
 }
 
 #-------------------------------------------------------------------------------------
 
-ET.Makkink <- function(data, constants, ts="daily", solar="sunshine hours", 
-                       message = "yes", AdditionalStats= "yes", save.csv = "yes", ...) {
+ET.Makkink <- function(data, constants, ts="daily", solar="sunshine hours",
+                       message = "yes", AdditionalStats= "yes", save.csv = "no", ...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
@@ -1695,12 +1683,12 @@ ET.Makkink <- function(data, constants, ts="daily", solar="sunshine hours",
   } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
     stop("Required data missing for 'Precip'")
   }
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   # Calculations from data and constants for Makkink
-  
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -1710,23 +1698,22 @@ ET.Makkink <- function(data, constants, ts="daily", solar="sunshine hours",
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
-  
+
   if (solar == "data") {
     R_s <- data$Rs
-  } else if (solar!="monthly precipitation") {
-    # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
-  } else {
-    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-    R_s <- (0.85 - 0.047*data$Cd)*R_a 
+  }else if (solar != "monthly precipitation"&
+            solar != "cloud") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+  }else {
+    R_s <- (0.85 - 0.047 * data$Cd) * R_a
   }
-  
+
   Emakkink.Daily <- 0.61 * (delta / (delta + gamma) * R_s/2.45) - 0.12  # potential evapotranspiration by Bruin (1981) (S9.6)
-  
+
   ET.Daily <- Emakkink.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -1737,9 +1724,9 @@ ET.Makkink <- function(data, constants, ts="daily", solar="sunshine hours",
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
-  
+
   # Generate summary message for results
   ET_formulation <- "Makkink"
   ET_type <- "Reference crop ET"
@@ -1752,9 +1739,9 @@ ET.Makkink <- function(data, constants, ts="daily", solar="sunshine hours",
   } else {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
-  
+
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1)
-  
+
   if (ts=="daily") {
     res_ts <-  ET.Daily
   } else if (ts=="monthly") {
@@ -1762,12 +1749,12 @@ ET.Makkink <- function(data, constants, ts="daily", solar="sunshine hours",
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message == "yes") {
-    
+
     message(ET_formulation, " ", ET_type)
     message(message1)
-    
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -1786,12 +1773,12 @@ ET.Makkink <- function(data, constants, ts="daily", solar="sunshine hours",
     }
     #class(results) <- funname
   }
-  
+
   if (save.csv == "yes") {
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_Makkink.csv", dec=".", 
+      write.table(as.character(namer), file="ET_Makkink.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_Makkink.csv", col.names=F, append= T, sep=',' )
     }
@@ -1799,17 +1786,17 @@ ET.Makkink <- function(data, constants, ts="daily", solar="sunshine hours",
   } else {
     return(results)
   }
-  
+
 }
 
 #-------------------------------------------------------------------------------------
 
-ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours", height=F, 
-                             message = "yes", AdditionalStats= "yes", save.csv = "yes",...) {
+ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours", height=F,
+                             message = "yes", AdditionalStats= "yes", save.csv = "no",...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   if (solar == "sunshine hours" & is.null(data$n)) { # sunshine hour data is required
@@ -1821,56 +1808,55 @@ ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours"
     if (is.null(data$u2) & is.null(data$uz)) {
       stop("Required data missing for 'uz' or 'u2'")
     }
-    if (is.null(data$RHmin)) { 
+    if (is.null(data$RHmin)) {
       stop("Required data missing for 'RHmin'")
-    } 
-  } 
+    }
+  }
   if (solar == "data" | solar == "monthly precipitation") {
     stop("Only 'sunshine hours' and 'cloud' are accepted because estimations of sunshine hours is required")
   }
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   # Calculations from data and constants for Blaney and Criddle
   delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
-  
+
   # Wind speed
   if (is.null(data$u2)) {
     u2 <- data$uz * 4.87 / log(67.8*constants$z - 5.42) # Equation S5.20 for PET formulations other than Penman
   } else {
     u2 <- data$u2
   }
-  
+
   bvar <- constants$e0 + constants$e1 * data$RHmin + constants$e2 * data$n/N + constants$e3 * u2 + constants$e4 * data$RHmin * data$n/N + constants$e5 * data$RHmin * u2 # undefined working variable (Allena and Pruitt, 1986; Shuttleworth, 1992) (S9.8)
   N.annual <- ave(N, format(time(N), "%y"), FUN = sum) # Annual sum of maximum sunshine hours
   # chech if data from first/last years is incomplete, and adjust N.annual values for incomplete years
   if(data$J[1]!=1 & is.integer(floor(as.numeric(as.yearmon(data$Date.daily)))[1]/4)==FALSE) { # first year a normal year
-    N.annual[floor(as.numeric(as.yearmon(data$Date.daily)))==floor(as.numeric(as.yearmon(data$Date.daily)))[1]] <- 
+    N.annual[floor(as.numeric(as.yearmon(data$Date.daily)))==floor(as.numeric(as.yearmon(data$Date.daily)))[1]] <-
       sum(24/pi * acos(-tan(constants$lat_rad) * tan(0.409 * sin(2*pi/365 * c(1:365) - 1.39))))
   }
   if(data$J[1]!=1 & is.integer(floor(as.numeric(as.yearmon(data$Date.daily)))[1]/4)==TRUE) { # first year a leap year
-    N.annual[floor(as.numeric(as.yearmon(data$Date.daily)))==floor(as.numeric(as.yearmon(data$Date.daily)))[1]] <- 
+    N.annual[floor(as.numeric(as.yearmon(data$Date.daily)))==floor(as.numeric(as.yearmon(data$Date.daily)))[1]] <-
       sum(24/pi * acos(-tan(constants$lat_rad) * tan(0.409 * sin(2*pi/365 * c(1:366) - 1.39))))
   }
   if (data$J[length(data$J)]!=365 & is.integer(floor(as.numeric(as.yearmon(data$Date.daily)))[length(data$J)]/4)==FALSE) { # last year a normal year
-    N.annual[floor(as.numeric(as.yearmon(data$Date.daily)))==floor(as.numeric(as.yearmon(data$Date.daily)))[length(data$J)]] <- 
+    N.annual[floor(as.numeric(as.yearmon(data$Date.daily)))==floor(as.numeric(as.yearmon(data$Date.daily)))[length(data$J)]] <-
       sum(24/pi * acos(-tan(constants$lat_rad) * tan(0.409 * sin(2*pi/365 * c(1:365) - 1.39))))
   }
   if (data$J[length(data$J)]!=366 & is.integer(floor(as.numeric(as.yearmon(data$Date.daily)))[length(data$J)]/4)==TRUE) { # first year a leap year
-    N.annual[floor(as.numeric(as.yearmon(data$Date.daily)))==floor(as.numeric(as.yearmon(data$Date.daily)))[length(data$J)]] <- 
+    N.annual[floor(as.numeric(as.yearmon(data$Date.daily)))==floor(as.numeric(as.yearmon(data$Date.daily)))[length(data$J)]] <-
       sum(24/pi * acos(-tan(constants$lat_rad) * tan(0.409 * sin(2*pi/366 * c(1:366) - 1.39))))
   }
   p_y <- 100 * data$n/N.annual # percentage of actual daytime hours for the day comparing to the annual sum of maximum sunshine hours
-  
-  
+
   ET_BC.Daily <- (0.0043 * data$RHmin - data$n/N - 1.41) + bvar * p_y * (0.46 * Ta +8.13) # Blaney-Criddle Reference Crop evapotranspiration (mm.day^-1) (S9.7)
-  
+
   ET.Daily <- ET_BC.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -1881,13 +1867,13 @@ ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours"
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
-  
+
   if (height == T) {
-    ET_BC.Daily = ET_BC.Daily * (1 + 0.1 * constants$Elev/1000) # with adjustment for site elevation by Allen and Pruitt (1986) (S9.9) 
+    ET_BC.Daily = ET_BC.Daily * (1 + 0.1 * constants$Elev/1000) # with adjustment for site elevation by Allen and Pruitt (1986) (S9.9)
   }
-  
+
   # Generate summary message for results
   ET_formulation <- "Blaney-Criddle"
   ET_type <- "Reference Crop ET"
@@ -1898,14 +1884,14 @@ ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours"
   } else {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
-  
+
   if (height == T) {
     message3 <- "Height adjustment has been applied to calculated Blaney-Criddle reference crop evapotranspiration"
   } else {
     message3 <- "No height adjustment has been applied to calculated Blaney-Criddle reference crop evapotranspiration"
   }
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message3=message3)
-  
+
   if (ts=="daily") {
     res_ts <-  ET.Daily
   } else if (ts=="monthly") {
@@ -1914,13 +1900,13 @@ ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours"
     res_ts <- ET.Annual
   }
   if (message == "yes") {
-    
-    
+
+
     message(ET_formulation, " ", ET_type)
     message("Evaporative surface: reference crop")
     message(message1)
     message(message3)
-    
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -1943,7 +1929,7 @@ ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours"
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_BlaneyCriddle.csv", dec=".", 
+      write.table(as.character(namer), file="ET_BlaneyCriddle.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_BlaneyCriddle.csv", col.names=F, append= T, sep=',' )
     }
@@ -1951,17 +1937,17 @@ ET.BlaneyCriddle <- function(data, constants, ts="daily", solar="sunshine hours"
   } else {
     return(results)
   }
-  
+
 }
 
 #-------------------------------------------------------------------------------------
 
-ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=F, 
-                    message = "yes",AdditionalStats= "yes", save.csv ="yes",...) {
+ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=F,
+                    message = "yes",AdditionalStats= "yes", save.csv ="no",...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
@@ -1973,16 +1959,16 @@ ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=F
   } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
     stop("Required data missing for 'Precip'")
   }
-  
+
   if (humid == TRUE & (is.null(data$RHmax)|is.null(data$RHmin))) { # for adjustment for non-humid conditions
     stop("Required data missing for 'RHmax' and 'RHmin', or 'RH'")
-  } 
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+  }
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   # Calculations from data and constants for Turc
-  
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -1992,30 +1978,28 @@ ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=F
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
-  
+
   if (solar == "data") {
     R_s <- data$Rs
-  } else if (solar!="monthly precipitation") {
-    # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
-  } else {
-    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-    R_s <- (0.85 - 0.047*data$Cd)*R_a 
+  }else if (solar != "monthly precipitation"&
+            solar != "cloud") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+  }else {
+    R_s <- (0.85 - 0.047 * data$Cd) * R_a
   }
-  
   ET_Turc.Daily <- 0.013 * (23.88 * R_s + 50) * Ta / (Ta + 15) # reference crop evapotranspiration by Turc (1961) (S9.10)
-  
+
   if (humid == TRUE) {
     # mean relative humidity
-    RHmean <- (data$RHmax + data$RHmin) / 2 
-    
+    RHmean <- (data$RHmax + data$RHmin) / 2
+
     ET_Turc.Daily[RHmean < 50] <- 0.013 * (23.88 * R_s + 50) * Ta[RHmean < 50] / (Ta[RHmean < 50] + 15) * (1 + (50 - RHmean[RHmean < 50]) / 70) # Turc reference crop evapotranspiration adjusted for non-humid conditions (RH < 50) by Alexandris et al., (S9.11)
   }
-  
+
   ET.Daily <- ET_Turc.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -2026,13 +2010,13 @@ ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=F
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
-  
+
   # Generate summary message for results
   ET_formulation <- "Turc"
   ET_type <- "Reference Crop ET"
-  
+
   if (solar == "data") {
     message1 <- "Solar radiation data have been used directly for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
@@ -2042,16 +2026,16 @@ ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=F
   } else {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
-  
+
   if (humid == TRUE) {
     message4 <- "Adjustment for non-humid conditions has been applied to calculated Turc reference crop evapotranspiration"
   } else {
     message4 <- "No adjustment for non-humid conditions has been applied to calculated Turc reference crop evapotranspiration"
   }
-  
-  
+
+
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message4=message4)
-  
+
   if (ts=="daily") {
     res_ts <-  ET.Daily
   } else if (ts=="monthly") {
@@ -2059,13 +2043,13 @@ ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=F
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message == "yes") {
     message(ET_formulation, " ", ET_type)
     message("Evaporative surface: reference crop")
     message(message1)
     message(message4)
-    
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -2088,7 +2072,7 @@ ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=F
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_Turc.csv", dec=".", 
+      write.table(as.character(namer), file="ET_Turc.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_Turc.csv", col.names=F, append= T, sep=',' )
     }
@@ -2096,33 +2080,33 @@ ET.Turc <- function(data, constants, ts="daily", solar="sunshine hours", humid=F
   } else {
     return(results)
   }
-  
+
 }
 
 #-------------------------------------------------------------------------------------
 
-ET.Hamon <- function(data, constants = NULL, ts="daily", 
-                     message = "yes",AdditionalStats= "yes", save.csv ="yes",...) {
+ET.Hamon <- function(data, constants = NULL, ts="daily",
+                     message = "yes",AdditionalStats= "yes", save.csv ="no",...) {
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   if (is.null(data$n)) {
     stop("Required data missing for 'n'")
   }
-  Ta <- (data$Tmax + data$Tmin) / 2 
-  
+  Ta <- (data$Tmax + data$Tmin) / 2
+
   # Saturated vapour pressure
   vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
   vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
   vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-  
-  ET_Hamon.Daily <- 0.55 * 25.4 * (data$n/12)^2 * (216.7 * vas * 10 / (Ta + 273.3))/100 # Rosenberry et al., 2004 
-  
+
+  ET_Hamon.Daily <- 0.55 * 25.4 * (data$n/12)^2 * (216.7 * vas * 10 / (Ta + 273.3))/100 # Rosenberry et al., 2004
+
   ET.Daily <- ET_Hamon.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -2133,15 +2117,15 @@ ET.Hamon <- function(data, constants = NULL, ts="daily",
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
-  
+
   # Generate summary message for results
   ET_formulation <- "Hamon"
   ET_type <- "Potential ET"
-  
+
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
-  
+
   if (ts=="daily") {
     res_ts <-  ET.Daily
   } else if (ts=="monthly") {
@@ -2149,7 +2133,7 @@ ET.Hamon <- function(data, constants = NULL, ts="daily",
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message == "yes") {
     message(ET_formulation, " ", ET_type)
     message("Timestep: ", ts)
@@ -2174,7 +2158,7 @@ ET.Hamon <- function(data, constants = NULL, ts="daily",
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_Hamon.csv", dec=".", 
+      write.table(as.character(namer), file="ET_Hamon.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_Hamon.csv", col.names=F, append= T, sep=',' )
     }
@@ -2182,31 +2166,31 @@ ET.Hamon <- function(data, constants = NULL, ts="daily",
   } else {
     return(results)
   }
-  
-} 
+
+}
 # Oudin et al., 2005
 
 #-------------------------------------------------------------------------------------
 
-ET.Linacre <- function(data, constants, ts="daily", 
-                       message = "yes",AdditionalStats= "yes", save.csv ="yes",...) {
+ET.Linacre <- function(data, constants, ts="daily",
+                       message = "yes",AdditionalStats= "yes", save.csv ="no",...) {
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   # Check of specific data requirement
-  if (is.null(data$Tdew)) { 
+  if (is.null(data$Tdew)) {
     stop("Required data missing for 'Tdew' or 'Tdew'")
   }
-  
-  Ta <- (data$Tmax + data$Tmin) / 2 
+
+  Ta <- (data$Tmax + data$Tmin) / 2
   T_m <- Ta + 0.006 * constants$Elev
   ET_Linacre.Daily <- (500 * T_m /(100 - constants$lat)+15*(Ta - data$Tdew))/(80 - Ta)
-  
+
   ET.Daily <- ET_Linacre.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -2217,13 +2201,13 @@ ET.Linacre <- function(data, constants, ts="daily",
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
-  
+
   # Generate summary message for results
   ET_formulation <- "Linacre"
   ET_type <- "Actual ET"
-  
+
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
   if (ts=="daily") {
     res_ts <-  ET.Daily
@@ -2256,7 +2240,7 @@ ET.Linacre <- function(data, constants, ts="daily",
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_Linacre.csv", dec=".", 
+      write.table(as.character(namer), file="ET_Linacre.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_Linacre.csv", col.names=F, append= T, sep=',' )
     }
@@ -2264,16 +2248,16 @@ ET.Linacre <- function(data, constants, ts="daily",
   } else {
     return(results)
   }
-  
+
 }
 # Linacre ET. 1977. A simple formula for estimating evaporation rates in various climates, using temperature data alone. AgriculturalMeteorology 18: 409-424.
 
 #-------------------------------------------------------------------------------------
 
 ET.Romanenko <- function(data, constants = NULL, ts="daily",
-                         message = "yes",AdditionalStats= "yes", save.csv ="yes",...) {
+                         message = "yes",AdditionalStats= "yes", save.csv ="no",...) {
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   # Check of specific data requirement
@@ -2281,9 +2265,9 @@ ET.Romanenko <- function(data, constants = NULL, ts="daily",
     if (is.null(data$RHmax)|is.null(data$RHmin)) {
       stop("Required data missing: need either 'va' and 'vs', or 'RHmax' and 'RHmin' (or 'RH')")
     }
-  } 
-  Ta <- (data$Tmax + data$Tmin) / 2 
-  
+  }
+  Ta <- (data$Tmax + data$Tmin) / 2
+
   if (!is.null(data$va) & !is.null(data$vs)) {
     vabar <- data$va
     vas <- data$vs
@@ -2292,16 +2276,16 @@ ET.Romanenko <- function(data, constants = NULL, ts="daily",
     vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
     vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
     vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-    
+
     # Vapour pressure
     vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
   }
-  
+
   ET_Romanenko.Daily <- 4.5 * (1 + Ta / 25)^2 * (1 - vabar/vas)
   ET.Daily <- ET_Romanenko.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -2312,12 +2296,12 @@ ET.Romanenko <- function(data, constants = NULL, ts="daily",
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
   # Generate summary message for results
   ET_formulation <- "Romanenko"
   ET_type <- "Actual ET"
-  
+
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
   if (ts=="daily") {
     res_ts <-  ET.Daily
@@ -2326,7 +2310,7 @@ ET.Romanenko <- function(data, constants = NULL, ts="daily",
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message == "yes") {
     message(ET_formulation, " ", ET_type)
     message("Timestep: ", ts)
@@ -2351,7 +2335,7 @@ ET.Romanenko <- function(data, constants = NULL, ts="daily",
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_Romanenko.csv", dec=".", 
+      write.table(as.character(namer), file="ET_Romanenko.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_Romanenko.csv", col.names=F, append= T, sep=',' )
     }
@@ -2359,16 +2343,16 @@ ET.Romanenko <- function(data, constants = NULL, ts="daily",
   } else {
     return(results)
   }
-  
+
 }
 # Oudin et al., 2005
 
 #-------------------------------------------------------------------------------------
 
-ET.Abtew <- function(data, constants, ts="daily", solar="sunshine hours", 
-                     message = "yes",AdditionalStats= "yes", save.csv ="yes",...) {
+ET.Abtew <- function(data, constants, ts="daily", solar="sunshine hours",
+                     message = "yes",AdditionalStats= "yes", save.csv ="no",...) {
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
@@ -2380,12 +2364,12 @@ ET.Abtew <- function(data, constants, ts="daily", solar="sunshine hours",
   } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
     stop("Required data missing for 'Precip.daily'")
   }
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   # Calculations from data and constants for Penman
-  
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -2395,23 +2379,22 @@ ET.Abtew <- function(data, constants, ts="daily", solar="sunshine hours",
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
   R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
-  
+
   if (solar == "data") {
     R_s <- data$Rs
-  } else if (solar!="monthly precipitation") {
-    # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
-  } else {
-    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-    R_s <- (0.85 - 0.047*data$Cd)*R_a 
+  }else if (solar != "monthly precipitation"&
+            solar != "cloud") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+  }else {
+    R_s <- (0.85 - 0.047 * data$Cd) * R_a
   }
-  
+
   ET_Abtew.Daily <- 0.52 * R_s/constants$lambda
-  
+
   ET.Daily <- ET_Abtew.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -2422,7 +2405,7 @@ ET.Abtew <- function(data, constants, ts="daily", solar="sunshine hours",
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-  } 
+  }
   # Generate summary message for results
   ET_formulation <- "Abtew"
   ET_type <- "Actual ET"
@@ -2441,13 +2424,13 @@ ET.Abtew <- function(data, constants, ts="daily", solar="sunshine hours",
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message == "yes") {
-    
-    
+
+
     message(ET_formulation, " ", ET_type)
     message(message1)
-    
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -2470,7 +2453,7 @@ ET.Abtew <- function(data, constants, ts="daily", solar="sunshine hours",
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_Abtew.csv", dec=".", 
+      write.table(as.character(namer), file="ET_Abtew.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_Abtew.csv", col.names=F, append= T, sep=',' )
     }
@@ -2478,25 +2461,25 @@ ET.Abtew <- function(data, constants, ts="daily", solar="sunshine hours",
   } else {
     return(results)
   }
-  
+
 }
 # Abtew, W. (1996), EVAPOTRANSPIRATION MEASUREMENTS AND MODELING FOR THREE WETLAND SYSTEMS IN SOUTH FLORIDA. JAWRA Journal of the American Water Resources Association, 32: 465-473. doi: 10.1111/j.1752-1688.1996.tb04044.x
 #-------------------------------------------------------------------------------------
 
-ET.HargreavesSamani <- function(data, constants, ts="daily", 
-                                message = "yes",AdditionalStats= "yes", save.csv ="yes",...) {
+ET.HargreavesSamani <- function(data, constants, ts="daily",
+                                message = "yes",AdditionalStats= "yes", save.csv ="no",...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   # Calculations from data and constants for Hargreaves-Samani
-  
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -2505,14 +2488,14 @@ ET.HargreavesSamani <- function(data, constants, ts="daily",
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
-  
+
   C_HS <- 0.00185 * (data$Tmax - data$Tmin)^2 - 0.0433 * (data$Tmax - data$Tmin) + 0.4023 # empirical coefficient by Hargreaves and Samani (1985) (S9.13)
   ET_HS.Daily <- 0.0135 * C_HS * R_a / constants$lambda * (data$Tmax - data$Tmin)^0.5 * (Ta + 17.8) # reference crop evapotranspiration by Hargreaves and Samani (1985) (S9.12)
-  
+
   ET.Daily <- ET_HS.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -2523,12 +2506,12 @@ ET.HargreavesSamani <- function(data, constants, ts="daily",
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
-  } 
+
+  }
   # Generate summary message for results
   ET_formulation <- "Hargreaves-Samani"
   ET_type <- "Reference Crop ET"
-  
+
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
   if (ts=="daily") {
     res_ts <-  ET.Daily
@@ -2540,7 +2523,7 @@ ET.HargreavesSamani <- function(data, constants, ts="daily",
   if (message == "yes") {
     message(ET_formulation, " ", ET_type)
     message("Evaporative surface: reference crop")
-    
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -2563,7 +2546,7 @@ ET.HargreavesSamani <- function(data, constants, ts="daily",
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_HargreavesSamani.csv", dec=".", 
+      write.table(as.character(namer), file="ET_HargreavesSamani.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_HargreavesSamani.csv", col.names=F, append= T, sep=',' )
     }
@@ -2571,25 +2554,25 @@ ET.HargreavesSamani <- function(data, constants, ts="daily",
   } else {
     return(results)
   }
-  
+
 }
 
 #-------------------------------------------------------------------------------------
 
 ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="sunshine hours", alpha=0.23,
-                                 message = "yes",AdditionalStats= "yes", save.csv ="yes",...) {
+                                 message = "yes",AdditionalStats= "yes", save.csv ="no",...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
   if (PenPan == TRUE) { # Calculate Class-A pan evaporation using PenPan formula
-    if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+    if (is.null(data$Tmax)|is.null(data$Tmin)) {
       stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
     }
     if (is.null(data$va)|is.null(data$vs)) {
       if (is.null(data$RHmax)|is.null(data$RHmin)) {
         stop("Required data missing: need either 'va' and 'vs', or 'RHmax' and 'RHmin' (or 'RH')")
       }
-    } 
+    }
     if (is.null(data$u2) & is.null(data$uz)) {
       stop("Required data missing for 'uz' or 'u2'")
     }
@@ -2601,7 +2584,7 @@ ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="su
       stop("Required data missing for 'Cd'")
     } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
       stop("Required data missing for 'Precip'")
-    } 
+    }
   }
   if (PenPan == FALSE & is.null(data$Epan)) { # for using Class-A pan evaporation data
     stop("Required data missing for 'Epan'")
@@ -2615,17 +2598,17 @@ ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="su
       if (as.numeric(alpha) < 0 | as.numeric(alpha) > 1) {
         stop("Please use a value between 0 and 1 for the alpha (albedo of evaporative surface)")
       }
-    } 
+    }
   }
-  
-  # Calculations from data and constants for daily equivalent Penman-Monteith potential evaporation 
+
+  # Calculations from data and constants for daily equivalent Penman-Monteith potential evaporation
   A_p <- 0.17 + 0.011 * abs(constants$lat) # constant (S13.2)
   B_p <- 10 ^ (0.66 - 0.211 * abs(constants$lat)) # constants (S13.3)
-  
+
   if (PenPan == TRUE) {
-    # Calculating mean temperature 
-    Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-    
+    # Calculating mean temperature
+    Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
     if (!is.null(data$va) & !is.null(data$vs)) {
       vabar <- data$va
       vas <- data$vs
@@ -2634,11 +2617,11 @@ ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="su
       vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax / (data$Tmax + 237.3)) # Equation S2.5
       vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin / (data$Tmin + 237.3)) # Equation S2.5
       vas <- (vs_Tmax + vs_Tmin)/2 # Equation S2.6
-      
+
       # Vapour pressure
       vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2 # Equation S2.7
-    }    
-    # estimating class-A pan evaporation using PenPan model 
+    }
+    # estimating class-A pan evaporation using PenPan model
     P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
     delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
     gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -2648,24 +2631,22 @@ ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="su
     N <- 24/pi * w_s # calculating daily values
     R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
     R_so <- (0.75 + (2*10^-5)*constants$Elev) * R_a # clear sky radiation (S3.4)
-    
+
     if (solar == "data") {
       R_s <- data$Rs
-    } else if (solar == "monthly precipitation") {
-      # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-      R_s <- (0.85 - 0.047*data$Cd)*R_a 
-    } else {
-      # calculate R_s from sunshine hours - data or estimation using cloudness
-      R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
+    }else if (solar != "monthly precipitation"&
+              solar != "cloud") {
+      R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+    }else {
+      R_s <- (0.85 - 0.047 * data$Cd) * R_a
     }
-    
     # Wind speed
     if (is.null(data$u2)) {
       u2 <- data$uz * 4.87 / log(67.8*constants$z - 5.42) # Equation S5.20 for PET formulations other than Penman
     } else {
       u2 <- data$u2
     }
-    
+
     R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
     # For short grass
     P_rad <- 1.32 + 4 * 10^(-4) * abs(constants$lat) + 8 * 10^(-5) * (constants$lat)^2 # pan radiation factor (S6.6)
@@ -2673,7 +2654,7 @@ ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="su
     R_span <- (f_dir * P_rad + 1.42 * (1 - f_dir) + 0.42 * alpha) * R_s # total shortwave radiation received (S6.4)
     R_npan <-(1 - constants$alphaA) * R_span - R_nl # net radiation at the pan (S6.3)
     f_pan_u <-1.201 + 1.621 * u2 # (S6.2)
-    
+
     Epan <- delta / (delta + constants$ap * gamma) * R_npan / constants$lambda + constants$ap * gamma / (delta + constants$ap * gamma) * f_pan_u * (vas - vabar) # PenPan estimation of Class-A pan evaporation (S6.1)
     ET_eqPM.Daily <- A_p * Epan + B_p # daily equivalent Penman-Monteith potential evaporation (mm.day^-1)
   } else if (PenPan == FALSE & is.null(data$Epan)) {
@@ -2681,15 +2662,15 @@ ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="su
   } else {
     ET_eqPM.Daily <- A_p * data$Epan + B_p # daily equivalent Penman-Monteith potential evaporation (mm.day^-1)
   }
-  
+
   ET.Daily <- ET_eqPM.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
-  
+
   if (AdditionalStats=="yes") {
-    
+
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
       i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
       ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
@@ -2698,9 +2679,9 @@ ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="su
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
-    
-  } 
+
+
+  }
   # Generate summary message for results
   ET_formulation <- "Chapman"
   ET_type <- "Potential ET"
@@ -2709,7 +2690,7 @@ ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="su
   } else {
     Surface <- paste("not specified, actual Class-A pan evaporation data is used")
   }
-  
+
   if (solar == "data") {
     message1 <- "Solar radiation data have been used for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
@@ -2719,13 +2700,13 @@ ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="su
   } else {
     message1 <- "Monthly precipitation data have been used for calculating incoming solar radiation"
   }
-  
+
   if (PenPan == TRUE) {
     message5 <- "PenPan formulation has been used to estimate Class-A pan evaporation for the calculation of potential evapotranspiration"
   } else {
     message5 <- "Class-A pan evaporation has been used for the calculation of potential evapotranspiration"
   }
-  
+
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type, message1=message1, message5=message5)
   if (ts=="daily") {
     res_ts <-  ET.Daily
@@ -2734,15 +2715,15 @@ ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="su
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message == "yes") {
     # Generate summary message for results
-    
+
     message(ET_formulation, " ", ET_type)
     message("Evaporative surface: ", Surface)
     message(message1)
     message(message5)
-    
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -2765,7 +2746,7 @@ ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="su
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_ChapmanAustralian.csv", dec=".", 
+      write.table(as.character(namer), file="ET_ChapmanAustralian.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_ChapmanAustralian.csv", col.names=F, append= T, sep=',' )
     }
@@ -2773,17 +2754,17 @@ ET.ChapmanAustralian <- function(data, constants, ts="daily",PenPan=T, solar="su
   } else {
     return(results)
   }
-  
+
 }
 
 #-------------------------------------------------------------------------------------
 
 ET.JensenHaise <- function(data, constants, ts="daily",solar="sunshine hours",
-                           message = "yes",AdditionalStats= "yes", save.csv ="yes",...) {
+                           message = "yes",AdditionalStats= "yes", save.csv ="no",...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
   if (solar == "data" & is.null(data$Rs)) { # solar radiation data is required
@@ -2794,12 +2775,12 @@ ET.JensenHaise <- function(data, constants, ts="daily",solar="sunshine hours",
     stop("Required data missing for 'Cd'")
   } else if (solar == "monthly precipitation" & is.null(data$Precip)) { # for alternative calculation of cloudiness using monthly precipitation
     stop("Required data missing for 'Precip'")
-  } 
-  
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+  }
+
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -2808,28 +2789,27 @@ ET.JensenHaise <- function(data, constants, ts="daily",solar="sunshine hours",
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
-  
+
   if (solar == "data") {
     R_s <- data$Rs
-  } else if (solar == "monthly precipitation") {
-    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
-    R_s <- (0.85 - 0.047*data$Cd)*R_a 
-  } else {
-    # calculate R_s from sunshine hours - data or estimation using cloudness
-    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
+  }else if (solar != "monthly precipitation"&
+            solar != "cloud") {
+    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
+  }else {
+    R_s <- (0.85 - 0.047 * data$Cd) * R_a
   }
-  
+
   # estimating evapotranspiration using Jensen-Haise
-  
+
   ET_JH.Daily <- 0.025* (Ta + 3) * R_s / constants$lambda # Jensen-Haise daily evapotranspiration by Prudhomme & Williams 2013
   ET.Daily <- ET_JH.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
-  
+
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
-    
+
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
       i = mon - min(as.POSIXlt(data$Date.daily)$mon) + 1
       ET.MonthlyAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$mon== mon])
@@ -2838,13 +2818,13 @@ ET.JensenHaise <- function(data, constants, ts="daily",solar="sunshine hours",
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
-  } 
-  
+
+  }
+
   ET_formulation <- "Jensen-Haise"
   ET_type <- "Potential ET"
-  
-  
+
+
   if (solar == "data") {
     message1 <- "Solar radiation data have been used for calculating evapotranspiration"
   } else if (solar == "sunshine hours") {
@@ -2862,10 +2842,10 @@ ET.JensenHaise <- function(data, constants, ts="daily",solar="sunshine hours",
   } else if (ts=="annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message =="yes") {
     # Generate summary message for results
-    
+
     message(ET_formulation, " ", ET_type)
     message(message1)
     message("Timestep: ", ts)
@@ -2890,7 +2870,7 @@ ET.JensenHaise <- function(data, constants, ts="daily",solar="sunshine hours",
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_JensenHaise.csv", dec=".", 
+      write.table(as.character(namer), file="ET_JensenHaise.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_JensenHaise.csv", col.names=F, append= T, sep=',' )
     }
@@ -2898,23 +2878,23 @@ ET.JensenHaise <- function(data, constants, ts="daily",solar="sunshine hours",
   } else {
     return(results)
   }
-  
+
 }
 
 #-------------------------------------------------------------------------------------
 
-ET.McGuinnessBordne <- function(data, constants, ts="daily", 
-                                message = "yes",AdditionalStats= "yes", save.csv ="yes",...) {
+ET.McGuinnessBordne <- function(data, constants, ts="daily",
+                                message = "yes",AdditionalStats= "yes", save.csv ="no",...) {
   #class(data) <- funname
-  
+
   # Check of specific data requirement
-  if (is.null(data$Tmax)|is.null(data$Tmin)) { 
+  if (is.null(data$Tmax)|is.null(data$Tmin)) {
     stop("Required data missing for 'Tmax' and 'Tmin', or 'Temp'")
   }
-  
-  # Calculating mean temperature 
-  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998. 
-  
+
+  # Calculating mean temperature
+  Ta <- (data$Tmax + data$Tmin) / 2   # Equation S2.1 in Tom McMahon's HESS 2013 paper, which in turn was based on Equation 9 in Allen et al, 1998.
+
   P <- 101.3 * ((293 - 0.0065 * constants$Elev) / 293)^5.26 # atmospheric pressure (S2.10)
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
@@ -2923,15 +2903,15 @@ ET.McGuinnessBordne <- function(data, constants, ts="daily",
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
-  
+
   # estimating evapotranspiration using McGuinness-Bordne
-  
+
   ET_MB.Daily <- R_a * (Ta + 5)/ (constants$lambda*68)  # McGuinness-Bordne daily evapotranspiration by McGuinness-Bordne  (1972) (mm.day^-1) (Oudin et al., 2005
-  
+
   ET.Daily <- ET_MB.Daily
   ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
   ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
-  
+
   ET.MonthlyAve <- ET.AnnualAve <- NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.daily)$mon):max(as.POSIXlt(data$Date.daily)$mon)){
@@ -2942,13 +2922,13 @@ ET.McGuinnessBordne <- function(data, constants, ts="daily",
       i = year - min(as.POSIXlt(data$Date.daily)$year) + 1
       ET.AnnualAve[i] <- mean(ET.Daily[as.POSIXlt(data$Date.daily)$year== year])
     }
-    
+
   }
-  
+
   # Generate summary message for results
   ET_formulation <- "McGuinness-Bordne"
   ET_type <- "Potential ET"
-  
+
   results <- list(ET.Daily=ET.Daily, ET.Monthly=ET.Monthly, ET.Annual=ET.Annual, ET.MonthlyAve=ET.MonthlyAve, ET.AnnualAve=ET.AnnualAve, ET_formulation=ET_formulation, ET_type=ET_type)
   if (ts=="daily") {
     res_ts <-  ET.Daily
@@ -2959,7 +2939,7 @@ ET.McGuinnessBordne <- function(data, constants, ts="daily",
   }
   if (message =="yes") {
     message(ET_formulation, " ", ET_type)
-    
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
@@ -2982,7 +2962,7 @@ ET.McGuinnessBordne <- function(data, constants, ts="daily",
     # write to csv file
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file="ET_McGuinnessBordne.csv", dec=".", 
+      write.table(as.character(namer), file="ET_McGuinnessBordne.csv", dec=".",
                   quote=FALSE, col.names=FALSE, row.names=F, append=TRUE, sep=",")
       write.table(data.frame(get(namer,results)), file="ET_McGuinnessBordne.csv", col.names=F, append= T, sep=',' )
     }
@@ -2990,13 +2970,13 @@ ET.McGuinnessBordne <- function(data, constants, ts="daily",
   } else {
     return(results)
   }
-  
+
 }
 #####################################################
 
 # Calculate radiation variables
-Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours", 
-                       Tdew = T, alpha = NULL, model = "CRAE") 
+Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours",
+                       Tdew = T, alpha = NULL, model = "CRAE")
 {
   if (model != "CRWE" & model != "CRAE" & model != "CRLE") {
     stop("Error: please choose either 'CRWE' or 'CRAE' for the model to use")
@@ -3018,9 +2998,9 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
       if (is.null(data$RHmax) | is.null(data$RHmin)) {
         stop("Required data missing for 'va' , or 'RHmax' and 'RHmin' (or 'RH')")
       }
-    } 
+    }
   }
-  
+
   if (solar == "sunshine hours" & is.null(data$n)) {
     stop("Required data missing for 'n'")
   }
@@ -3033,43 +3013,43 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     }
   }
   T_Mo.temp <- (data$Tmax + data$Tmin)/2
-  T_Mo <- aggregate(T_Mo.temp, as.yearmon(data$Date.daily, 
+  T_Mo <- aggregate(T_Mo.temp, as.yearmon(data$Date.daily,
                                           "%m/%y"), FUN = mean)
   # calculate Tdew
   if (Tdew == TRUE) {
-    Tdew_Mo <- aggregate(data$Tdew, as.yearmon(data$Date.daily, 
+    Tdew_Mo <- aggregate(data$Tdew, as.yearmon(data$Date.daily,
                                                "%d/%m/%y"), FUN = mean)
   } else if (!is.null(data$va)) {
-    vabar_Mo <- aggregate(data$va, as.yearmon(data$Date.daily, 
+    vabar_Mo <- aggregate(data$va, as.yearmon(data$Date.daily,
                                               "%m/%y"), FUN = mean)
-    Tdew_Mo <- (116.9 + 237.3 * log(vabar_Mo))/(16.78 - 
+    Tdew_Mo <- (116.9 + 237.3 * log(vabar_Mo))/(16.78 -
                                                   log(vabar_Mo))
   } else {
     vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2
-    vabar_Mo <- aggregate(vabar, as.yearmon(data$Date.daily, 
+    vabar_Mo <- aggregate(vabar, as.yearmon(data$Date.daily,
                                             "%m/%y"), FUN = mean)
-    Tdew_Mo <- (116.9 + 237.3 * log(vabar_Mo))/(16.78 - 
+    Tdew_Mo <- (116.9 + 237.3 * log(vabar_Mo))/(16.78 -
                                                   log(vabar_Mo))
   }
-  
+
   # calculate vas
   if (is.null(data$vs)) {
     vas <- data$vs
   } else {
-    vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax/(data$Tmax + 
+    vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax/(data$Tmax +
                                                  237.3))
-    vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin/(data$Tmin + 
+    vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin/(data$Tmin +
                                                  237.3))
     vas <- (vs_Tmax + vs_Tmin)/2
   }
-  
-  
-  delta <- 4098 * (0.6108 * exp(17.27 * T_Mo/(T_Mo + 237.3)))/(T_Mo + 
+
+
+  delta <- 4098 * (0.6108 * exp(17.27 * T_Mo/(T_Mo + 237.3)))/(T_Mo +
                                                                  237.3)^2
   deltas <- 0.409 * sin(2 * pi/365 * data$J - 1.39)
   omegas <- acos(-tan(constants$lat_rad) * tan(deltas))
   if (!is.null(data$Precip)) {
-    PA <- mean(aggregate(data$Precip, floor(as.numeric(as.yearmon(data$Date.daily, 
+    PA <- mean(aggregate(data$Precip, floor(as.numeric(as.yearmon(data$Date.daily,
                                                                   "%m/%y"))), FUN = sum))
   }
   else {
@@ -3083,7 +3063,7 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     constants$b2 <- 1.12
   }
   ptops <- ((288 - 0.0065 * constants$Elev)/288)^5.256
-  alpha_zd <- 0.26 - 0.00012 * PA * sqrt(ptops) * (1 + 
+  alpha_zd <- 0.26 - 0.00012 * PA * sqrt(ptops) * (1 +
                                                      abs(constants$lat/42) + (constants$lat/42)^2)
   if (alpha_zd < 0.11) {
     alpha_zd <- 0.11
@@ -3091,8 +3071,8 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
   else if (alpha_zd > 0.17) {
     alpha_zd <- 0.17
   }
-  
-  if (solar == "sunshine hours") {
+
+  if (solar == "sunshine hours" | solar == "cloud") {
     N <- 24/pi * omegas
     # S_daily <- data$n/N
     # for (i in 1:length(S_daily)) {
@@ -3103,15 +3083,15 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     # Vectorised version : Tim Peterson 23 May 2019
     S_daily <- pmin(data$n/N, 1)
     S <- mean(S_daily)
-    
-    
-    vD_Mo <- 6.11 * exp(constants$alphaMo * Tdew_Mo/(Tdew_Mo + 
+
+
+    vD_Mo <- 6.11 * exp(constants$alphaMo * Tdew_Mo/(Tdew_Mo +
                                                        constants$betaMo))
-    v_Mo <- 6.11 * exp(constants$alphaMo * T_Mo/(T_Mo + 
+    v_Mo <- 6.11 * exp(constants$alphaMo * T_Mo/(T_Mo +
                                                    constants$betaMo))
-    deltaMo <- constants$alphaMo * constants$betaMo * v_Mo/((T_Mo + 
+    deltaMo <- constants$alphaMo * constants$betaMo * v_Mo/((T_Mo +
                                                                constants$betaMo)^2)
-    thetaMo <- (23.2 * sin((29.5 * data$i - 94) * pi/180)) * 
+    thetaMo <- (23.2 * sin((29.5 * data$i - 94) * pi/180)) *
       pi/180
     Z_Mo <- acos(cos(constants$lat_rad - thetaMo))
     # for (i in 1:length(Z_Mo)) {
@@ -3124,16 +3104,16 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     if (length(filt)>0) {
       Z_Mo[filt] <- acos(0.001)
     }
-    
-    
-    omegaMo <- acos(1 - cos(Z_Mo)/(cos(constants$lat_rad) * 
+
+
+    omegaMo <- acos(1 - cos(Z_Mo)/(cos(constants$lat_rad) *
                                      cos(thetaMo)))
-    cosz <- cos(Z_Mo) + (sin(omegaMo)/omegaMo - 1) * cos(constants$lat_rad) * 
+    cosz <- cos(Z_Mo) + (sin(omegaMo)/omegaMo - 1) * cos(constants$lat_rad) *
       cos(thetaMo)
     etaMo <- 1 + 1/60 * sin((29.5 * data$i - 106) * pi/180)
     G_E <- 1354/(etaMo^2) * omegaMo/pi * cosz
     alpha_zz <- matrix(NA, length(v_Mo), 1)
-    
+
     if (model == "CRLE" | model == "CRWE") {
       alpha_zz[1:length(v_Mo)] <- 0.05
     } else {
@@ -3174,12 +3154,12 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     #   }
     # }
     # Vectorised version : Tim Peterson 23 May 2019
-    c_0 <- pmax(c_0, 0)       
-    c_0 <- pmin(c_0, 1)              
-    
+    c_0 <- pmax(c_0, 0)
+    c_0 <- pmin(c_0, 1)
+
     alpha_z <- alpha_zz + (1 - c_0^2) * (0.34 - alpha_zz)
-    alpha_0 <- alpha_z * (exp(1.08) - ((2.16 * cos(Z_Mo))/pi + 
-                                         sin(Z_Mo)) * exp(0.012 * Z_Mo * 180/pi))/(1.473 * 
+    alpha_0 <- alpha_z * (exp(1.08) - ((2.16 * cos(Z_Mo))/pi +
+                                         sin(Z_Mo)) * exp(0.012 * Z_Mo * 180/pi))/(1.473 *
                                                                                      (1 - sin(Z_Mo)))
     W_Mo <- vD_Mo/(0.49 + T_Mo/129)
     c_1 <- as.vector(21 - T_Mo)
@@ -3197,29 +3177,29 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     #   }
     # }
     # Vectorised version : Tim Peterson 23 May 2019
-    c_1 <- pmax(c_1, 0)       
-    c_1 <- pmin(c_1, 5)       
-    
-    j_Mo <- (0.5 + 2.5 * (cosz)^2) * exp(c_1 * (ptops - 
+    c_1 <- pmax(c_1, 0)
+    c_1 <- pmin(c_1, 5)
+
+    j_Mo <- (0.5 + 2.5 * (cosz)^2) * exp(c_1 * (ptops -
                                                   1))
-    tauMo <- exp(-0.089 * (ptops * 1/cosz)^0.75 - 0.083 * 
+    tauMo <- exp(-0.089 * (ptops * 1/cosz)^0.75 - 0.083 *
                    (j_Mo/cosz)^0.9 - 0.029 * (W_Mo/cosz)^0.6)
-    tauaMo <- as.vector(exp(-0.0415 * (j_Mo/cosz)^0.9 - 
+    tauaMo <- as.vector(exp(-0.0415 * (j_Mo/cosz)^0.9 -
                               (0.0029)^0.5 * (W_Mo/cosz)^0.3))
     for (i in 1:length(tauaMo)) {
-      if (tauaMo[i] < exp(-0.0415 * (as.matrix(j_Mo/cosz)[i])^0.9 - 
+      if (tauaMo[i] < exp(-0.0415 * (as.matrix(j_Mo/cosz)[i])^0.9 -
                           0.029 * (as.matrix(W_Mo/cosz)[i])^0.6)) {
-        tauaMo[i] <- exp(-0.0415 * (as.matrix(j_Mo/cosz)[i])^0.9 - 
+        tauaMo[i] <- exp(-0.0415 * (as.matrix(j_Mo/cosz)[i])^0.9 -
                            0.029 * (as.matrix(W_Mo/cosz)[i])^0.6)
       }
       else {
         tauaMo[i] <- tauaMo[i]
       }
     }
-    G_0 <- G_E * tauMo * (1 + (1 - tauMo/tauaMo) * (1 + 
+    G_0 <- G_E * tauMo * (1 + (1 - tauMo/tauaMo) * (1 +
                                                       alpha_0 * tauMo))
     G_Mo <- S * G_0 + (0.08 + 0.3 * S) * (1 - S) * G_E
-    alpha_Mo <- alpha_0 * (S + (1 - S) * (1 - Z_Mo/330 * 
+    alpha_Mo <- alpha_0 * (S + (1 - S) * (1 - Z_Mo/330 *
                                             180/pi))
     c_2 <- as.vector(10 * (vD_Mo/v_Mo - S - 0.42))
     # for (i in 1:length(c_2)) {
@@ -3236,18 +3216,18 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     #   }
     # }
     # Vectorised version : Tim Peterson 23 May 2019
-    c_2 <- pmax(c_2, 0)       
-    c_2 <- pmin(c_2, 1)            
-    
-    rouMo <- 0.18 * ((1 - c_2) * (1 - S)^2 + c_2 * (1 - 
+    c_2 <- pmax(c_2, 0)
+    c_2 <- pmin(c_2, 1)
+
+    rouMo <- 0.18 * ((1 - c_2) * (1 - S)^2 + c_2 * (1 -
                                                       S)^0.5) * 1/ptops
-    B_Mo <- as.vector(constants$epsilonMo * constants$sigmaMo * 
-                        (T_Mo + 273)^4 * (1 - (0.71 + 0.007 * vD_Mo * ptops) * 
+    B_Mo <- as.vector(constants$epsilonMo * constants$sigmaMo *
+                        (T_Mo + 273)^4 * (1 - (0.71 + 0.007 * vD_Mo * ptops) *
                                             (1 + rouMo)))
     # for (i in 1:length(B_Mo)) {
-    #   if (B_Mo[i] < 0.05 * constants$epsilonMo * constants$sigmaMo * 
+    #   if (B_Mo[i] < 0.05 * constants$epsilonMo * constants$sigmaMo *
     #       (T_Mo[i] + 274)^4) {
-    #     B_Mo[i] <- 0.05 * constants$epsilonMo * constants$sigmaMo * 
+    #     B_Mo[i] <- 0.05 * constants$epsilonMo * constants$sigmaMo *
     #       (T_Mo[i] + 274)^4
     #   }
     #   else {
@@ -3256,19 +3236,19 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     # }
     # Vectorised version : Tim Peterson 23 May 2019
     B_Mo <- pmax(B_Mo, 0.05 * constants$epsilonMo * constants$sigmaMo * (T_Mo + 274)^4)
-    
-    
+
+
     R_T <- (1 - alpha_Mo) * G_Mo - B_Mo
   }
   else if (solar == "data") {
-    vD_Mo <- 6.11 * exp(constants$alphaMo * Tdew_Mo/(Tdew_Mo + 
+    vD_Mo <- 6.11 * exp(constants$alphaMo * Tdew_Mo/(Tdew_Mo +
                                                        constants$betaMo))
-    v_Mo <- 6.11 * exp(constants$alphaMo * T_Mo/(T_Mo + 
+    v_Mo <- 6.11 * exp(constants$alphaMo * T_Mo/(T_Mo +
                                                    constants$betaMo))
     ptops <- ((288 - 0.0065 * constants$Elev)/288)^5.256
-    deltaMo <- constants$alphaMo * constants$betaMo * v_Mo/((T_Mo + 
+    deltaMo <- constants$alphaMo * constants$betaMo * v_Mo/((T_Mo +
                                                                constants$betaMo)^2)
-    thetaMo <- (23.2 * sin((29.5 * data$i - 94) * pi/180)) * 
+    thetaMo <- (23.2 * sin((29.5 * data$i - 94) * pi/180)) *
       pi/180
     Z_Mo <- acos(cos(constants$lat_rad - thetaMo))
     # for (i in 1:length(Z_Mo)) {
@@ -3281,30 +3261,30 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     if (length(filt)>0) {
       Z_Mo[filt] <- acos(0.001)
     }
-    
-    omegaMo <- acos(1 - cos(Z_Mo)/(cos(constants$lat_rad) * 
+
+    omegaMo <- acos(1 - cos(Z_Mo)/(cos(constants$lat_rad) *
                                      cos(thetaMo)))
-    cosz <- cos(Z_Mo) + (sin(omegaMo)/omegaMo - 1) * cos(constants$lat_rad) * 
+    cosz <- cos(Z_Mo) + (sin(omegaMo)/omegaMo - 1) * cos(constants$lat_rad) *
       cos(thetaMo)
     etaMo <- 1 + 1/60 * sin((29.5 * data$i - 106) * pi/180)
     G_E <- 1354/(etaMo^2) * omegaMo/pi * cosz
-    G_Mo <- aggregate(data$Rs * 10^6/86400, as.yearmon(data$Date.daily, 
+    G_Mo <- aggregate(data$Rs * 10^6/86400, as.yearmon(data$Date.daily,
                                                        "%m/%y"), FUN = mean)
     #S = NULL
     Ta <- (data$Tmax + data$Tmin)/2
     P <- 101.3 * ((293 - 0.0065 * constants$Elev)/293)^5.26
-    delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta + 237.3)))/((Ta + 
+    delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta + 237.3)))/((Ta +
                                                                   237.3)^2)
     gamma <- 0.00163 * P/constants$lambda
     d_r2 <- 1 + 0.033 * cos(2 * pi/365 * data$J)
     delta2 <- 0.409 * sin(2 * pi/365 * data$J - 1.39)
     w_s <- acos(-tan(constants$lat_rad) * tan(delta2))
     N <- 24/pi * w_s
-    R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * 
-                                                 sin(delta2) + cos(constants$lat_rad) * cos(delta2) * 
+    R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) *
+                                                 sin(delta2) + cos(constants$lat_rad) * cos(delta2) *
                                                  sin(w_s))
     R_so <- (0.75 + (2 * 10^-5) * constants$Elev) * R_a
-    
+
     alpha_zz <- matrix(NA, length(v_Mo), 1)
     if (model == "CRLE" | model == "CRWE") {
       alpha_zz[1:length(v_Mo)] <- 0.05
@@ -3328,8 +3308,8 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
       if (length(filt)>0) {
         alpha_zz[filt] <- 0.5 * (0.91 - vD_Mo[filt]/v_Mo[filt])
       }
-      
-      
+
+
     }
     c_0 <- as.vector(v_Mo - vD_Mo)
     # for (i in 1:length(c_0)) {
@@ -3346,12 +3326,12 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     #   }
     # }
     # Vectorised version : Tim Peterson 23 May 2019
-    c_0 <- pmax(c_0, 0)       
-    c_0 <- pmin(c_0, 1)        
-    
+    c_0 <- pmax(c_0, 0)
+    c_0 <- pmin(c_0, 1)
+
     alpha_z <- alpha_zz + (1 - c_0^2) * (0.34 - alpha_zz)
-    alpha_0 <- alpha_z * (exp(1.08) - ((2.16 * cos(Z_Mo))/pi + 
-                                         sin(Z_Mo)) * exp(0.012 * Z_Mo * 180/pi))/(1.473 * 
+    alpha_0 <- alpha_z * (exp(1.08) - ((2.16 * cos(Z_Mo))/pi +
+                                         sin(Z_Mo)) * exp(0.012 * Z_Mo * 180/pi))/(1.473 *
                                                                                      (1 - sin(Z_Mo)))
     W_Mo <- vD_Mo/(0.49 + T_Mo/129)
     c_1 <- as.vector(21 - T_Mo)
@@ -3369,19 +3349,19 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     #   }
     # }
     # Vectorised version : Tim Peterson 23 May 2019
-    c_1 <- pmax(c_1, 0)       
-    c_1 <- pmin(c_1, 5)        
-    
-    j_Mo <- (0.5 + 2.5 * (cosz)^2) * exp(c_1 * (ptops - 
+    c_1 <- pmax(c_1, 0)
+    c_1 <- pmin(c_1, 5)
+
+    j_Mo <- (0.5 + 2.5 * (cosz)^2) * exp(c_1 * (ptops -
                                                   1))
-    tauMo <- exp(-0.089 * (ptops * 1/cosz)^0.75 - 0.083 * 
+    tauMo <- exp(-0.089 * (ptops * 1/cosz)^0.75 - 0.083 *
                    (j_Mo/cosz)^0.9 - 0.029 * (W_Mo/cosz)^0.6)
-    tauaMo <- as.vector(exp(-0.0415 * (j_Mo/cosz)^0.9 - 
+    tauaMo <- as.vector(exp(-0.0415 * (j_Mo/cosz)^0.9 -
                               (0.0029)^0.5 * (W_Mo/cosz)^0.3))
     # for (i in 1:length(tauaMo)) {
-    #   if (tauaMo[i] < exp(-0.0415 * (as.matrix(j_Mo/cosz)[i])^0.9 - 
+    #   if (tauaMo[i] < exp(-0.0415 * (as.matrix(j_Mo/cosz)[i])^0.9 -
     #                       0.029 * (as.matrix(W_Mo/cosz)[i])^0.6)) {
-    #     tauaMo[i] <- exp(-0.0415 * (as.matrix(j_Mo/cosz)[i])^0.9 - 
+    #     tauaMo[i] <- exp(-0.0415 * (as.matrix(j_Mo/cosz)[i])^0.9 -
     #                        0.029 * (as.matrix(W_Mo/cosz)[i])^0.6)
     #   }
     #   else {
@@ -3389,18 +3369,18 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     #   }
     # }
     # Vectorised version : Tim Peterson 23 May 2019
-    tauaMo <- pmax(tauaMo, exp(-0.0415 * (as.matrix(j_Mo/cosz))^0.9 - 
+    tauaMo <- pmax(tauaMo, exp(-0.0415 * (as.matrix(j_Mo/cosz))^0.9 -
                                  0.029 * (as.matrix(W_Mo/cosz))^0.6))
-    
-    G_0 <- G_E * tauMo * (1 + (1 - tauMo/tauaMo) * (1 + 
+
+    G_0 <- G_E * tauMo * (1 + (1 - tauMo/tauaMo) * (1 +
                                                       alpha_0 * tauMo))
-    
-    
+
+
     S <- 0.53*G_Mo / (G_0 - 0.47*G_Mo)
     S[which(S<0)] <- 0
     S[which(S>1)] <- 1
-    
-    alpha_Mo <- alpha_0 * (S + (1 - S) * (1 - Z_Mo/330 * 
+
+    alpha_Mo <- alpha_0 * (S + (1 - S) * (1 - Z_Mo/330 *
                                             180/pi))
     c_2 <- as.vector(10 * (vD_Mo/v_Mo - S - 0.42))
     # for (i in 1:length(c_2)) {
@@ -3417,17 +3397,17 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     #   }
     # }
     # Vectorised version : Tim Peterson 23 May 2019
-    c_2 <- pmax(c_2, 0)       
-    c_2 <- pmin(c_2, 1)               
-    rouMo <- 0.18 * ((1 - c_2) * (1 - S)^2 + c_2 * (1 - 
+    c_2 <- pmax(c_2, 0)
+    c_2 <- pmin(c_2, 1)
+    rouMo <- 0.18 * ((1 - c_2) * (1 - S)^2 + c_2 * (1 -
                                                       S)^0.5) * 1/ptops
-    B_Mo <- as.vector(constants$epsilonMo * constants$sigmaMo * 
-                        (T_Mo + 273)^4 * (1 - (0.71 + 0.007 * vD_Mo * ptops) * 
+    B_Mo <- as.vector(constants$epsilonMo * constants$sigmaMo *
+                        (T_Mo + 273)^4 * (1 - (0.71 + 0.007 * vD_Mo * ptops) *
                                             (1 + rouMo)))
     # for (i in 1:length(B_Mo)) {
-    #   if (B_Mo[i] < 0.05 * constants$epsilonMo * constants$sigmaMo * 
+    #   if (B_Mo[i] < 0.05 * constants$epsilonMo * constants$sigmaMo *
     #       (T_Mo[i] + 274)^4) {
-    #     B_Mo[i] <- 0.05 * constants$epsilonMo * constants$sigmaMo * 
+    #     B_Mo[i] <- 0.05 * constants$epsilonMo * constants$sigmaMo *
     #       (T_Mo[i] + 274)^4
     #   }
     #   else {
@@ -3436,7 +3416,7 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     # }
     # Vectorised version : Tim Peterson 23 May 2019
     B_Mo <- pmax(B_Mo, 0.05 * constants$epsilonMo * constants$sigmaMo * (T_Mo + 274)^4)
-    
+
     R_T <- (1 - alpha_Mo) * G_Mo - B_Mo
   }
   if (solar == "sunshine hours") {
@@ -3454,20 +3434,20 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
   else {
     message6 <- "Data of average vapour pressure has been used to estimate dew point pressure"
   }
-  variables <- list(T_Mo = T_Mo, Tdew_Mo = Tdew_Mo, S = S, 
-                    R_T = R_T, ptops = ptops, vD_Mo = vD_Mo, v_Mo = v_Mo, 
-                    deltaMo = deltaMo, G_E = G_E, G_Mo = G_Mo, alpha_Mo = alpha_Mo, 
+  variables <- list(T_Mo = T_Mo, Tdew_Mo = Tdew_Mo, S = S,
+                    R_T = R_T, ptops = ptops, vD_Mo = vD_Mo, v_Mo = v_Mo,
+                    deltaMo = deltaMo, G_E = G_E, G_Mo = G_Mo, alpha_Mo = alpha_Mo,
                     B_Mo = B_Mo, message1 = message1, message6 = message6)
   return(variables)
 }
 
 
 #-------------------------------------------------------------------------------------
-ET.MortonCRAE <- function (data, constants, ts = "monthly", est = "potential ET", 
-                           solar = "sunshine hours", Tdew = T, alpha = NULL, 
-                           message = "yes",AdditionalStats= "yes", save.csv ="yes",...) 
+ET.MortonCRAE <- function (data, constants, ts = "monthly", est = "potential ET",
+                           solar = "sunshine hours", Tdew = T, alpha = NULL,
+                           message = "yes",AdditionalStats= "yes", save.csv ="no",...)
 {
-  variables <- Radiation(data, constants, ts, solar, Tdew, 
+  variables <- Radiation(data, constants, ts, solar, Tdew,
                          alpha)
   R_T <- (1 - variables$alpha_Mo) * variables$G_Mo - variables$B_Mo
   R_TC <- as.vector(R_T)
@@ -3479,9 +3459,9 @@ ET.MortonCRAE <- function (data, constants, ts = "monthly", est = "potential ET"
       R_TC[i] <- R_TC[i]
     }
   }
-  xiMo <- 1/(0.28 * (1 + variables$vD_Mo/variables$v_Mo) + 
-               R_TC * variables$deltaMo/(variables$ptops * constants$gammaps * 
-                                           (1/variables$ptops)^0.5 * constants$b0 * constants$fz * 
+  xiMo <- 1/(0.28 * (1 + variables$vD_Mo/variables$v_Mo) +
+               R_TC * variables$deltaMo/(variables$ptops * constants$gammaps *
+                                           (1/variables$ptops)^0.5 * constants$b0 * constants$fz *
                                            (variables$v_Mo - variables$vD_Mo)))
   # for (i in 1:length(xiMo)) {
   #   if (xiMo[i] < 1) {
@@ -3493,28 +3473,28 @@ ET.MortonCRAE <- function (data, constants, ts = "monthly", est = "potential ET"
   # }
   # Vectorised version : Tim Peterson 23 May 2019
   xiMo <- pmax(xiMo, 1)
-  
+
   f_T <- (1/variables$ptops)^0.5 * constants$fz/xiMo
-  lambdaMo1 <- constants$gammaps * variables$ptops + 4 * constants$epsilonMo * 
+  lambdaMo1 <- constants$gammaps * variables$ptops + 4 * constants$epsilonMo *
     constants$sigmaMo * (variables$T_Mo + 274)^3/f_T
   T_p <- variables$T_Mo
   for (i in 1:99999) {
     v_p <- 6.11 * exp((constants$alphaMo * T_p)/(T_p + constants$betaMo))
-    delta_p <- constants$alphaMo * constants$betaMo * v_p/((T_p + 
+    delta_p <- constants$alphaMo * constants$betaMo * v_p/((T_p +
                                                               constants$betaMo)^2)
-    delta_T_p <- (R_T/f_T + variables$vD_Mo - v_p + lambdaMo1 * 
+    delta_T_p <- (R_T/f_T + variables$vD_Mo - v_p + lambdaMo1 *
                     (variables$T_Mo - T_p))/(delta_p + lambdaMo1)
     T_p <- T_p + delta_T_p
-    if (abs(max(na.omit(delta_T_p))) < 0.01) 
+    if (abs(max(na.omit(delta_T_p))) < 0.01)
       break
   }
   v_p <- 6.11 * exp((constants$alphaMo * T_p)/(T_p + constants$betaMo))
-  delta_p <- constants$alphaMo * constants$betaMo * v_p/((T_p + 
+  delta_p <- constants$alphaMo * constants$betaMo * v_p/((T_p +
                                                             constants$betaMo)^2)
   E_TP.temp <- R_T - lambdaMo1 * f_T * (T_p - variables$T_Mo)
-  R_TP <- E_TP.temp + variables$ptops * constants$gammaps * 
+  R_TP <- E_TP.temp + variables$ptops * constants$gammaps *
     f_T * (T_p - variables$T_Mo)
-  E_TW.temp <- constants$b1 + constants$b2 * R_TP/(1 + variables$ptops * 
+  E_TW.temp <- constants$b1 + constants$b2 * R_TP/(1 + variables$ptops *
                                                      constants$gammaps/delta_p)
   E_T_Mo.temp <- 2 * E_TW.temp - E_TP.temp
   E_TP.temp <- 1/(constants$lambdaMo) * E_TP.temp
@@ -3540,29 +3520,29 @@ ET.MortonCRAE <- function (data, constants, ts = "monthly", est = "potential ET"
   }
   ET.Daily <- NULL
   ET.Monthly <- ET_Mo.Monthly
-  ET.Annual <- aggregate(ET.Monthly, floor(as.numeric(as.yearmon(data$Date.monthly, 
+  ET.Annual <- aggregate(ET.Monthly, floor(as.numeric(as.yearmon(data$Date.monthly,
                                                                  "%m/%y"))), FUN = sum)
   ET.MonthlyAve = ET.AnnualAve = NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.monthly)$mon):max(as.POSIXlt(data$Date.monthly)$mon)) {
       i = mon - min(as.POSIXlt(data$Date.monthly)$mon) + 1
-      ET.MonthlyAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$mon == 
+      ET.MonthlyAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$mon ==
                                                mon])
     }
     for (year in min(as.POSIXlt(data$Date.monthly)$year):max(as.POSIXlt(data$Date.monthly)$year)) {
-      i = year - min(as.POSIXlt(data$Date.monthly)$year) + 
+      i = year - min(as.POSIXlt(data$Date.monthly)$year) +
         1
-      ET.AnnualAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$year == 
+      ET.AnnualAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$year ==
                                               year])
     }
-    
-  } 
-  
+
+  }
+
   ET_formulation <- "Morton CRAE"
-  
-  results <- list(ET.Daily = ET.Daily, ET.Monthly = ET.Monthly, 
-                  ET.Annual = ET.Annual, ET.MonthlyAve = ET.MonthlyAve, 
-                  ET.AnnualAve = ET.AnnualAve, ET_formulation = ET_formulation, 
+
+  results <- list(ET.Daily = ET.Daily, ET.Monthly = ET.Monthly,
+                  ET.Annual = ET.Annual, ET.MonthlyAve = ET.MonthlyAve,
+                  ET.AnnualAve = ET.AnnualAve, ET_formulation = ET_formulation,
                   ET_type = ET_type, message1 = variables$message1, message6 = variables$message6)
   if (ts == "monthly") {
     res_ts <- ET.Monthly
@@ -3570,17 +3550,17 @@ ET.MortonCRAE <- function (data, constants, ts = "monthly", est = "potential ET"
   else if (ts == "annual") {
     res_ts <- ET.Annual
   }
-  
+
   if (message == "yes") {
     message(ET_formulation, " ", ET_type)
     message(variables$message1)
     message(variables$message6)
-    
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
     if (NA %in% res_ts) {
-      message(length(res_ts), " ET estimates obtained; ", 
+      message(length(res_ts), " ET estimates obtained; ",
               length(which(is.na(res_ts))), " NA output entries due to missing data")
       message("Basic stats (NA excluded)")
       message("Mean: ", round(mean(res_ts, na.rm = T), digits = 2))
@@ -3598,31 +3578,31 @@ ET.MortonCRAE <- function (data, constants, ts = "monthly", est = "potential ET"
   if (save.csv== "yes") {
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file = "ET_MortonCRAE.csv", 
-                  dec = ".", quote = FALSE, col.names = FALSE, row.names = F, 
+      write.table(as.character(namer), file = "ET_MortonCRAE.csv",
+                  dec = ".", quote = FALSE, col.names = FALSE, row.names = F,
                   append = TRUE, sep = ",")
-      write.table(data.frame(get(namer, results)), file = "ET_MortonCRAE.csv", 
+      write.table(data.frame(get(namer, results)), file = "ET_MortonCRAE.csv",
                   col.names = F, append = T, sep = ",")
     }
     invisible(results)
   } else {
     return(results)
   }
-  
+
 }
 
 #-----------------------------------------------------------------------------------
-ET.MortonCRWE <- function (data, constants, ts = "monthly", est = "potential ET", 
-                           solar = "sunshine hours", Tdew = T, alpha = NULL, 
-                           message = "yes",AdditionalStats= "yes", save.csv ="yes",...) 
+ET.MortonCRWE <- function (data, constants, ts = "monthly", est = "potential ET",
+                           solar = "sunshine hours", Tdew = T, alpha = NULL,
+                           message = "yes",AdditionalStats= "yes", save.csv ="no",...)
 {
   constants$epsilonMo <- 0.97
   constants$fz <- 25
   constants$b0 <- 1.12
   constants$b1 <- 13
   constants$b2 <- 1.12
-  
-  variables <- Radiation(data, constants, ts, solar, Tdew, 
+
+  variables <- Radiation(data, constants, ts, solar, Tdew,
                          alpha, model = "CRWE")
   R_TC <- as.vector(variables$R_T)
   # for (i in 1:length(R_TC)) {
@@ -3633,13 +3613,13 @@ ET.MortonCRWE <- function (data, constants, ts = "monthly", est = "potential ET"
   #     R_TC[i] <- R_TC[i]
   #   }
   # }
-  # 
+  #
   # Vectorised version : Tim Peterson 23 May 2019
   R_TC = pmax(R_TC, 0)
-  
-  xiMo <- 1/(0.28 * (1 + variables$vD_Mo/variables$v_Mo) + 
-               R_TC * variables$deltaMo/(variables$ptops * constants$gammaps * 
-                                           (1/variables$ptops)^0.5 * constants$b0 * constants$fz * 
+
+  xiMo <- 1/(0.28 * (1 + variables$vD_Mo/variables$v_Mo) +
+               R_TC * variables$deltaMo/(variables$ptops * constants$gammaps *
+                                           (1/variables$ptops)^0.5 * constants$b0 * constants$fz *
                                            (variables$v_Mo - variables$vD_Mo)))
   # for (i in 1:length(xiMo)) {
   #   if (xiMo[i] < 1) {
@@ -3651,28 +3631,28 @@ ET.MortonCRWE <- function (data, constants, ts = "monthly", est = "potential ET"
   # }
   # Vectorised version : Tim Peterson 23 May 2019
   xiMo <- pmax(xiMo, 1)
-  
+
   f_T <- (1/variables$ptops)^0.5 * constants$fz/xiMo
-  lambdaMo1 <- constants$gammaps * variables$ptops + 4 * constants$epsilonMo * 
+  lambdaMo1 <- constants$gammaps * variables$ptops + 4 * constants$epsilonMo *
     constants$sigmaMo * (variables$T_Mo + 274)^3/f_T
   T_p <- variables$T_Mo
   for (i in 1:99999) {
     v_p <- 6.11 * exp((constants$alphaMo * T_p)/(T_p + constants$betaMo))
-    delta_p <- constants$alphaMo * constants$betaMo * v_p/((T_p + 
+    delta_p <- constants$alphaMo * constants$betaMo * v_p/((T_p +
                                                               constants$betaMo)^2)
-    delta_T_p <- (R_TC/f_T + variables$vD_Mo - v_p + lambdaMo1 * 
+    delta_T_p <- (R_TC/f_T + variables$vD_Mo - v_p + lambdaMo1 *
                     (variables$T_Mo - T_p))/(delta_p + lambdaMo1)
     T_p <- T_p + delta_T_p
-    if (abs(max(na.omit(delta_T_p))) < 0.01) 
+    if (abs(max(na.omit(delta_T_p))) < 0.01)
       break
   }
   v_p <- 6.11 * exp((constants$alphaMo * T_p)/(T_p + constants$betaMo))
-  delta_p <- constants$alphaMo * constants$betaMo * v_p/((T_p + 
+  delta_p <- constants$alphaMo * constants$betaMo * v_p/((T_p +
                                                             constants$betaMo)^2)
   E_P.temp <- R_TC - lambdaMo1 * f_T * (T_p - variables$T_Mo)
-  R_P <- E_P.temp + variables$ptops * constants$gammaps * 
+  R_P <- E_P.temp + variables$ptops * constants$gammaps *
     f_T * (T_p - variables$T_Mo)
-  E_W.temp <- constants$b1 + constants$b2 * R_P/(1 + variables$ptops * 
+  E_W.temp <- constants$b1 + constants$b2 * R_P/(1 + variables$ptops *
                                                    constants$gammaps/delta_p)
   E_T_Mo.temp <- 2 * E_W.temp - E_P.temp
   E_P.temp <- 1/(constants$lambdaMo) * E_P.temp
@@ -3693,30 +3673,29 @@ ET.MortonCRWE <- function (data, constants, ts = "monthly", est = "potential ET"
   }
   ET.Daily <- NULL
   ET.Monthly <- ET_Mo.Monthly
-  ET.Annual <- aggregate(ET.Monthly, floor(as.numeric(as.yearmon(data$Date.monthly, 
+  ET.Annual <- aggregate(ET.Monthly, floor(as.numeric(as.yearmon(data$Date.monthly,
                                                                  "%m/%y"))), FUN = sum)
-  
   ET.MonthlyAve = ET.AnnualAve = NULL
   if (AdditionalStats=="yes") {
     for (mon in min(as.POSIXlt(data$Date.monthly)$mon):max(as.POSIXlt(data$Date.monthly)$mon)) {
       i = mon - min(as.POSIXlt(data$Date.monthly)$mon) + 1
-      ET.MonthlyAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$mon == 
+      ET.MonthlyAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$mon ==
                                                mon])
     }
     for (year in min(as.POSIXlt(data$Date.monthly)$year):max(as.POSIXlt(data$Date.monthly)$year)) {
-      i = year - min(as.POSIXlt(data$Date.monthly)$year) + 
+      i = year - min(as.POSIXlt(data$Date.monthly)$year) +
         1
-      ET.AnnualAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$year == 
+      ET.AnnualAve[i] <- mean(ET_Mo.Average[as.POSIXlt(data$Date.monthly)$year ==
                                               year])
     }
-    
-  } 
-  
+
+  }
+
   ET_formulation <- "Morton CRWE"
-  
-  results <- list(ET.Daily = ET.Daily, ET.Monthly = ET.Monthly, 
-                  ET.Annual = ET.Annual, ET.MonthlyAve = ET.MonthlyAve, 
-                  ET.AnnualAve = ET.AnnualAve, ET_formulation = ET_formulation, 
+
+  results <- list(ET.Daily = ET.Daily, ET.Monthly = ET.Monthly,
+                  ET.Annual = ET.Annual, ET.MonthlyAve = ET.MonthlyAve,
+                  ET.AnnualAve = ET.AnnualAve, ET_formulation = ET_formulation,
                   ET_type = ET_type, message1 = variables$message1, message6 = variables$message6)
   if (ts == "monthly") {
     res_ts <- ET.Monthly
@@ -3728,12 +3707,12 @@ ET.MortonCRWE <- function (data, constants, ts = "monthly", est = "potential ET"
     message(ET_formulation, " ", ET_type)
     message(variables$message1)
     message(variables$message6)
-    
+
     message("Timestep: ", ts)
     message("Units: mm")
     message("Time duration: ", time(res_ts[1]), " to ", time(res_ts[length(res_ts)]))
     if (NA %in% res_ts) {
-      message(length(res_ts), " ET estimates obtained; ", 
+      message(length(res_ts), " ET estimates obtained; ",
               length(which(is.na(res_ts))), " NA output entries due to missing data")
       message("Basic stats (NA excluded)")
       message("Mean: ", round(mean(res_ts, na.rm = T), digits = 2))
@@ -3751,15 +3730,15 @@ ET.MortonCRWE <- function (data, constants, ts = "monthly", est = "potential ET"
   if (save.csv == "yes") {
     for (i in 1:length(results)) {
       namer <- names(results[i])
-      write.table(as.character(namer), file = "ET_MortonCRWE.csv", 
-                  dec = ".", quote = FALSE, col.names = FALSE, row.names = F, 
+      write.table(as.character(namer), file = "ET_MortonCRWE.csv",
+                  dec = ".", quote = FALSE, col.names = FALSE, row.names = F,
                   append = TRUE, sep = ",")
-      write.table(data.frame(get(namer, results)), file = "ET_MortonCRWE.csv", 
+      write.table(data.frame(get(namer, results)), file = "ET_MortonCRWE.csv",
                   col.names = F, append = T, sep = ",")
     }
     invisible(results)
   } else {
     return(results)
   }
-  
+
 }

@@ -7,9 +7,9 @@
 Implementing the Morton CRWE formulation for estimating potential evapotranspiration or shallow lake evaporation.
 }
 \usage{
-\method{ET}{MortonCRWE}(data, constants, ts="monthly", est="potential ET", 
-solar="sunshine hours", Tdew= T, alpha = NULL, message="yes", AdditionalStats="yes", 
-save.csv="yes", \dots)
+\method{ET}{MortonCRWE}(data, constants, ts="monthly", est="potential ET",
+solar="sunshine hours", Tdew= T, alpha = NULL, message="yes", AdditionalStats="yes",
+save.csv="no", \dots)
 }
 
 \arguments{
@@ -37,7 +37,7 @@ save.csv="yes", \dots)
   \emph{lambdaMo} - Latent heat of vaporisation in Morton's procedure, = 28.5W.day.kg^-1 when T >= 0 degree Celcius, = 28.5*1.15W.day.kg^-1 when T < 0 degree Celcius,\cr
   }
   \item{ts}{
-  Must be either \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Must be either \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on.
   Default is \code{monthly}.
   }
   \item{solar}{
@@ -77,7 +77,7 @@ save.csv="yes", \dots)
   "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
   }
   \item{save.csv}{
-  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -129,18 +129,18 @@ Morton, F.I. 1983, \emph{Operational estimates of lake evaporation}. Journal of 
 Danlu Guo
 }
 \seealso{
-\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.MortonCRWE}}
+\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.MortonCRWE}}
 }
 \examples{
-# Use processed existing data set and constants from 
+# Use processed existing data set and constants from
 # kent Town, Adelaide
 data("processeddata")
 data("constants")
 
 # Call ET.MortonCRWE under the generic function ET
-results <- ET.MortonCRWE(data, constants, ts="monthly",
-est="potential ET", solar="sunshine hours", Tdew= TRUE, 
-alpha = NULL, message="yes", AdditionalStats="yes", save.csv="yes") 
+results <- ET.MortonCRWE(processeddata, constants, ts="monthly",
+est="potential ET", solar="sunshine hours", Tdew= TRUE,
+alpha = NULL, message="yes", AdditionalStats="yes", save.csv="no")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

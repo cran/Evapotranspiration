@@ -7,8 +7,8 @@
 Implementing the Penman-Monteith formulation (including the method for FAO-56 hypothetical short grass and the method for ASCE-EWRI Standardised crop) for estimating reference crop evapotranspiration
 }
 \usage{
-\method{ET}{PenmanMonteith}(data, constants, ts="daily", solar="sunshine hours", 
-wind="yes", crop="short", message="yes", AdditionalStats="yes", save.csv="yes", \dots)
+\method{ET}{PenmanMonteith}(data, constants, ts="daily", solar="sunshine hours",
+wind="yes", crop="short", message="yes", AdditionalStats="yes", save.csv="no", \dots)
 }
 
 \arguments{
@@ -26,14 +26,14 @@ wind="yes", crop="short", message="yes", AdditionalStats="yes", save.csv="yes", 
   \emph{sigma} - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.\cr
   \emph{G} - soil heat flux in MJ.m^-2.day^-1, = 0 when using daily time step.
   \cr
-  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr 
-  \emph{as} - only for when cloud data is used for calculating radiation i.e. solar = "cloud" - fraction of extraterrestrial 
+  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr
+  \emph{as} - only for when cloud data is used for calculating radiation i.e. solar = "cloud" - fraction of extraterrestrial
   radiation reaching earth on sunless days,\cr
-  \emph{bs} - only for when cloud data is used for calculating radiation i.e. solar = "cloud" - difference between fracion of 
+  \emph{bs} - only for when cloud data is used for calculating radiation i.e. solar = "cloud" - difference between fracion of
   extraterrestrial radiation reaching full-sun days and that on sunless days.
   }
   \item{ts}{
-  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on.
   Default is \code{daily}.
   }
   \item{solar}{
@@ -51,7 +51,7 @@ wind="yes", crop="short", message="yes", AdditionalStats="yes", save.csv="yes", 
   Default is \code{yes}.
   }
   \item{crop}{
-  Must be either \code{short} or \code{tall}.\cr 
+  Must be either \code{short} or \code{tall}.\cr
   \code{short} indicates that the method for FAO-56 hypothetical short grass will be applied (Allen et al., 1998, Equation 6); \cr
   \code{tall} indicates that the method for  ASCE-EWRI Standardised crop will be applied (ASCE, 2005, Equation 1, Table 1).\cr
   Default is \code{short}.
@@ -71,7 +71,7 @@ wind="yes", crop="short", message="yes", AdditionalStats="yes", save.csv="yes", 
   "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
   }
   \item{save.csv}{
-  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -124,7 +124,7 @@ Allen, R. G. 2005. \emph{The ASCE standardized reference evapotranspiration equa
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -132,8 +132,8 @@ data("processeddata")
 data("constants")
 
 # Call ET.PenmanMonteith under the generic function ET
-results <- ET.PenmanMonteith(data, constants, ts="daily", solar="sunshine hours", 
-wind="yes", crop = "short", message="yes", AdditionalStats="yes", save.csv="yes") 
+results <- ET.PenmanMonteith(processeddata, constants, ts="daily", solar="sunshine hours",
+wind="yes", crop = "short", message="yes", AdditionalStats="yes", save.csv="no")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

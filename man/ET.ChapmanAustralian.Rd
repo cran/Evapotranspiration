@@ -7,9 +7,9 @@
 Implementing the Chapman formulation for estimating potential evapotranspiration.
 }
 \usage{
-\method{ET}{ChapmanAustralian}(data, constants, ts="daily", PenPan= T, 
-solar="sunshine hours", alpha=0.23, message="yes", AdditionalStats="yes", 
-save.csv="yes", \dots) 
+\method{ET}{ChapmanAustralian}(data, constants, ts="daily", PenPan= T,
+solar="sunshine hours", alpha=0.23, message="yes", AdditionalStats="yes",
+save.csv="no", \dots)
 }
 
 \arguments{
@@ -30,13 +30,13 @@ save.csv="yes", \dots)
   \emph{alphaA} - albedo for Class-A pan,\cr
   \emph{ap} - a constant in PenPan = 2.4.
   \cr
-  
-  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr 
+
+  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr
   \emph{as} - fraction of extraterrestrial radiation reaching earth on sunless days,\cr
   \emph{bs} - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
   }
   \item{ts}{
-  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on.
   Default is \code{daily}.
   }
   \item{PenPan}{
@@ -70,7 +70,7 @@ save.csv="yes", \dots)
   "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
   }
   \item{save.csv}{
-  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -109,9 +109,9 @@ The function generates a list containing the following components:
   A message to inform the users about how solar radiation has been calculated by using which data.
   }
   \item{message5}{
-  A message to inform the users about if the Class-A pan evaporation is from actual data or from PenPan estimation. 
+  A message to inform the users about if the Class-A pan evaporation is from actual data or from PenPan estimation.
   }
-  
+
 }
 \references{
 
@@ -124,7 +124,7 @@ Chapman, T. 2001, \emph{Estimation of evaporation in rainfall-runoff models}, in
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.PenPan}}
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.PenPan}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -132,9 +132,9 @@ data("processeddata")
 data("constants")
 
 # Call ET.ChapmanAustralian under the generic function ET
-results <- ET.ChapmanAustralian(data, constants, ts="daily", PenPan= TRUE, 
-solar="sunshine hours", alpha=0.23, message="yes", AdditionalStats="yes", 
-save.csv="yes") 
+results <- ET.ChapmanAustralian(processeddata, constants, ts="daily", PenPan= TRUE,
+solar="sunshine hours", alpha=0.23, message="yes", AdditionalStats="yes",
+save.csv="no")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

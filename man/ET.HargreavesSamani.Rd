@@ -8,7 +8,7 @@ Implementing the Hargreaves-Samani formulation for estimating reference crop eva
 }
 \usage{
 \method{ET}{HargreavesSamani}(data, constants, ts="daily",
-message="yes", AdditionalStats="yes", save.csv="yes", \dots)
+message="yes", AdditionalStats="yes", save.csv="no", \dots)
 }
 
 \arguments{
@@ -24,7 +24,7 @@ message="yes", AdditionalStats="yes", save.csv="yes", \dots)
   \emph{Gsc} - solar constant = 0.0820 MJ.m^-2.min^-1.\cr
   }
   \item{ts}{
-  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on.
   Default is \code{daily}.
   }
   \item{message}{
@@ -40,7 +40,7 @@ message="yes", AdditionalStats="yes", save.csv="yes", \dots)
   "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
   }
   \item{save.csv}{
-  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -86,7 +86,7 @@ Hargreaves, G.H.Samani, Z.A. 1985, \emph{Reference crop evapotranspiration from 
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -94,8 +94,8 @@ data("processeddata")
 data("constants")
 
 # Call ET.HargreavesSamani under the generic function ET
-results <- ET.HargreavesSamani(data, constants, ts="daily", message="yes", 
-AdditionalStats="yes", save.csv="yes")
+results <- ET.HargreavesSamani(processeddata, constants, ts="daily", message="yes",
+AdditionalStats="yes", save.csv="no")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

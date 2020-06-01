@@ -7,9 +7,9 @@
 Implementing the Morton CRAE formulation for estimating potential evapotranspiration, wet-environment areal evapotranspiration and actual areal evapotranspiration.
 }
 \usage{
-\method{ET}{MortonCRAE}(data, constants, ts="monthly", est="potential ET", 
-solar="sunshine hours", Tdew= T, alpha = NULL, message="yes", AdditionalStats="yes", 
-save.csv="yes", \dots)
+\method{ET}{MortonCRAE}(data, constants, ts="monthly", est="potential ET",
+solar="sunshine hours", Tdew= T, alpha = NULL, message="yes", AdditionalStats="yes",
+save.csv="no", \dots)
 }
 
 \arguments{
@@ -37,7 +37,7 @@ save.csv="yes", \dots)
   \emph{lambdaMo} - Latent heat of vaporisation in Morton's procedure, = 28.5W.day.kg^-1 when T >= 0 degree Celcius, = 28.5*1.15W.day.kg^-1 when T < 0 degree Celcius,\cr
   }
   \item{ts}{
-  Must be either \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Must be either \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on.
   Default is \code{monthly}.
   }
   \item{solar}{
@@ -51,7 +51,7 @@ save.csv="yes", \dots)
   \item{est}{
   Must be either \code{potential ET}, \code{wet areal ET} or \code{actual areal ET}:\cr
   \code{potential ET} proceeds to estimating potential evapotranspiration;\cr
-  \code{wet areal ET} proceeds to estimating wet-environmental areal evapotranspiration;\cr 
+  \code{wet areal ET} proceeds to estimating wet-environmental areal evapotranspiration;\cr
   \code{actual areal ET} proceeds to estimating actual areal evapotranspiraion.\cr
   Default is \code{potential ET}.
   }
@@ -78,7 +78,7 @@ save.csv="yes", \dots)
   "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
   }
   \item{save.csv}{
-  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -131,18 +131,18 @@ Morton, F.I. 1983, \emph{Operational estimates of areal evapotranspiration and t
 Danlu Guo
 }
 \seealso{
-\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.MortonCRWE}}
+\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.MortonCRWE}}
 }
 \examples{
-# Use processed existing data set and constants from 
+# Use processed existing data set and constants from
 # kent Town, Adelaide
 data("processeddata")
 data("constants")
 
 # Call ET.MortonCRAE under the generic function ET
-results <- ET.MortonCRAE(data, constants, ts="monthly", 
-est="potential ET", solar="sunshine hours", Tdew= TRUE, 
-alpha = NULL, message="yes", AdditionalStats="yes", save.csv="yes") 
+results <- ET.MortonCRAE(processeddata, constants, ts="monthly",
+est="potential ET", solar="sunshine hours", Tdew= TRUE,
+alpha = NULL, message="yes", AdditionalStats="yes", save.csv="no")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

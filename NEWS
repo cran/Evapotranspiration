@@ -1,19 +1,17 @@
-    CHANGES IN Evapotranspiration VERSION 1.14
+    CHANGES IN Evapotranspiration VERSION 1.15
 
 NEW FEATURES
     o  NA
    
 SIGNIFICANT USER-VISIBLE CHANGES
-    o  Significant speed up functionc 'ET.MortonCRAE' and 'ET.MortonCRWE' via vectorization of estimation - tested for a daily dataset over 50 years and achieved a 8-fold speed up than version 1.13.
-    o  Enabled users to turn off on-screen messages when running 'ReadInputs'
-    o  Enabled users to disable estimation of monthly and annual averages when running 'ET...' functions
+    o  All save.csv = "yes" arguments in 'ET....' functions were updated to save.csv = "no" i.e. default is to not to save ET estimates as csv
 
 BUG FIXES
-    o  NA
+    o  Fixed input bugs in all 'ET....' functions that require 'solar' argument for solar = 'cloud'
+    o  Fixed minor bugs in all 'ET....' functionsfor calculating annual ET sum 
 
 MINOR CHANGES
-    o  Argument 'AdditionalStats' added to all 'ET....' functions to allow enable/disable of estimation of monthly and annual average ET, manual updated accordingly
-    o  Argument 'message' added to 'ReadInputs' to enable users to turn off on-screen messages 
-    
+    o  Fixed error in the manual of function ReadInputs, which had the unit of subdaily RH input data as degC (corrected to percentage)
+
 DEPRECATED & DEFUNCT
     o  NA

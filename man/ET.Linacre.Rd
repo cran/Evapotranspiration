@@ -7,8 +7,8 @@
 Implementing the Linacre formulation for estimating actual evapotranspiration.
 }
 \usage{
-\method{ET}{Linacre}(data, constants, ts="daily", message="yes", AdditionalStats="yes", 
-save.csv="yes", \dots) 
+\method{ET}{Linacre}(data, constants, ts="daily", message="yes", AdditionalStats="yes",
+save.csv="no", \dots)
 }
 
 \arguments{
@@ -22,7 +22,7 @@ save.csv="yes", \dots)
   \emph{lat} - latitude in degrees.\cr
   }
   \item{ts}{
-  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on.
   Default is \code{daily}.
   }
   \item{message}{
@@ -37,7 +37,7 @@ save.csv="yes", \dots)
   "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
   }
   \item{save.csv}{
-  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -81,7 +81,7 @@ Linacre, E. T. 1977. \emph{A simple formula for estimating evaporation rates in 
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -89,8 +89,8 @@ data("processeddata")
 data("constants")
 
 # Call ET.Linacre under the generic function ET
-results <- ET.Linacre(data, constants, ts="daily",
-message="yes", AdditionalStats="yes", save.csv="yes") 
+results <- ET.Linacre(processeddata, constants, ts="daily",
+message="yes", AdditionalStats="yes", save.csv="no")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

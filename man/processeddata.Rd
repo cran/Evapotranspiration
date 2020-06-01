@@ -1,11 +1,11 @@
-\name{data}
+\name{processeddata}
+\alias{processeddata}
 \docType{data}
-\alias{data}
 \title{Processed Climate Data Required for Calculating Evapotranspiration}
 \description{
   This data set contains the processed climate data including the variables required for calculating evapotranspiration in function \code{\link{ET}} over the observation period between 1/3/2001 and 31/8/2004 at the Kent Town station in Adelaide, Australia.
 }
-\usage{data}
+\usage{data(processeddata)}
 \format{A list containing 11 non-empty variables:\cr
 \cr
 \emph{Date.daily} - date in daily time step,\cr

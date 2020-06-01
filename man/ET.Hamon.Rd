@@ -7,8 +7,8 @@
 Implementing the Hamon formulation for estimating potential evapotranspiration.
 }
 \usage{
-\method{ET}{Hamon}(data, constants = NULL, ts="daily", message="yes", AdditionalStats="yes", 
-save.csv="yes", \dots) 
+\method{ET}{Hamon}(data, constants = NULL, ts="daily", message="yes", AdditionalStats="yes",
+save.csv="no", \dots)
 }
 
 \arguments{
@@ -20,7 +20,7 @@ save.csv="yes", \dots)
   Dummy argument with a \code{NULL} value.
   }
   \item{ts}{
-  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on.
   Default is \code{daily}.
   }
   \item{message}{
@@ -35,7 +35,7 @@ save.csv="yes", \dots)
   "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
   }
   \item{save.csv}{
-  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -82,7 +82,7 @@ Oudin, L., Hervieu, F., Michel, C., Perrin, C., Andreassian, V., Anctil, F.Louma
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{data}}
+\code{\link{ET}},\code{\link{processeddata}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -90,7 +90,7 @@ data("processeddata")
 data("constants")
 
 # Call ET.Hamon under the generic function ET
-results <- ET.Hamon(data, ts="daily", message="yes", AdditionalStats="yes", save.csv="yes") 
+results <- ET.Hamon(processeddata, ts="daily", message="yes", AdditionalStats="yes", save.csv="no")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the

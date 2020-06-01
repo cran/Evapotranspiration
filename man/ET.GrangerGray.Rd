@@ -7,9 +7,9 @@
 Implementing the Granger-Gray formulation for estimating actual areal evapotranspiration.
 }
 \usage{
-\method{ET}{GrangerGray}(data, constants, ts="daily", 
-solar="sunshine hours", windfunction_ver=1948, alpha=0.23, 
-message="yes", AdditionalStats="yes", save.csv="yes", \dots)
+\method{ET}{GrangerGray}(data, constants, ts="daily",
+solar="sunshine hours", windfunction_ver=1948, alpha=0.23,
+message="yes", AdditionalStats="yes", save.csv="no", \dots)
 }
 
 \arguments{
@@ -27,12 +27,12 @@ message="yes", AdditionalStats="yes", save.csv="yes", \dots)
   \emph{sigma} - Stefan-Boltzmann constant = 4.903*10^-9 MJ.K^-4.m^-2.day^-1.\cr
   \emph{G} - soil heat flux in MJ.m^-2.day^-1, = 0 when using daily time step.
   \cr
-  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr 
+  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr
   \emph{as} - fraction of extraterrestrial radiation reaching earth on sunless days,\cr
   \emph{bs} - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
   }
   \item{ts}{
-  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on.
   Default is \code{daily}.
   }
   \item{solar}{
@@ -68,7 +68,7 @@ message="yes", AdditionalStats="yes", save.csv="yes", \dots)
   "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
   }
   \item{save.csv}{
-  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -122,7 +122,7 @@ Penman, H. L. 1956. \emph{Evaporation: An introductory survey}. Netherlands Jour
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.Penman}}
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}},\code{\link{ET.Penman}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -130,9 +130,9 @@ data("processeddata")
 data("constants")
 
 # Call ET.GrangerGray under the generic function ET
-results <- ET.GrangerGray(data, constants, ts="daily", 
-solar="sunshine hours", windfunction_ver=1948, alpha=0.23, 
-message="yes", AdditionalStats="yes", save.csv="yes")
+results <- ET.GrangerGray(processeddata, constants, ts="daily",
+solar="sunshine hours", windfunction_ver=1948, alpha=0.23,
+message="yes", AdditionalStats="yes", save.csv="no")
 
 }
 

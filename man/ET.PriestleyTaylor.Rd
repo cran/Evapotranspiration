@@ -7,8 +7,8 @@
 Implementing the Priestley-Taylor formulation for potential evaporation
 }
 \usage{
-\method{ET}{PriestleyTaylor}(data, constants, ts="daily", solar="sunshine hours", alpha=0.23, 
-message="yes", AdditionalStats="yes", save.csv="yes", \dots)
+\method{ET}{PriestleyTaylor}(data, constants, ts="daily", solar="sunshine hours", alpha=0.23,
+message="yes", AdditionalStats="yes", save.csv="no", \dots)
 }
 
 \arguments{
@@ -26,13 +26,13 @@ message="yes", AdditionalStats="yes", save.csv="yes", \dots)
   \emph{alphaPT} - Priestley-Taylor coefficient = 1.26 for Priestley-Taylor model (Priestley and Taylor, 1972)\cr
   \emph{G} - soil heat flux in MJ.m^-2.day^-1, = 0 when using daily time step.
   \cr
-  
-  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr 
+
+  The following constants are also required when argument \code{solar} has value of \code{sunshine hours}:\cr
   \emph{as} - fraction of extraterrestrial radiation reaching earth on sunless days,\cr
   \emph{bs} - difference between fracion of extraterrestrial radiation reaching full-sun days and that on sunless days.
   }
   \item{ts}{
-  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on. 
+  Must be either \code{daily}, \code{monthly} or \code{annual}, which indicates the disired time step that the output ET estimates should be on.
   Default is \code{daily}.
   }
   \item{solar}{
@@ -61,7 +61,7 @@ message="yes", AdditionalStats="yes", save.csv="yes", \dots)
   "yes" or "no" indicating whether monthly averaged and annual averaged ET should be calculated.
   }
   \item{save.csv}{
-  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory. 
+  Must be either \code{yes} or \code{no}, indicating whether a .csv of ET estimates should be saved to working directory.
   }
   \item{\dots}{
   Dummy for generic function, no need to define.
@@ -113,7 +113,7 @@ Priestley, C. & Taylor, R. 1972, \emph{On the assessment of surface heat flux an
 Danlu Guo
 }
 \seealso{
-\code{\link{ET}},\code{\link{data}},\code{\link{defaultconstants}},\code{\link{constants}}
+\code{\link{ET}},\code{\link{processeddata}},\code{\link{defaultconstants}},\code{\link{constants}}
 }
 \examples{
 # Use processed existing data set and constants from kent Town, Adelaide
@@ -121,8 +121,8 @@ data("processeddata")
 data("constants")
 
 # Call ET.PriestleyTaylor under the generic function ET
-results <- ET.PriestleyTaylor(data, constants, ts="daily", solar="sunshine hours", alpha=0.23,
-message="yes", AdditionalStats="yes", save.csv="yes")
+results <- ET.PriestleyTaylor(processeddata, constants, ts="daily",
+solar="sunshine hours", alpha=0.23, message="yes", AdditionalStats="yes", save.csv="no")
 }
 
 % Add one or more standard keywords, see file 'KEYWORDS' in the
