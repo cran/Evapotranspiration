@@ -141,7 +141,7 @@ ET.Penman <- function(data, constants, ts="daily", solar="sunshine hours", wind=
   delta <- 4098 * (0.6108 * exp((17.27 * Ta)/(Ta+237.3))) / ((Ta + 237.3)^2) # slope of vapour pressure curve (S2.4)
   gamma <- 0.00163 * P / constants$lambda # psychrometric constant (S2.9)
   d_r2 <- 1 + 0.033*cos(2*pi/365 * data$J) # dr is the inverse relative distance Earth-Sun (S3.6)
-  delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar dedication (S3.7)
+  delta2 <- 0.409 * sin(2*pi/365 * data$J - 1.39) # solar declination (S3.7)
   w_s <- acos(-tan(constants$lat_rad) * tan(delta2))  # sunset hour angle (S3.8)
   N <- 24/pi * w_s # calculating daily values
   R_a <- (1440/pi) * d_r2 * constants$Gsc * (w_s * sin(constants$lat_rad) * sin(delta2) + cos(constants$lat_rad) * cos(delta2) * sin(w_s)) # extraterristrial radiation (S3.5)
@@ -381,11 +381,12 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
 
   if (solar == "data") {
     R_s <- data$Rs
-  }else if (solar != "monthly precipitation"&
-            solar != "cloud") {
-    R_s <- (constants$as + constants$bs * (data$n/N)) * R_a
-  }else {
-    R_s <- (0.85 - 0.047 * data$Cd) * R_a
+  } else if (solar!="monthly precipitation") {
+    # calculate R_s from sunshine hours - data or estimation using cloudness
+    R_s <- (constants$as + constants$bs * (data$n/N))*R_a # estimated incoming solar radiation (S3.9)
+  } else {
+    # calculate R_s from cloudness estimated from monthly precipitation (#S3.14)
+    R_s <- (0.85 - 0.047*data$Cd)*R_a 
   }
 
   R_nl <- constants$sigma * (0.34 - 0.14 * sqrt(vabar)) * ((data$Tmax+273.2)^4 + (data$Tmin+273.2)^4)/2  * (1.35 * R_s / R_so - 0.35) # estimated net outgoing longwave radiation (S3.3)
@@ -411,7 +412,7 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     }
     ET.Daily <- ET_RC.Daily
     ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-    ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily))), FUN = sum)
+    ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily, "%m/%y"))), FUN = sum)
   } else {
     # mean relative humidity
     RHmean <- (data$RHmax + data$RHmin) / 2
@@ -423,13 +424,13 @@ ET.PenmanMonteith <- function(data, constants, ts="daily", solar="sunshine hours
     #ET_RC.Daily <- matrix(NA,length(data$date.Daily),1)
     ET_RC.Monthly <- 0.038 * R_s.Monthly * sqrt(Ta.Monthly + 9.5) - 2.4 * (R_s.Monthly/R_a.Monthly)^2 + 0.075 * (Ta.Monthly + 20) * (1 - RHmean.Monthly/100) # Reference crop evapotranspiration without wind data by Valiantzas (2006) (S5.21)
     ET_RC.Daily <- data$Tmax
-    for (cont in 1:length(data$i)) {
-      ET_RC.Daily[(((as.numeric(as.yearmon(time(ET_RC.Daily))))-floor(as.numeric(as.yearmon(time(ET_RC.Daily)))))*12+1)==data$i[cont]] <- ET_RC.Monthly[cont]
+    for (cont in 1:length(data$Date.monthly)) {
+      ET_RC.Daily[which(as.yearmon(time(ET_RC.Daily))==data$Date.monthly[cont])] <- ET_RC.Monthly[cont]
     }
 
     ET.Daily <- ET_RC.Daily
-    ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)
-    ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily))), FUN = sum)
+    ET.Monthly <- aggregate(ET.Daily, as.yearmon(data$Date.daily, "%m/%y"), FUN = sum)	
+    ET.Annual <- aggregate(ET.Daily, floor(as.numeric(as.yearmon(data$Date.daily))), FUN = sum)	
   }
 
   ET.MonthlyAve <- ET.AnnualAve <- NULL
@@ -3025,6 +3026,10 @@ Radiation <- function (data, constants, ts = "monthly", solar = "sunshine hours"
     Tdew_Mo <- (116.9 + 237.3 * log(vabar_Mo))/(16.78 -
                                                   log(vabar_Mo))
   } else {
+    vs_Tmax <- 0.6108 * exp(17.27 * data$Tmax/(data$Tmax + 
+                                                 237.3))
+    vs_Tmin <- 0.6108 * exp(17.27 * data$Tmin/(data$Tmin + 
+                                                 237.3))
     vabar <- (vs_Tmin * data$RHmax/100 + vs_Tmax * data$RHmin/100)/2
     vabar_Mo <- aggregate(vabar, as.yearmon(data$Date.daily,
                                             "%m/%y"), FUN = mean)

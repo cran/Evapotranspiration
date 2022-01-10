@@ -27,7 +27,11 @@ Eichinger et al., 1996, p.163);\cr
 \emph{ap} constant in Penpan formula = 2.4,\cr
 \emph{b0} constant in Morton's procedure = 1 (Chiew and McMahon, 1991, Table A1),\cr
 \emph{b1} constant in Morton's procedure = 14 W.m^-2 (Chiew and McMahon, 1991, Table A1),\cr 
+*Note: a re-calibrated value of 13.4 W.m^-2 was recommended to achieve achieve a Priestley-Taylor coefficient of 1.26 (Wang et al., 2009), rather the original value (14 W.m^-2) used by Morton that gave a Priestley-Taylor coefficient of 1.32;\cr
+
 \emph{b2} constant in Morton's procedure = 1.2 (Chiew and McMahon, 1991, Table A1), \cr
+*Note: a re-calibrated value of 1.13 was recommended to achieve achieve a Priestley-Taylor coefficient of 1.26 (Wang et al., 2009), rather the original value (1.2) used by Morton that gave a Priestley-Taylor coefficient of 1.32;\cr
+
 \emph{e0} constant for Blaney-Criddle formula = 0.81917 (Frevert et al., 1983, Table 1),\cr
 \emph{e1} constant for Blaney-Criddle formula = -0.0040922 (Frevert et al., 1983, Table 1),\cr
 \emph{e2} constant for Blaney-Criddle formula = 1.0705 (Frevert et al., 1983, Table 1),\cr
@@ -48,7 +52,10 @@ Eichinger et al., 1996, p.163);\cr
 \cr
 \emph{fz} constant in Morton's procedure: \cr
 = 28.0 W.m^-2.mbar^-1 for CRAE model for T >= 0 degree Celcius;\cr
+*Note: a re-calibrated value of 29.2 W.m^-2.mbar^-1 was recommended to achieve achieve a Priestley-Taylor coefficient of 1.26 (Wang et al., 2009), rather the original value (28.0 W.m^-2.mbar^-1) used by Morton that gave a Priestley-Taylor coefficient of 1.32;\cr
+
 = 28.0*1.15 W.m^-2.mbar^-1 for CRAE model for T < 0 degree Celcius; \cr
+
 = 25.0 W.m^-2.mbar^-1 for CRWE model for T >= 0 degree Celcius;\cr
 = 28.75 W.m^-2.mbar^-1 for CRWE model for T < 0 degree Celcius (Morton, 1983a, page65).\cr
 \cr
@@ -76,5 +83,24 @@ Eichinger et al., 1996, p.163);\cr
 \seealso{
 \code{\link{defaultconstants}}
 }
-\source{various references}
+\references{
+McMahon, T., Peel, M., Lowe, L., Srikanthan, R. & McVicar, T. 2012. \emph{Estimating actual, potential, reference crop and pan evaporation using standard meteorological data: a pragmatic synthesis}. Hydrology and Earth System Sciences Discussions, 9, 11829-11910.
+
+Allen, R. G., Pereira, L. S., Raes, D. & Smith, M. 1998. \emph{Crop evapotranspiration-Guidelines for computing crop water requirements-FAO Irrigation and drainage}. paper 56. FAO, Rome, 300, 6541.
+
+Szilagyi, J., & Jozsa, J. 2008. New findings about the complementary relationship-based evaporation estimation methods. Journal of Hydrology, 354(1-4), 171-186.
+
+Brutsaert, W., & Stricker, H. 1979. An advection-aridity approach to estimate actual regional evapotranspiration. Water Resources Research, 15(2), 443-450. 
+
+Chiew, F. H. S., & McMahon, T. A. 1991. The applicability of Morton's and Penman's evapotranspiration estimates in rainfall-runoff modelling. JAWRA Journal of the American Water Resources Association, 27(4), 611-620. 
+
+Frevert, D.K., Hill, R.W.Braaten, B.C. 1983, Estimation of FAO evapotranspiration coefficients, Journal of Irrigation and Drainage Engineering, vol. 109, no. 2, pp. 265-270.
+
+Roderick, M. L. 1999. Estimating the diffuse component from daily and monthly measurements of global radiation. Agricultural and Forest Meteorology, 95(3), 169-185. 
+
+Wang, Q. J., McConachy, F. L. N., Chiew, F. H. S., James, R., de Hoedt, G. C., & Wright, W. J. 2009. Maps of Evapotranspiration. Retrieved from Melbourne, Australia: http://www.bom.gov.au/climate/averages/climatology/evapotrans/text/et-description.pdf
+
+Morton, F. I. 1983. Operational estimates of areal evapotranspiration and their significance to the science and practice of hydrology. Journal of Hydrology, 66(1-4), 1-76. doi:http://dx.doi.org/10.1016/0022-1694(83)90177-4
+}
+
 \keyword{datasets}

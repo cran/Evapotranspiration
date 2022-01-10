@@ -1,17 +1,18 @@
-    CHANGES IN Evapotranspiration VERSION 1.15
+    CHANGES IN Evapotranspiration VERSION 1.16
 
 NEW FEATURES
     o  NA
    
 SIGNIFICANT USER-VISIBLE CHANGES
-    o  All save.csv = "yes" arguments in 'ET....' functions were updated to save.csv = "no" i.e. default is to not to save ET estimates as csv
+    o  NA
 
 BUG FIXES
-    o  Fixed input bugs in all 'ET....' functions that require 'solar' argument for solar = 'cloud'
-    o  Fixed minor bugs in all 'ET....' functionsfor calculating annual ET sum 
+    o  Fixed bug in the 'ET.PenmanMonteith' function that require 'wind' argument for wind = 'no'.
+    o  Fixed bug in the 'Radiation' function that require 'Tdew' argument for Tdew = F.
 
 MINOR CHANGES
-    o  Fixed error in the manual of function ReadInputs, which had the unit of subdaily RH input data as degC (corrected to percentage)
+    o  Updated the manual of 'constants' - added recommended values for fz, b1 and b2 to be used in Morton's model.
+    Corrected typo in the 'Radiation' function: 'solar dedication' -> 'solar declination'.
 
 DEPRECATED & DEFUNCT
     o  NA

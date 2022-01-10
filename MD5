@@ -1,7 +1,7 @@
-c1fca4b1b964fd1b15bcbefefd856c25 *DESCRIPTION
+583001c1d2c54d9bae245a7c76d0d231 *DESCRIPTION
 a011239a5c8de3372193aadd7b823867 *NAMESPACE
-f0ab30609a50743bd53245b5bbdcaf39 *NEWS
-db697f210c55e699113b26e17185f5a0 *R/Evapotranspiration.R
+77c21c50af6cc82b37b3406018dc7c8d *NEWS
+ff838ad361b0edd668385a2d4e2d4bf0 *R/Evapotranspiration.R
 9b21dccee9959cc676d370a2433ab443 *R/Plotting.R
 963c5d7bfc60f6a27e68b6a3acc15b52 *R/Reading.R
 d3f043d5b92de35fb14986d6937d1443 *data/E_OBS.RData
@@ -42,6 +42,6 @@ c7d222197433247a588f08eacbbdd597 *man/ReadInput_InterpMissing.Rd
 4daa7ddf6ff62d8a3dbd73b21278cd1b *man/ReadInputs.Rd
 dc078aa65d40b21c52224335a3234cfc *man/ReadOBSEvaporation.Rd
 f9d8f083340aa6736794dd0b2622f32b *man/climatedata.Rd
-7c2587eea4072f637e63222af6f857b4 *man/constants.Rd
+1349c8ff370a1d8d9e545fc2fc000543 *man/constants.Rd
 07d02d5f559e19695dbd5b6479a3a577 *man/defaultconstants.Rd
 93b68af8d05338111de4f0050c51d72f *man/processeddata.Rd
